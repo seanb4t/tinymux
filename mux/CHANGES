@@ -177,9 +177,12 @@ Bug Fixes:
  -- Suppress compiler warning in anum_extend() and compact code
     (Issues 169 and 170).
  -- Suppress compiler warning in add_helpfile() (Issue 165).
+ -- Corrected 'shutodnw' typo in 'wizhelp signals' (Issue 177).
  -- Add checking and warning messages for next free attribute, range of
     numbers used with names, and range of numbers used with objects
     (Issues 176, 180, and 181).
+ -- Require flagnames to be at least 1 character (Issue 183).
+ -- Fix @flag wizhelp topic (Issue 182).
 
 
 Performance Enhancements:
