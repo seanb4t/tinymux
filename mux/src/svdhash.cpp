@@ -1302,8 +1302,13 @@ CHashFile::CHashFile(void)
 
 void CHashFile::Init(void)
 {
+#ifdef WIN32
     m_hDirFile = INVALID_HANDLE_VALUE;
     m_hPageFile = INVALID_HANDLE_VALUE;
+#else
+    m_hDirFile = MUX_OPEN_INVALID_HANDLE_VALUE;
+    m_hPageFile = MUX_OPEN_INVALID_HANDLE_VALUE;
+#endif
     m_nDir = 0;
     m_nDirDepth = 0;
     m_pDir = NULL;
@@ -1334,7 +1339,7 @@ void CHashFile::WriteDirectory(void)
 #else // WIN32
 void CHashFile::WriteDirectory(void)
 {
-    if (INVALID_HANDLE_VALUE == m_hDirFile)
+    if (MUX_OPEN_INVALID_HANDLE_VALUE == m_hDirFile)
     {
         return;
     }
@@ -1423,15 +1428,18 @@ bool CHashFile::InitializeDirectory(unsigned int n)
 bool CHashFile::CreateFileSet(const char *szDirFile, const char *szPageFile)
 {
     CloseAll();
+
+    bool bSuccess;
 #ifdef WIN32
     m_hPageFile = CreateFile(szPageFile, GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ, 0, CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL + FILE_FLAG_RANDOM_ACCESS, NULL);
+    bSuccess = (INVALID_HANDLE_VALUE != m_hPageFile);
 #else // WIN32
-    mux_open(&m_hPageFile, szPageFile, O_RDWR|O_BINARY|O_CREAT|O_TRUNC);
+    bSuccess = mux_open(&m_hPageFile, szPageFile, O_RDWR|O_BINARY|O_CREAT|O_TRUNC);
 #endif // WIN32
 
-    if (INVALID_HANDLE_VALUE == m_hPageFile)
+    if (!bSuccess)
     {
         return false;
     }
@@ -1440,11 +1448,12 @@ bool CHashFile::CreateFileSet(const char *szDirFile, const char *szPageFile)
     m_hDirFile = CreateFile(szDirFile, GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ, 0, CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL + FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    bSuccess = (INVALID_HANDLE_VALUE != m_hDirFile);
 #else // WIN32
-    mux_open(&m_hDirFile, szDirFile, O_RDWR|O_BINARY|O_CREAT|O_TRUNC);
+    bSuccess = mux_open(&m_hDirFile, szDirFile, O_RDWR|O_BINARY|O_CREAT|O_TRUNC);
 #endif // WIN32
 
-    if (INVALID_HANDLE_VALUE == m_hPageFile)
+    if (!bSuccess)
     {
         return false;
     }
@@ -1610,14 +1619,16 @@ int CHashFile::Open(const char *szDirFile, const char *szPageFile, int nCachePag
 
     // First let's try to open the page file. This is the more important file.
     //
+    bool bSuccess;
 #ifdef WIN32
     m_hPageFile = CreateFile(szPageFile, GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ, 0, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL + FILE_FLAG_RANDOM_ACCESS, NULL);
+    bSuccess = (INVALID_HANDLE_VALUE != m_hPageFile);
 #else // WIN32
-    mux_open(&m_hPageFile, szPageFile, O_RDWR|O_BINARY);
+    bSuccess = mux_open(&m_hPageFile, szPageFile, O_RDWR|O_BINARY);
 #endif // WIN32
-    if (INVALID_HANDLE_VALUE == m_hPageFile)
+    if (!bSuccess)
     {
         // The PageFile doesn't exist, so we have'ta create both of them.
         //
@@ -1672,10 +1683,11 @@ int CHashFile::Open(const char *szDirFile, const char *szPageFile, int nCachePag
     m_hDirFile = CreateFile(szDirFile, GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ, 0, OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL + FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    bSuccess = (INVALID_HANDLE_VALUE != m_hDirFile);
 #else // WIN32
-    mux_open(&m_hDirFile, szDirFile, O_RDWR|O_BINARY);
+    bSuccess = mux_open(&m_hDirFile, szDirFile, O_RDWR|O_BINARY);
 #endif // WIN32
-    if (INVALID_HANDLE_VALUE == m_hDirFile)
+    if (!bSuccess)
     {
         // The Directory doesn't exist, so we create it anew, and rebuild the
         // index.
@@ -1683,11 +1695,12 @@ int CHashFile::Open(const char *szDirFile, const char *szPageFile, int nCachePag
         m_hDirFile = CreateFile(szDirFile, GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ, 0, CREATE_ALWAYS,
             FILE_ATTRIBUTE_NORMAL + FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+        bSuccess = (INVALID_HANDLE_VALUE != m_hDirFile);
 #else // WIN32
-        mux_open(&m_hDirFile, szDirFile, O_RDWR|O_BINARY|O_CREAT|O_TRUNC);
+        bSuccess = mux_open(&m_hDirFile, szDirFile, O_RDWR|O_BINARY|O_CREAT|O_TRUNC);
 #endif // WIN32
 
-        if (INVALID_HANDLE_VALUE == m_hPageFile)
+        if (!bSuccess)
         {
             CloseAll();
             return HF_OPEN_STATUS_ERROR;
@@ -1713,7 +1726,11 @@ int CHashFile::Open(const char *szDirFile, const char *szPageFile, int nCachePag
 
 void CHashFile::Sync(void)
 {
+#ifdef WIN32
     if (INVALID_HANDLE_VALUE != m_hPageFile)
+#else
+    if (MUX_OPEN_INVALID_HANDLE_VALUE != m_hPageFile)
+#endif
     {
         cs_syncs++;
         bool bAllFlushed = true;
@@ -1741,7 +1758,11 @@ void CHashFile::Sync(void)
 #endif // DO_COMMIT
     }
 #ifdef DO_COMMIT
+#ifdef WIN32
     if (  INVALID_HANDLE_VALUE != m_hDirFile
+#else
+    if (  MUX_OPEN_INVALID_HANDLE_VALUE != m_hDirFile
+#endif
        && !mudstate.bStandAlone)
     {
 #ifdef WIN32
@@ -1755,7 +1776,11 @@ void CHashFile::Sync(void)
 
 void CHashFile::CloseAll(void)
 {
+#ifdef WIN32
     if (INVALID_HANDLE_VALUE != m_hPageFile)
+#else
+    if (MUX_OPEN_INVALID_HANDLE_VALUE != m_hPageFile)
+#endif
     {
         Sync();
         if (m_pDir)
@@ -1776,7 +1801,11 @@ void CHashFile::CloseAll(void)
 #endif // WIN32
     }
 
+#ifdef WIN32
     if (INVALID_HANDLE_VALUE != m_hDirFile)
+#else
+    if (MUX_OPEN_INVALID_HANDLE_VALUE != m_hDirFile)
+#endif
     {
 #ifdef WIN32
         CloseHandle(m_hDirFile);
@@ -2733,53 +2762,63 @@ static void MakeLogName
     }
 }
 
-void CLogFile::CreateLogFile(void)
+bool CLogFile::CreateLogFile(void)
 {
     CloseLogFile();
 
     m_nSize = 0;
+
+    bool bSuccess;
 #ifdef WIN32
     m_hFile = CreateFile(m_szFilename, GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ, 0, CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL + FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    bSuccess = (INVALID_HANDLE_VALUE != m_hFile);
 #else // WIN32
-    mux_open(&m_hFile, m_szFilename, O_RDWR|O_BINARY|O_CREAT|O_TRUNC);
+    bSuccess = mux_open(&m_fdFile, m_szFilename, O_RDWR|O_BINARY|O_CREAT|O_TRUNC);
 #endif // WIN32
+    return bSuccess;
 }
 
 void CLogFile::AppendLogFile(void)
 {
     CloseLogFile();
 
+    bool bSuccess;
 #ifdef WIN32
     m_hFile = CreateFile(m_szFilename, GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ, 0, OPEN_ALWAYS,
         FILE_ATTRIBUTE_NORMAL + FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    bSuccess = (INVALID_HANDLE_VALUE != m_hFile);
 #else // WIN32
-    mux_open(&m_hFile, m_szFilename, O_RDWR|O_BINARY);
+    bSuccess = mux_open(&m_fdFile, m_szFilename, O_RDWR|O_BINARY);
 #endif // WIN32
 
-    if (INVALID_HANDLE_VALUE != m_hFile)
+    if (bSuccess)
     {
 #ifdef WIN32
         SetFilePointer(m_hFile, 0, 0, FILE_END);
 #else // WIN32
-        mux_lseek(m_hFile, 0, SEEK_SET);
+        mux_lseek(m_fdFile, 0, SEEK_SET);
 #endif // WIN32
     }
 }
 
 void CLogFile::CloseLogFile(void)
 {
+#ifdef WIN32
     if (INVALID_HANDLE_VALUE != m_hFile)
     {
-#ifdef WIN32
         CloseHandle(m_hFile);
-#else // WIN32
-        mux_close(m_hFile);
-#endif // WIN32
         m_hFile = INVALID_HANDLE_VALUE;
     }
+#else
+    if (MUX_OPEN_INVALID_HANDLE_VALUE != m_fdFile)
+    {
+        mux_close(m_fdFile);
+        m_fdFile = MUX_OPEN_INVALID_HANDLE_VALUE;
+    }
+#endif
 }
 
 #define FILE_SIZE_TRIGGER (512*1024UL)
@@ -2802,7 +2841,7 @@ void CLogFile::Flush(void)
         unsigned long nWritten;
         WriteFile(m_hFile, m_aBuffer, (DWORD)m_nBuffer, &nWritten, NULL);
 #else // WIN32
-        mux_write(m_hFile, m_aBuffer, m_nBuffer);
+        mux_write(m_fdFile, m_aBuffer, m_nBuffer);
 #endif // WIN32
 
         if (m_nSize > FILE_SIZE_TRIGGER)
@@ -2878,7 +2917,11 @@ CLogFile::CLogFile(void)
 #endif // WIN32
 
     m_ltaStarted.GetLocal();
+#ifdef WIN32
     m_hFile = INVALID_HANDLE_VALUE;
+#else
+    m_fdFile = MUX_OPEN_INVALID_HANDLE_VALUE;
+#endif
     m_nSize = 0;
     m_nBuffer = 0;
     bEnabled = false;
