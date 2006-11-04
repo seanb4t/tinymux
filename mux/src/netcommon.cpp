@@ -857,7 +857,10 @@ static void announce_connect(dbref player, DESC *d)
     if (nLen)
     {
         wait_que(player, player, player, AttrTrace(aflags, 0), false, lta,
-            NOTHING, 0, buf, (char **)NULL, 0, NULL);
+            NOTHING, 0,
+            buf,
+            0, NULL,
+            NULL);
     }
     if (mudconf.master_room != NOTHING)
     {
@@ -866,7 +869,10 @@ static void announce_connect(dbref player, DESC *d)
         if (nLen)
         {
             wait_que(mudconf.master_room, player, player, AttrTrace(aflags, 0),
-                false, lta, NOTHING, 0, buf, (char **)NULL, 0, NULL);
+                false, lta, NOTHING, 0,
+                buf,
+                0, NULL,
+                NULL);
         }
         DOLIST(obj, Contents(mudconf.master_room))
         {
@@ -874,7 +880,10 @@ static void announce_connect(dbref player, DESC *d)
             if (nLen)
             {
                 wait_que(obj, player, player, AttrTrace(aflags, 0), false, lta,
-                    NOTHING, 0, buf, (char **)NULL, 0, NULL);
+                    NOTHING, 0,
+                    buf,
+                    0, NULL,
+                    NULL);
             }
         }
     }
@@ -892,7 +901,10 @@ static void announce_connect(dbref player, DESC *d)
             if (nLen)
             {
                 wait_que(zone, player, player, AttrTrace(aflags, 0), false,
-                    lta, NOTHING, 0, buf, (char **)NULL, 0, NULL);
+                    lta, NOTHING, 0,
+                    buf,
+                    0, NULL,
+                    NULL);
             }
             break;
 
@@ -907,7 +919,10 @@ static void announce_connect(dbref player, DESC *d)
                 if (nLen)
                 {
                     wait_que(obj, player, player, AttrTrace(aflags, 0), false,
-                        lta, NOTHING, 0, buf, (char **)NULL, 0, NULL);
+                        lta, NOTHING, 0,
+                        buf,
+                        0, NULL,
+                        NULL);
                 }
             }
             break;
@@ -1006,11 +1021,16 @@ void announce_disconnect(dbref player, DESC *d, const char *reason)
         {
 #if defined(FIRANMUX)
             wait_que(player, player, mudstate.curr_enactor,
-                AttrTrace(aflags, 0), false, lta, NOTHING, 0, buf, argv, 1,
+                AttrTrace(aflags, 0), false, lta, NOTHING, 0,
+                buf,
+                1, argv,
                 NULL);
 #else
             wait_que(player, player, player, AttrTrace(aflags, 0), false,
-                lta, NOTHING, 0, buf, argv, 1, NULL);
+                lta, NOTHING, 0,
+                buf,
+                1, argv,
+                NULL);
 #endif // FIRANMUX
         }
         if (mudconf.master_room != NOTHING)
@@ -1020,8 +1040,10 @@ void announce_disconnect(dbref player, DESC *d, const char *reason)
             if (nLen)
             {
                 wait_que(mudconf.master_room, player, player,
-                    AttrTrace(aflags, 0), false, lta, NOTHING, 0, buf,
-                    (char **)NULL, 0, NULL);
+                    AttrTrace(aflags, 0), false, lta, NOTHING, 0,
+                    buf,
+                    0, NULL,
+                    NULL);
             }
             DOLIST(obj, Contents(mudconf.master_room))
             {
@@ -1030,7 +1052,10 @@ void announce_disconnect(dbref player, DESC *d, const char *reason)
                 if (nLen)
                 {
                     wait_que(obj, player, player, AttrTrace(aflags, 0), false,
-                        lta, NOTHING, 0, buf, (char **)NULL, 0, NULL);
+                        lta, NOTHING, 0,
+                        buf,
+                        0, NULL,
+                        NULL);
                 }
             }
         }
@@ -1048,7 +1073,10 @@ void announce_disconnect(dbref player, DESC *d, const char *reason)
                 if (nLen)
                 {
                     wait_que(zone, player, player, AttrTrace(aflags, 0),
-                        false, lta, NOTHING, 0, buf, (char **)NULL, 0, NULL);
+                        false, lta, NOTHING, 0,
+                        buf,
+                        0, NULL,
+                        NULL);
                 }
                 break;
 
@@ -1063,7 +1091,9 @@ void announce_disconnect(dbref player, DESC *d, const char *reason)
                     if (nLen)
                     {
                         wait_que(obj, player, player, AttrTrace(aflags, 0),
-                            false, lta, NOTHING, 0, buf, (char **)NULL, 0,
+                            false, lta, NOTHING, 0,
+                            buf,
+                            0, NULL,
                             NULL);
                     }
                 }
@@ -1761,7 +1791,7 @@ static const char *DumpInfoTable[] =
     "WOD_REALMS",
 #endif
 #if defined(REALITY_LVLS)
-    "REALITY_LVLS"
+    "REALITY_LVLS",
 #endif
 #if defined(MEMORY_BASED)
     "MEMORY_BASED",
@@ -2475,8 +2505,11 @@ void do_command(DESC *d, char *command)
         mudstate.curr_enactor = d->player;
         for (int i = 0; i < MAX_GLOBAL_REGS; i++)
         {
-            mudstate.global_regs[i][0] = '\0';
-            mudstate.glob_reg_len[i] = 0;
+            if (mudstate.global_regs[i])
+            {
+                RegRelease(mudstate.global_regs[i]);
+                mudstate.global_regs[i] = NULL;
+            }
         }
 
         CLinearTimeAbsolute ltaBegin;

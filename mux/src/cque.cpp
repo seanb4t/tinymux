@@ -105,17 +105,11 @@ static void Task_RunQueueEntry(void *pEntry, int iUnused)
             //
             for (int i = 0; i < MAX_GLOBAL_REGS; i++)
             {
-                if (point->scr[i])
+                if (mudstate.global_regs[i])
                 {
-                    size_t n = strlen(point->scr[i]);
-                    memcpy(mudstate.global_regs[i], point->scr[i], n+1);
-                    mudstate.glob_reg_len[i] = n;
+                    RegRelease(mudstate.global_regs[i]);
                 }
-                else
-                {
-                    mudstate.global_regs[i][0] = '\0';
-                    mudstate.glob_reg_len[i] = 0;
-                }
+                mudstate.global_regs[i] = point->scr[i];
             }
 
             char *command = point->comm;
@@ -231,8 +225,11 @@ static void Task_RunQueueEntry(void *pEntry, int iUnused)
 
     for (int i = 0; i < MAX_GLOBAL_REGS; i++)
     {
-        mudstate.global_regs[i][0] = '\0';
-        mudstate.glob_reg_len[i] = 0;
+        if (mudstate.global_regs[i])
+        {
+            RegRelease(mudstate.global_regs[i]);
+            mudstate.global_regs[i] = NULL;
+        }
     }
 }
 
@@ -656,20 +653,28 @@ void do_notify
 // ---------------------------------------------------------------------------
 // setup_que: Set up a queue entry.
 //
-static BQUE *setup_que(dbref executor, dbref caller, dbref enactor, int eval,
-                       char *command, char *args[], int nargs, char *sargs[])
+static BQUE *setup_que
+(
+    dbref    executor,
+    dbref    caller,
+    dbref    enactor,
+    int      eval,
+    char    *command,
+    int      nargs,
+    char    *args[],
+    reg_ref *sargs[]
+)
 {
-    int a;
-    BQUE *tmp;
-
     // Can we run commands at all?
     //
     if (Halted(executor))
+    {
         return NULL;
+    }
 
     // Make sure executor can afford to do it.
     //
-    a = mudconf.waitcost;
+    int a = mudconf.waitcost;
     if (mudconf.machinecost && RandomINT32(0, mudconf.machinecost-1) == 0)
     {
         a++;
@@ -706,17 +711,18 @@ static BQUE *setup_que(dbref executor, dbref caller, dbref enactor, int eval,
     size_t tlen = 0;
     static size_t nCommand;
     static size_t nLenEnv[NUM_ENV_VARS];
-    static size_t nLenRegs[MAX_GLOBAL_REGS];
 
     if (command)
     {
         nCommand = strlen(command) + 1;
         tlen = nCommand;
     }
+
     if (nargs > NUM_ENV_VARS)
     {
         nargs = NUM_ENV_VARS;
     }
+
     for (a = 0; a < nargs; a++)
     {
         if (args[a])
@@ -725,21 +731,10 @@ static BQUE *setup_que(dbref executor, dbref caller, dbref enactor, int eval,
             tlen += nLenEnv[a];
         }
     }
-    if (sargs)
-    {
-        for (a = 0; a < MAX_GLOBAL_REGS; a++)
-        {
-            if (sargs[a])
-            {
-                nLenRegs[a] = strlen(sargs[a]) + 1;
-                tlen += nLenRegs[a];
-            }
-        }
-    }
 
     // Create the qeue entry and load the save string.
     //
-    tmp = alloc_qentry("setup_que.qblock");
+    BQUE *tmp = alloc_qentry("setup_que.qblock");
     tmp->comm = NULL;
 
     char *tptr = tmp->text = (char *)MEMALLOC(tlen);
@@ -751,6 +746,7 @@ static BQUE *setup_que(dbref executor, dbref caller, dbref enactor, int eval,
         tmp->comm = tptr;
         tptr += nCommand;
     }
+
     for (a = 0; a < nargs; a++)
     {
         if (args[a])
@@ -764,24 +760,28 @@ static BQUE *setup_que(dbref executor, dbref caller, dbref enactor, int eval,
             tmp->env[a] = NULL;
         }
     }
+
     for ( ; a < NUM_ENV_VARS; a++)
     {
         tmp->env[a] = NULL;
     }
-    for (a = 0; a < MAX_GLOBAL_REGS; a++)
-    {
-        tmp->scr[a] = NULL;
-    }
+
     if (sargs)
     {
         for (a = 0; a < MAX_GLOBAL_REGS; a++)
         {
+            tmp->scr[a] = sargs[a];
             if (sargs[a])
             {
-                memcpy(tptr, sargs[a], nLenRegs[a]);
-                tmp->scr[a] = tptr;
-                tptr += nLenRegs[a];
+                RegAddRef(sargs[a]);
             }
+        }
+    }
+    else
+    {
+        for (a = 0; a < MAX_GLOBAL_REGS; a++)
+        {
+            tmp->scr[a] = NULL;
         }
     }
 
@@ -803,18 +803,18 @@ static BQUE *setup_que(dbref executor, dbref caller, dbref enactor, int eval,
 //
 void wait_que
 (
-    dbref executor,
-    dbref caller,
-    dbref enactor,
-    int   eval,
-    bool bTimed,
+    dbref    executor,
+    dbref    caller,
+    dbref    enactor,
+    int      eval,
+    bool     bTimed,
     CLinearTimeAbsolute &ltaWhen,
-    dbref sem,
-    int   attr,
-    char *command,
-    char *args[],
-    int   nargs,
-    char *sargs[]
+    dbref    sem,
+    int      attr,
+    char    *command,
+    int      nargs,
+    char    *args[],
+    reg_ref *sargs[]
 )
 {
     if (!(mudconf.control_flags & CF_INTERP))
@@ -822,7 +822,11 @@ void wait_que
         return;
     }
 
-    BQUE *tmp = setup_que(executor, caller, enactor, eval, command, args, nargs, sargs);
+    BQUE *tmp = setup_que(executor, caller, enactor, eval,
+        command,
+        nargs, args,
+        sargs);
+
     if (!tmp)
     {
         return;
@@ -877,18 +881,18 @@ void wait_que
 //
 void sql_que
 (
-    dbref executor,
-    dbref caller,
-    dbref enactor,
-    int  eval,
-    bool bTimed,
+    dbref    executor,
+    dbref    caller,
+    dbref    enactor,
+    int      eval,
+    bool     bTimed,
     CLinearTimeAbsolute &ltaWhen,
-    dbref thing,
-    int   attr,
-    char *command,
-    char *args[],
-    int   nargs,
-    char *sargs[]
+    dbref    thing,
+    int      attr,
+    char    *command,
+    int      nargs,
+    char    *args[],
+    reg_ref *sargs[]
 )
 {
     if (!(mudconf.control_flags & CF_INTERP))
@@ -896,7 +900,11 @@ void sql_que
         return;
     }
 
-    BQUE *tmp = setup_que(executor, caller, enactor, eval, command, args, nargs, sargs);
+    BQUE *tmp = setup_que(executor, caller, enactor, eval,
+        command,
+        nargs, args,
+        sargs);
+
     if (!tmp)
     {
         return;
@@ -957,8 +965,10 @@ void do_wait
             ltd.SetSecondsString(event);
             ltaWhen += ltd;
         }
-        wait_que(executor, caller, enactor, eval, true, ltaWhen, NOTHING, 0, cmd,
-            cargs, ncargs, mudstate.global_regs);
+        wait_que(executor, caller, enactor, eval, true, ltaWhen, NOTHING, 0,
+            cmd,
+            ncargs, cargs,
+            mudstate.global_regs);
         return;
     }
 
@@ -1033,7 +1043,9 @@ void do_wait
             bTimed = false;
         }
         wait_que(executor, caller, enactor, eval, bTimed, ltaWhen, thing, atr,
-            cmd, cargs, ncargs, mudstate.global_regs);
+            cmd,
+            ncargs, cargs,
+            mudstate.global_regs);
     }
 }
 
