@@ -228,9 +228,6 @@ Bug Fixes:
  -- Wizhelp SUSPECT should describe that all commands from SUSPECT-set
     players are logged as controlled by the 'log' configuration option
     (Issue 199).
- -- Issue 199: wizhelp SUSPECT should describe that all commands from
-    SUSPECT-set players are logged as controlled by the 'log'
-    configuration option.
 
 
 Performance Enhancements:
