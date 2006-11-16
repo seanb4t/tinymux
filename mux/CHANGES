@@ -230,6 +230,7 @@ Bug Fixes:
     (Issue 199).
  -- @moniker without any argument gave 'I don't see that here.' followed by
     'Permission denied.'.  (Issue 40).
+ -- Update PATCHES file (Issue 189).
 
 
 Performance Enhancements:
