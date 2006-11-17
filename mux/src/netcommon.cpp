@@ -273,6 +273,7 @@ static void add_to_output_queue(DESC *d, const char *b, size_t n)
         else
         {
             ISOUTOFMEMORY(tp);
+            return;
         }
     }
     else
@@ -323,6 +324,7 @@ static void add_to_output_queue(DESC *d, const char *b, size_t n)
             else
             {
                 ISOUTOFMEMORY(tp);
+                return;
             }
         }
     } while (n > 0);
@@ -1895,7 +1897,7 @@ static void dump_info(DESC *arg_desc)
     queue_write(arg_desc, "\r\n### End INFO\r\n");
 }
 
-static char *MakeCanonicalDoing(char *pDoing, size_t *pnValidDoing, bool *pbValidDoing)
+char *MakeCanonicalDoing(char *pDoing, size_t *pnValidDoing, bool *pbValidDoing)
 {
     *pnValidDoing = 0;
     *pbValidDoing = false;
