@@ -17,7 +17,7 @@
 #include "powers.h"
 #ifdef REALITY_LVLS
 #include "levels.h"
-#endif /* REALITY_LVLS */
+#endif // REALITY_LVLS
 
 char * DCL_CDECL tprintf(const char *fmt,...)
 {
@@ -164,7 +164,7 @@ bool can_see(dbref player, dbref thing, bool can_see_loc)
        return ((!Dark(thing) && IsReal(player, thing)) ||
 #else
         return (!Dark(thing) ||
-#endif /* REALITY_LVLS */
+#endif // REALITY_LVLS
             (mudconf.see_own_dark && MyopicExam(player, thing)));
     }
     else
@@ -173,7 +173,7 @@ bool can_see(dbref player, dbref thing, bool can_see_loc)
         return ((Light(thing) && !Dark(thing) && IsReal(player, thing)) ||
 #else
         return ((Light(thing) && !Dark(thing)) ||
-#endif /* REALITY_LVLS */
+#endif // REALITY_LVLS
             (mudconf.see_own_dark && MyopicExam(player, thing)));
     }
 }
@@ -2229,7 +2229,7 @@ bool exit_visible(dbref exit, dbref player, int key)
     if (!IsReal(player, exit))
        return 0;
     }
-#endif /* REALITY_LVLS */
+#endif // REALITY_LVLS
 
     // Exam exit's location
     //
@@ -2304,7 +2304,8 @@ bool exit_displayable(dbref exit, dbref player, int key)
  */
 
 void did_it(dbref player, dbref thing, int what, const char *def, int owhat,
-            const char *odef, int awhat, char *args[], int nargs)
+            const char *odef, int awhat, int ctrl_flags,
+            char *args[], int nargs)
 {
     if (MuxAlarm.bAlarmed)
     {
@@ -2381,7 +2382,7 @@ void did_it(dbref player, dbref thing, int what, const char *def, int owhat,
 
     // message to neighbors.
     //
-    if (  owhat > 0
+    if (  0 < owhat
        && Has_location(player)
        && Good_obj(loc = Location(player)))
     {
@@ -2405,33 +2406,76 @@ void did_it(dbref player, dbref thing, int what, const char *def, int owhat,
 #endif // FIRANMUX
             {
 #ifdef REALITY_LVLS
-                notify_except2_rlevel(loc, player, player, thing, tprintf("%s %s", Name(player), buff));
+                if (aflags & AF_NONAME)
+                {
+                    notify_except2_rlevel(loc, player, player, thing, buff);
+                }
+                else
+                {
+                    notify_except2_rlevel(loc, player, player, thing,
+                        tprintf("%s %s", Name(player), buff));
+                }
 #else
-                notify_except2(loc, player, player, thing, tprintf("%s %s", Name(player), buff));
-#endif /* REALITY_LVLS */
+                if (aflags & AF_NONAME)
+                {
+                    notify_except2(loc, player, player, thing, buff);
+                }
+                else
+                {
+                    notify_except2(loc, player, player, thing,
+                        tprintf("%s %s", Name(player), buff));
+                }
+#endif // REALITY_LVLS
             }
             free_lbuf(buff);
         }
         else if (odef)
         {
 #ifdef REALITY_LVLS
-            notify_except2_rlevel(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
+            if (ctrl_flags & VERB_NONAME)
+            {
+                notify_except2_rlevel(loc, player, player, thing, odef);
+            }
+            else
+            {
+                notify_except2_rlevel(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
+            }
 #else
-            notify_except2(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
-#endif /* REALITY_LVLS */
+            if (ctrl_flags & VERB_NONAME)
+            {
+                notify_except2(loc, player, player, thing, odef);
+            }
+            else
+            {
+                notify_except2(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
+            }
+#endif // REALITY_LVLS
         }
         free_lbuf(d);
-    }
-    if (  owhat < 0
-       && odef
-       && Has_location(player)
-       && Good_obj(loc = Location(player)))
+    } else if (  owhat < 0
+              && odef
+              && Has_location(player)
+              && Good_obj(loc = Location(player)))
     {
 #ifdef REALITY_LVLS
-        notify_except2_rlevel(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
+        if (ctrl_flags & VERB_NONAME)
+        {
+            notify_except2_rlevel(loc, player, player, thing, odef);
+        }
+        else
+        {
+            notify_except2_rlevel(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
+        }
 #else
-        notify_except2(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
-#endif /* REALITY_LVLS */
+        if (ctrl_flags & VERB_NONAME)
+        {
+            notify_except2(loc, player, player, thing, odef);
+        }
+        else
+        {
+            notify_except2(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
+        }
+#endif // REALITY_LVLS
     }
 
     // If we preserved the state of the global registers, restore them.
@@ -2442,13 +2486,14 @@ void did_it(dbref player, dbref thing, int what, const char *def, int owhat,
         PopRegisters(preserve, MAX_GLOBAL_REGS);
     }
 
-    // do the action attribute.
+    // Do the action attribute.
     //
 #ifdef REALITY_LVLS
-    if (awhat > 0 && IsReal(thing, player))
+    if (  0 < awhat
+       && IsReal(thing, player))
 #else
-    if (awhat > 0)
-#endif /* REALITY_LVLS */
+    if (0 < awhat)
+#endif // REALITY_LVLS
     {
         if (*(act = atr_pget(thing, awhat, &aowner, &aflags)))
         {
@@ -2570,7 +2615,7 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int key,
         // Get arguments.
         //
         parse_arglist(victim, actor, actor, args[6], '\0',
-            EV_STRIP_LS | EV_STRIP_TS, xargs, 10, (char **)NULL, 0, &nxargs);
+            EV_STRIP_LS | EV_STRIP_TS, xargs, 10, NULL, 0, &nxargs);
 
     case 6:
         // Get action attribute.
@@ -2657,7 +2702,8 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int key,
 
     // Go do it.
     //
-    did_it(actor, victim, what, whatd, owhat, owhatd, awhat, xargs, nxargs);
+    did_it(actor, victim, what, whatd, owhat, owhatd, awhat,
+        key & VERB_NONAME, xargs, nxargs);
 
     // Free user args.
     //
