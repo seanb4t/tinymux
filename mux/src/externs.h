@@ -129,39 +129,47 @@ void mux_exec(char *buff, char **bufc, dbref executor, dbref caller,
 
 DCL_INLINE void BufAddRef(lbuf_ref *lbufref)
 {
-    mux_assert(NULL != lbufref);
-    lbufref->refcount++;
+    if (NULL != lbufref)
+    {
+        lbufref->refcount++;
+    }
 }
 
 DCL_INLINE void BufRelease(lbuf_ref *lbufref)
 {
-    mux_assert(NULL != lbufref);
-    lbufref->refcount--;
-    if (0 == lbufref->refcount)
+    if (NULL != lbufref)
     {
-        free_lbuf(lbufref->lbuf_ptr);
-        lbufref->lbuf_ptr = NULL;
-        free_lbufref(lbufref);
+        lbufref->refcount--;
+        if (0 == lbufref->refcount)
+        {
+            free_lbuf(lbufref->lbuf_ptr);
+            lbufref->lbuf_ptr = NULL;
+            free_lbufref(lbufref);
+        }
     }
 }
 
 DCL_INLINE void RegAddRef(reg_ref *regref)
 {
-    mux_assert(NULL != regref);
-    regref->refcount++;
+    if (NULL != regref)
+    {
+        regref->refcount++;
+    }
 }
 
 DCL_INLINE void RegRelease(reg_ref *regref)
 {
-    mux_assert(NULL != regref);
-    regref->refcount--;
-    if (0 == regref->refcount)
+    if (NULL != regref)
     {
-        BufRelease(regref->lbuf);
-        regref->lbuf    = NULL;
-        regref->reg_ptr = NULL;
-        regref->reg_len = 0;
-        free_regref(regref);
+        regref->refcount--;
+        if (0 == regref->refcount)
+        {
+            BufRelease(regref->lbuf);
+            regref->lbuf    = NULL;
+            regref->reg_ptr = NULL;
+            regref->reg_len = 0;
+            free_regref(regref);
+        }
     }
 }
 void RegAssign(reg_ref **regref, size_t nLength, const char *ptr);
@@ -281,7 +289,7 @@ void log_type_and_name(dbref);
 /* From look.cpp */
 void look_in(dbref,dbref, int);
 void show_vrml_url(dbref, dbref);
-#define NUM_ATTRIBUTE_CODES 11
+#define NUM_ATTRIBUTE_CODES 12
 size_t decode_attr_flags(int aflags, char buff[NUM_ATTRIBUTE_CODES+1]);
 void   decode_attr_flag_names(int aflags, char *buf, char **bufc);
 
@@ -349,7 +357,9 @@ bool locatable(dbref, dbref, dbref);
 bool nearby(dbref, dbref);
 bool exit_visible(dbref, dbref, int);
 bool exit_displayable(dbref, dbref, int);
-void did_it(dbref, dbref, int, const char *, int, const char *, int, char *[], int);
+void did_it(dbref player, dbref thing, int what, const char *def, int owhat,
+            const char *odef, int awhat, int ctrl_flags,
+            char *args[], int nargs);
 bool bCanReadAttr(dbref executor, dbref target, ATTR *tattr, bool bParentCheck);
 bool bCanSetAttr(dbref executor, dbref target, ATTR *tattr);
 bool bCanLockAttr(dbref executor, dbref target, ATTR *tattr);
@@ -716,6 +726,7 @@ extern int anum_alc_top;
 #define TWARP_IDLE      8   /* Warp the idle check interval */
 /* empty       16 */
 #define TWARP_EVENTS    32  /* Warp the events checking interval */
+#define VERB_NONAME     1   // Do not preprend name to odefault.
 #define WAIT_UNTIL      1   // Absolute UTC seconds instead of delta.
 
 /* Hush codes for movement messages */
