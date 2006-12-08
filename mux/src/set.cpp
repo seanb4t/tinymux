@@ -139,11 +139,12 @@ void do_chzone
         // inconvenient -- although this may pose a bit of a security risk. Be
         // careful when @chzone'ing wizard or royal players.
         //
-        Flags(thing) &= ~(WIZARD | ROYALTY | INHERIT);
+        SetClearFlags(thing, mudconf.stripped_flags.word, NULL);
 
         // Wipe out all powers.
         //
         Powers(thing) = 0;
+        Powers2(thing) = 0;
     }
     notify(executor, "Zone changed.");
 }
@@ -652,6 +653,117 @@ void do_unlink(dbref executor, dbref caller, dbref enactor, int eval, int key, c
     }
 }
 
+void TranslateFlags_Clone
+(
+    FLAG     aClearFlags[3],
+    dbref    executor,
+    int      key
+)
+{
+    if (key & CLONE_NOSTRIP)
+    {
+        if (God(executor))
+        {
+            // #1 using /nostrip causes nothing to be stripped.
+            //
+            aClearFlags[FLAG_WORD1] = 0;
+        }
+        else
+        {
+            // With #1 powers, /nostrip still strips the WIZARD bit.
+            //
+            aClearFlags[FLAG_WORD1] = WIZARD;
+        }
+        aClearFlags[FLAG_WORD2] = 0;
+        aClearFlags[FLAG_WORD3] = 0;
+    }
+    else
+    {
+        if (  (key & CLONE_INHERIT)
+           && Inherits(executor))
+        {
+            // The /inherit switch specifically allows INHERIT powers through.
+            //
+            aClearFlags[FLAG_WORD1] = (WIZARD | mudconf.stripped_flags.word[FLAG_WORD1]) & ~(INHERIT);
+        }
+        else
+        {
+            // Normally WIZARD and the other stripped_flags are removed.
+            //
+            aClearFlags[FLAG_WORD1] = WIZARD | mudconf.stripped_flags.word[FLAG_WORD1];
+        }
+        aClearFlags[FLAG_WORD2] = mudconf.stripped_flags.word[FLAG_WORD2];
+        aClearFlags[FLAG_WORD3] = mudconf.stripped_flags.word[FLAG_WORD3];
+    }
+}
+
+void TranslateFlags_Chown
+(
+    FLAG     aClearFlags[3],
+    FLAG     aSetFlags[3],
+    bool    *bClearPowers,
+    dbref    executor,
+    int      key
+)
+{
+    if (key & CHOWN_NOSTRIP)
+    {
+        if (God(executor))
+        {
+            // #1 using /nostrip only clears CHOWN_OK and sets HALT.
+            //
+            aClearFlags[FLAG_WORD1] = CHOWN_OK;
+            *bClearPowers = false;
+        }
+        else
+        {
+            // With /nostrip, CHOWN_OK and WIZARD are cleared, HALT is
+            // set, and powers are cleared.
+            //
+            aClearFlags[FLAG_WORD1] = CHOWN_OK | WIZARD;
+            *bClearPowers = true;
+        }
+        aClearFlags[FLAG_WORD2] = 0;
+        aClearFlags[FLAG_WORD3] = 0;
+    }
+    else
+    {
+        // Without /nostrip, CHOWN_OK, WIZARD, and stripped_flags are
+        // cleared, HALT is set, powers are cleared.
+        //
+        aClearFlags[FLAG_WORD1] = CHOWN_OK | WIZARD
+                                | mudconf.stripped_flags.word[FLAG_WORD1];
+        aClearFlags[FLAG_WORD2] = mudconf.stripped_flags.word[FLAG_WORD2];
+        aClearFlags[FLAG_WORD3] = mudconf.stripped_flags.word[FLAG_WORD3];
+        *bClearPowers = true;
+    }
+    aSetFlags[FLAG_WORD1] = HALT;
+    aSetFlags[FLAG_WORD2] = 0;
+    aSetFlags[FLAG_WORD3] = 0;
+}
+
+void SetClearFlags
+(
+    dbref thing,
+    FLAG aClearFlags[3],
+    FLAG aSetFlags[3]
+)
+{
+    int j;
+    for (j = FLAG_WORD1; j <= FLAG_WORD3; j++)
+    {
+        if (NULL != aClearFlags)
+        {
+            db[thing].fs.word[j] &= ~aClearFlags[j];
+        }
+
+        if (NULL != aSetFlags)
+        {
+            db[thing].fs.word[j] |= aSetFlags[j];
+        }
+    }
+}
+
 /*
  * ---------------------------------------------------------------------------
  * * do_chown: Change ownership of an object or attribute.
@@ -883,41 +995,18 @@ void do_chown
         s_Owner(thing, nOwnerNew);
         atr_chown(thing);
 
-        FLAG clearflag1 = 0;
-        FLAG setflag1 = 0;
+        FLAGSET clearflags;
+        FLAGSET setflags;
+        bool    bClearPowers;
 
-        // Always strip CHOWN_OK and set HALT.
-        //
-        clearflag1 |= CHOWN_OK|WIZARD|ROYALTY|INHERIT;
-        setflag1   |= HALT;
-        if (key & CHOWN_NOSTRIP)
+        TranslateFlags_Chown(clearflags.word, setflags.word, &bClearPowers, executor, key);
+
+        SetClearFlags(thing, clearflags.word, setflags.word);
+        if (bClearPowers)
         {
-            // Don't strip ROYALTY or INHERIT if /nostrip is used.
-            //
-            clearflag1 &= ~(ROYALTY|INHERIT);
-            if (God(executor))
-            {
-                // Don't strip WIZARD if #1 uses /nostrip
-                //
-                clearflag1 &= ~WIZARD;
-            }
-            else
-            {
-                // Reset @powers when someone besides #1 uses /nostrip.
-                //
-                s_Powers(thing, 0);
-                s_Powers2(thing, 0);
-            }
-        }
-        else
-        {
-            // Reset @powers if /nostrip isn't given.
-            //
             s_Powers(thing, 0);
             s_Powers2(thing, 0);
         }
-        db[thing].fs.word[FLAG_WORD1] &= ~clearflag1;
-        db[thing].fs.word[FLAG_WORD1] |= setflag1;
 
         // Always halt the queue.
         //
