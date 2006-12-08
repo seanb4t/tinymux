@@ -248,6 +248,7 @@ struct confdata
     FLAGSET robot_flags;        /* Flags robots start with */
     FLAGSET room_flags;         /* Flags rooms start with */
     FLAGSET thing_flags;        /* Flags things start with */
+    FLAGSET stripped_flags;     // Flags stripped by @chown, @chownall, and @clone.
 
     ArtRuleset* art_rules;      /* Rulesets for defining exceptions. */
 };
@@ -401,7 +402,9 @@ struct statedata
     CLinearTimeAbsolute start_time;     /* When was MUX started */
     CLinearTimeAbsolute tThrottleExpired; // How much time is left in this hour of throttling.
 
+#if !defined(MEMORY_BASED)
     CHashTable acache_htab;     // Attribute Cache
+#endif // MEMORY_BASED
     CHashTable attr_name_htab;  /* Attribute names hashtable */
     CHashTable channel_htab;    /* Channels hashtable */
     CHashTable command_htab;    /* Commands hashtable */
