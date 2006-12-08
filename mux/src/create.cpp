@@ -601,18 +601,26 @@ void do_clone
     dbref clone, thing, new_owner, loc;
     int cost;
 
-    if ((key & CLONE_INVENTORY) || !Has_location(executor))
+    if (  (key & CLONE_INVENTORY)
+       || !Has_location(executor))
+    {
         loc = executor;
+    }
     else
+    {
         loc = Location(executor);
+    }
 
     if (!Good_obj(loc))
+    {
         return;
+    }
 
     init_match(executor, name, NOTYPE);
     match_everything(0);
     thing = noisy_match_result();
-    if ((thing == NOTHING) || (thing == AMBIGUOUS))
+    if (  NOTHING == thing
+       || AMBIGUOUS == thing)
     {
         return;
     }
@@ -719,29 +727,9 @@ void do_clone
     //
     s_Pennies(clone, OBJECT_ENDOWMENT(cost));
 
-    // Strip flags subject to /inherit and /nostrip.
-    //
-    FLAG clearflag1 = IMMORTAL|WIZARD|ROYALTY|INHERIT;
-    if (key & CLONE_NOSTRIP)
-    {
-        // Don't strip ROYALTY, INHERIT, or IMMORTAL if /nostrip is used.
-        //
-        clearflag1 &= ~(ROYALTY|INHERIT|IMMORTAL);
-        if (God(executor))
-        {
-            // Don't strip WIZARD if #1 uses /nostrip
-            //
-            clearflag1 &= ~WIZARD;
-        }
-    }
-    else if (  (key & CLONE_INHERIT)
-            && Inherits(executor))
-    {
-        clearflag1 &= ~(INHERIT);
-    }
-    s_Flags(clone, FLAG_WORD1, Flags(thing) & ~clearflag1);
-    s_Flags(clone, FLAG_WORD2, Flags2(thing));
-    s_Flags(clone, FLAG_WORD3, Flags3(thing));
+    FLAGSET clearflags;
+    TranslateFlags_Clone(clearflags.word, executor, key);
+    SetClearFlags(clone, clearflags.word, NULL);
 
     // Tell creator about it
     //
