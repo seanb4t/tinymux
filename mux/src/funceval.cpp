@@ -2472,26 +2472,24 @@ FUNCTION(fun_elements)
         return;
     }
 
-    int nwords, cur;
     char *ptrs[LBUF_SIZE / 2];
-    char *wordlist, *s, *r;
     bool bFirst = true;
 
     // Turn the first list into an array.
     //
-    wordlist = alloc_lbuf("fun_elements.wordlist");
+    char *wordlist = alloc_lbuf("fun_elements.wordlist");
     mux_strncpy(wordlist, fargs[0], LBUF_SIZE-1);
-    nwords = list2arr(ptrs, LBUF_SIZE / 2, wordlist, &sep);
+    int nwords = list2arr(ptrs, LBUF_SIZE / 2, wordlist, &sep);
 
-    s = trim_space_sep(fargs[1], &sepSpace);
+    char *s = trim_space_sep(fargs[1], &sepSpace);
 
     // Go through the second list, grabbing the numbers and finding the
     // corresponding elements.
     //
     do {
-        r = split_token(&s, &sepSpace);
-        cur = mux_atol(r) - 1;
-        if (  cur >= 0
+        char *r = split_token(&s, &sepSpace);
+        int cur = mux_atol(r) - 1;
+        if (  0 <= cur
            && cur < nwords
            && ptrs[cur])
         {
@@ -2624,24 +2622,33 @@ FUNCTION(fun_shuffle)
         return;
     }
 
-    char **words = new char *[LBUF_SIZE];
-    ISOUTOFMEMORY(words);
-    int n, i, j;
-
-    n = list2arr(words, LBUF_SIZE, fargs[0], &sep);
-
-    for (i = 0; i < n-1; i++)
+    char **words = NULL;
+    try
     {
-        j = RandomINT32(i, n-1);
-
-        // Swap words[i] with words[j]
-        //
-        char *temp = words[i];
-        words[i] = words[j];
-        words[j] = temp;
+        words = new char *[LBUF_SIZE/2];
     }
-    arr2list(words, n, buff, bufc, &osep);
-    delete [] words;
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL != words)
+    {
+        int n = list2arr(words, LBUF_SIZE/2, fargs[0], &sep);
+
+        for (int i = 0; i < n-1; i++)
+        {
+            int j = RandomINT32(i, n-1);
+
+            // Swap words[i] with words[j]
+            //
+            char *temp = words[i];
+            words[i] = words[j];
+            words[j] = temp;
+        }
+        arr2list(words, n, buff, bufc, &osep);
+        delete [] words;
+    }
 }
 
 // pickrand -- choose a random item from a list.
@@ -3284,7 +3291,8 @@ FUNCTION(fun_munge)
     }
 
     // Convert lists into a hash table mapping elements of list1
-    // to corresponding elements of list2.
+    // to list indices (to be used to index list2 later). Indices
+    // are incremented to avoid ambiguity of storing 0.
     CHashTable *htab = new CHashTable;
     ISOUTOFMEMORY(htab);
 
@@ -3294,7 +3302,7 @@ FUNCTION(fun_munge)
         len = strlen(ptrs1[i]);
         if (!hashfindLEN(ptrs1[i], len, htab))
         {
-            hashaddLEN(ptrs1[i], len, ptrs2[i], htab);
+            hashaddLEN(ptrs1[i], len, (void *) (i + 1), htab);
         }
     }
     free_lbuf(list1);
@@ -3321,12 +3329,11 @@ FUNCTION(fun_munge)
     int nresults = list2arr(results, LBUF_SIZE / 2, rlist, &sep);
 
     bool bFirst = true;
-    char *p2;
     for (i = 0; i < nresults; i++)
     {
-        len = strlen(results[i]);
-        p2 = (char *) hashfindLEN(results[i], len, htab);
-        if (NULL != p2)
+        int j = (int) hashfindLEN(results[i], strlen(results[i]), htab);
+        if (  0 != j
+           && NULL != ptrs2[--j])
         {
             if (!bFirst)
             {
@@ -3336,8 +3343,8 @@ FUNCTION(fun_munge)
             {
                 bFirst = false;
             }
-            safe_str(p2, buff, bufc);
-            hashdeleteLEN(results[i], len, htab);
+            safe_str(ptrs2[j], buff, bufc);
+            ptrs2[j] = NULL;
         }
     }
     free_lbuf(atext);
