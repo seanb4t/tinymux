@@ -1,7 +1,9 @@
-// speech.cpp -- Commands which involve speaking.
-//
-// $Id$
-//
+/*! \file speech.cpp
+ * \brief Commands which involve speaking.
+ *
+ * $Id$
+ *
+ */
 
 #include "copyright.h"
 #include "autoconf.h"
@@ -109,7 +111,7 @@ void do_say(dbref executor, dbref caller, dbref enactor, int eval, int key, char
     //
     dbref loc = where_is(executor);
     if ( !(  Good_obj(loc)
-            & sp_ok(executor)))
+          && sp_ok(executor)))
     {
         return;
     }
