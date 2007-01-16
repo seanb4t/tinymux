@@ -4634,7 +4634,7 @@ void mux_string::set_Color(size_t n, ANSI_ColorState acsColor)
 
 void mux_string::strip(const char *pStripSet, size_t nStart, size_t nLen)
 {
-    static unsigned char strip_table[UCHAR_MAX+1];
+    static bool strip_table[UCHAR_MAX+1];
 
     if (  NULL == pStripSet
        || '\0' == pStripSet[0]
@@ -4653,16 +4653,16 @@ void mux_string::strip(const char *pStripSet, size_t nStart, size_t nLen)
 
     // Load set of characters to strip.
     //
-    memset(strip_table, 0, sizeof(strip_table));
+    memset(strip_table, false, sizeof(strip_table));
     while (*pStripSet)
     {
-        strip_table[(unsigned char)*pStripSet] = 1;
+        strip_table[(unsigned char)*pStripSet] = true;
         pStripSet++;
     }
     stripWithTable(strip_table, nStart, nLen);
 }
 
-void mux_string::stripWithTable(const unsigned char strip_table[UCHAR_MAX+1], size_t nStart, size_t nLen)
+void mux_string::stripWithTable(const bool strip_table[UCHAR_MAX+1], size_t nStart, size_t nLen)
 {
     if (  m_n <= nStart
        || 0 == nLen)
@@ -4682,13 +4682,13 @@ void mux_string::stripWithTable(const unsigned char strip_table[UCHAR_MAX+1], si
     for (size_t i = nStart; i < nStart + nLen; i++)
     {
         if (  !bInStrip
-           && 0 != strip_table[(unsigned char)m_ach[i]])
+           && strip_table[(unsigned char)m_ach[i]])
         {
             bInStrip = true;
             nStripStart = i;
         }
         else if (  bInStrip
-                && 0 != strip_table[(unsigned char)m_ach[i]])
+                && !strip_table[(unsigned char)m_ach[i]])
         {
             // We've hit the end of a string to be stripped.
             //
@@ -4715,6 +4715,42 @@ void mux_string::stripWithTable(const unsigned char strip_table[UCHAR_MAX+1], si
             delete_Chars(nStripStart, nStrip);
         }
     }
+}
+
+void mux_string::transform(mux_string &sFromSet, mux_string &sToSet, size_t nStart, size_t nLen)
+{
+    static unsigned char xfrmTable[UCHAR_MAX+1];
+
+    if (m_n <= nStart)
+    {
+        return;
+    }
+    else if (m_n - nStart < nLen)
+    {
+        nLen = m_n - nStart;
+    }
+
+    // Set up table.
+    //
+    for (unsigned int c = 0; c <= UCHAR_MAX; c++)
+    {
+        xfrmTable[c] = (unsigned char)c;
+    }
+
+    unsigned char cFrom, cTo;
+    size_t nSet = sFromSet.m_n;
+    if (sToSet.m_n < nSet)
+    {
+        nSet = sToSet.m_n;
+    }
+    for (size_t i = 0; i < nSet; i++)
+    {
+        cFrom = (unsigned char)sFromSet.m_ach[i];
+        cTo = (unsigned char)sToSet.m_ach[i];
+        xfrmTable[cFrom] = cTo;
+    }
+
+    transformWithTable(xfrmTable, nStart, nLen);
 }
 
 void mux_string::transformWithTable(const unsigned char xfrmTable[256], size_t nStart, size_t nLen)
