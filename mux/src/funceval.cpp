@@ -1686,20 +1686,30 @@ FUNCTION(fun_strtrunc)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    long maxVisualWidth = mux_atol(fargs[1]);
-    if (maxVisualWidth < 0)
+    long nLeft = mux_atol(fargs[1]);
+    if (nLeft < 0)
     {
         safe_range(buff, bufc);
         return;
     }
-    if (maxVisualWidth == 0)
+    else if (0 == nLeft)
     {
         return;
     }
-    size_t nVisualWidth;
-    char buf[LBUF_SIZE+1];
-    ANSI_TruncateToField(fargs[0], LBUF_SIZE, buf, maxVisualWidth, &nVisualWidth, ANSI_ENDGOAL_NORMAL);
-    safe_str(buf, buff, bufc);
+
+    mux_string *sStr = new mux_string(fargs[0]);
+    size_t nLen = sStr->length();
+
+    if (nLeft < nLen)
+    {
+        sStr->export_TextAnsi(buff, bufc, 0, nLeft);
+    }
+    else if (0 < nLen)
+    {
+        safe_str(fargs[0], buff, bufc);
+    }
+
+    delete sStr;
 }
 
 FUNCTION(fun_ifelse)
@@ -3230,7 +3240,7 @@ typedef UINT32 NHASH;
 typedef struct munge_htab_rec
 {
     NHASH       nHash;         // partial hash value of this record's key
-    LBUF_OFFSET nNext;         // index of next record in this hash chain
+    LBUF_OFFSET iNext;         // index of next record in this hash chain
     LBUF_OFFSET nKeyOffset;    // offset of key string (incremented by 1),
                                //     zero indicates empty record.
     LBUF_OFFSET nValueOffset;  // offset of value string
@@ -3295,7 +3305,7 @@ FUNCTION(fun_munge)
     memset(htab, 0, sizeof(munge_htab_rec) * (1 + 2 * nWords));
     memset(tails, 0, sizeof(UINT16) * (1 + nWords));
 
-    int nNext = 1 + nWords;  // first unused hash slot past starting area
+    int iNext = 1 + nWords;  // first unused hash slot past starting area
 
     // Chop up the lists, converting them into a hash table that
     // maps elements of list1 to corresponding elements of list2.
@@ -3316,7 +3326,7 @@ FUNCTION(fun_munge)
             // there is already a hash chain starting in this slot,
             // insert at the tail to preserve order.
             nHashSlot = tails[nHashSlot] =
-                htab[tails[nHashSlot]].nNext = static_cast<LBUF_OFFSET>(nNext++);
+                htab[tails[nHashSlot]].iNext = static_cast<LBUF_OFFSET>(iNext++);
         }
         else
         {
@@ -3376,7 +3386,7 @@ FUNCTION(fun_munge)
                                     (fargs[1] +
                                      htab[nHashSlot].nKeyOffset - 1))))
             {
-                nHashSlot = htab[nHashSlot].nNext;
+                nHashSlot = htab[nHashSlot].iNext;
             }
             if (0 != htab[nHashSlot].nKeyOffset)
             {
@@ -3390,7 +3400,7 @@ FUNCTION(fun_munge)
                 }
                 safe_str(fargs[2] + htab[nHashSlot].nValueOffset, buff, bufc);
                 // delete from the hash table
-                memcpy(&htab[nHashSlot], &htab[htab[nHashSlot].nNext],
+                memcpy(&htab[nHashSlot], &htab[htab[nHashSlot].iNext],
                        sizeof(munge_htab_rec));
             }
         }
