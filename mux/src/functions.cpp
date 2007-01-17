@@ -6792,7 +6792,7 @@ static FUNCTION(fun_edit)
     mux_string *sFrom = new mux_string(fargs[1]);
     mux_string *sTo   = new mux_string(fargs[2]);
 
-    sStr->edit(sFrom, sTo);
+    sStr->edit(*sFrom, *sTo);
     sStr->export_TextAnsi(buff, bufc);
 
     delete sStr;
@@ -8698,10 +8698,7 @@ static FUNCTION(fun_wrap)
     size_t nStr = sStr->length();
 
     char *pPlain = alloc_lbuf("fun_wrap.pPlain");
-    char *pcPlain = pPlain;
-
     char *pColor = alloc_lbuf("fun_wrap.pColor");
-    char *pcColor = pColor;
 
     size_t nLength = 0;
     bool newline = false;
@@ -8710,13 +8707,11 @@ static FUNCTION(fun_wrap)
 
     while (nPos < nStr)
     {
-        pcPlain = pPlain;
-        sStr->export_TextPlain(pPlain, &pcPlain, nPos);
+        sStr->export_TextPlain(pPlain, NULL, nPos);
 
         nLength = wraplen(pPlain, nPos == 0 ? nFirstWidth : nWidth, newline);
 
-        pcColor = pColor;
-        sStr->export_TextAnsi(pColor, &pcColor, nPos, nLength);
+        sStr->export_TextAnsi(pColor, NULL, nPos, nLength);
 
         if (0 != nPos)
         {
@@ -9833,7 +9828,7 @@ size_t transform_range(mux_string &sStr)
                     sTemp->append(cBefore);
                     cBefore++;
                 }
-                sStr.replace_Chars(sTemp, nStart, 1);
+                sStr.replace_Chars(*sTemp, nStart, 1);
             }
             else if (  mux_islower(cBefore)
                     && mux_isupper(cAfter))
@@ -9850,7 +9845,7 @@ size_t transform_range(mux_string &sStr)
                     sTemp->append(cBefore);
                     cBefore++;
                 }
-                sStr.replace_Chars(sTemp, nStart, 1);
+                sStr.replace_Chars(*sTemp, nStart, 1);
             }
         }
         else if (  mux_isdigit(cBefore)
@@ -9865,7 +9860,7 @@ size_t transform_range(mux_string &sStr)
                 sTemp->append(cBefore);
                 cBefore++;
             }
-            sStr.replace_Chars(sTemp, nStart, 1);
+            sStr.replace_Chars(*sTemp, nStart, 1);
         }
         nStart++;
         bSucceeded = sStr.search("-", &nPos, nStart);
