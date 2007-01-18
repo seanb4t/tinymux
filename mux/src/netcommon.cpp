@@ -150,6 +150,32 @@ void raw_notify_html(dbref player, const char *msg)
     }
 }
 
+void raw_notify_html(dbref player, mux_string &sMsg)
+{
+    if (0 == sMsg.length())
+    {
+        return;
+    }
+
+    if (  mudstate.inpipe
+       && player == mudstate.poutobj)
+    {
+        sMsg.export_TextAnsi(mudstate.poutnew, &mudstate.poutbufc);
+        return;
+    }
+    if (  !Connected(player)
+       || !Html(player))
+    {
+        return;
+    }
+
+    DESC *d;
+    DESC_ITER_PLAYER(player, d)
+    {
+        queue_string(d, sMsg);
+    }
+}
+
 /* ---------------------------------------------------------------------------
  * raw_notify: write a message to a player
  */
@@ -179,6 +205,35 @@ void raw_notify(dbref player, const char *msg)
     DESC_ITER_PLAYER(player, d)
     {
         queue_string(d, msg);
+        queue_write_LEN(d, "\r\n", 2);
+    }
+}
+
+void raw_notify(dbref player, mux_string &sMsg)
+{
+    DESC *d;
+
+    if (0 == sMsg.length())
+    {
+        return;
+    }
+
+    if (  mudstate.inpipe
+       && player == mudstate.poutobj)
+    {
+        sMsg.export_TextAnsi(mudstate.poutnew, &mudstate.poutbufc);
+        safe_str("\r\n", mudstate.poutnew, &mudstate.poutbufc);
+        return;
+    }
+
+    if (!Connected(player))
+    {
+        return;
+    }
+
+    DESC_ITER_PLAYER(player, d)
+    {
+        queue_string(d, sMsg);
         queue_write_LEN(d, "\r\n", 2);
     }
 }
@@ -476,6 +531,41 @@ void queue_string(DESC *d, const char *s)
     }
     p = encode_iac(p);
     queue_write(d, p);
+}
+
+void queue_string(DESC *d, mux_string &s)
+{
+    char *pBuff = alloc_lbuf("queue_string");
+    const char *pFinal = pBuff;
+
+    if (d->flags & DS_CONNECTED)
+    {
+        if (!Ansi(d->player))
+        {
+            s.export_TextPlain(pBuff);
+        }
+        else if (NoBleed(d->player))
+        {
+            s.export_TextAnsi(pBuff, NULL, 0, s.length(), LBUF_SIZE-1, ANSI_ENDGOAL_NOBLEED);
+        }
+        else
+        {
+            s.export_TextAnsi(pBuff);
+        }
+
+        if (NoAccents(d->player))
+        {
+            pFinal = strip_accents(pBuff);
+        }
+    }
+    else
+    {
+        s.export_TextPlain(pBuff);
+        pFinal = strip_accents(pBuff);
+    }
+    pFinal = encode_iac(pFinal);
+    queue_write(d, pFinal);
+    free_lbuf(pBuff);
 }
 
 void freeqs(DESC *d)
