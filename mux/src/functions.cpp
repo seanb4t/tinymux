@@ -2262,41 +2262,41 @@ static FUNCTION(fun_mid)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    int iPosition0 = mux_atol(fargs[1]);
-    int nLength    = mux_atol(fargs[2]);
+    int iStart = mux_atol(fargs[1]);
+    int nMid   = mux_atol(fargs[2]);
 
-    if (nLength < 0)
+    if (nMid < 0)
     {
-        // The range should end at iPosition0, inclusive.
+        // The range should end at iStart, inclusive.
         //
-        iPosition0 += 1 + nLength;
-        nLength = -nLength;
+        iStart += 1 + nMid;
+        nMid = -nMid;
     }
 
-    if (iPosition0 < 0)
+    if (iStart < 0)
     {
         // Start at the beginning of the string,
         // but end at the same place the range would end
         // if negative starting positions were valid.
         //
-        nLength += iPosition0;
-        iPosition0 = 0;
+        nMid += iStart;
+        iStart = 0;
     }
 
-    if (  nLength <= 0
-       || LBUF_SIZE <= iPosition0)
+    if (  nMid <= 0
+       || LBUF_SIZE <= iStart)
     {
         // The range doesn't select any characters.
         //
         return;
     }
 
-    // At this point, iPosition0 and nLength are nonnegative numbers
+    // At this point, iStart and nMid are nonnegative numbers
     // which may -still- not refer to valid data in the string. 
     //
     mux_string *sStr = new mux_string(fargs[0]);
 
-    sStr->export_TextAnsi(buff, bufc, iPosition0, nLength);
+    sStr->export_TextAnsi(buff, bufc, iStart, nMid);
 
     delete sStr;
 }
@@ -2315,22 +2315,21 @@ static FUNCTION(fun_right)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    long iRight = mux_atol(fargs[1]);
-    if (iRight < 0)
+    int nRight = mux_atol(fargs[1]);
+    if (nRight < 0)
     {
         safe_range(buff, bufc);
         return;
     }
-    else if (0 == iRight)
+    else if (0 == nRight)
     {
         return;
     }
-    size_t nRight = iRight;
 
     mux_string *sStr = new mux_string(fargs[0]);
     size_t nLen = sStr->length();
 
-    if (nRight < nLen)
+    if (static_cast<size_t>(nRight) < nLen)
     {
         sStr->export_TextAnsi(buff, bufc, nLen - nRight, nRight);
     }
@@ -4255,8 +4254,8 @@ static FUNCTION(fun_member)
 }
 
 // fun_secure: This function replaces any character in the set
-// '%$\[](){},;' with a space. It handles ANSI by not replacing
-// the '[' character within an ANSI sequence.
+// '%$\[](){},;' with a space. It handles ANSI by computing and
+// preserving the color of each visual character in the string.
 //
 static FUNCTION(fun_secure)
 {
@@ -4270,20 +4269,16 @@ static FUNCTION(fun_secure)
 
     mux_string *sStr = new mux_string(fargs[0]);
     size_t nLen = sStr->length();
-    char cChar = '\0';
 
     for (size_t i = 0; i < nLen; i++)
     {
-        cChar = sStr->export_Char(i);
-        if (mux_issecure(cChar))
+        if (mux_issecure(sStr->export_Char(i)))
         {
-            safe_chr(' ', buff, bufc);
-        }
-        else
-        {
-            safe_chr(cChar, buff, bufc);
+            sStr->set_Char(i, ' ');
         }
     }
+
+    sStr->export_TextAnsi(buff, bufc, 0, nLen);
 
     delete sStr;
 }
@@ -4343,9 +4338,10 @@ static FUNCTION(fun_wordpos)
         return;
     }
 
+    size_t ncp;
+    char *cp = strip_ansi(fargs[0], &ncp);
     unsigned int charpos = mux_atol(fargs[1]);
-    char *cp = fargs[0];
-    size_t ncp = strlen(cp);
+
     if (  charpos > 0
        && charpos <= ncp)
     {
@@ -4726,40 +4722,42 @@ static FUNCTION(fun_delete)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    long iStart = mux_atol(fargs[1]);
-    long iChars = mux_atol(fargs[2]);
-    size_t nStart = 0;
-    size_t nChars = 0;
+    int iStart = mux_atol(fargs[1]);
+    int nDelete = mux_atol(fargs[2]);
 
-    if (0 <= iChars)
+    if (nDelete < 0)
     {
-        nChars = static_cast<size_t>(iChars);
+        // The range should end at iStart, inclusive.
+        //
+        iStart += 1 + nDelete;
+        nDelete = -nDelete;
     }
-    else
-    {
-        iStart += iChars;
-        nChars = 0-iChars;
-    }
+
     if (iStart < 0)
     {
-        nChars += iStart;
+        // Start at the beginning of the string,
+        // but end at the same place the range would end
+        // if negative starting positions were valid.
+        //
+        nDelete += iStart;
         iStart = 0;
     }
-    nStart = static_cast<size_t>(iStart);
-    size_t nLen = strlen(fargs[0]);
 
-    // Are we deleting anything at all?
-    //
-    if (  0 == nChars
-       || nLen < nStart)
+    if (  nDelete <= 0
+       || LBUF_SIZE <= iStart)
     {
+        // The range doesn't select any characters.
+        //
         safe_str(fargs[0], buff, bufc);
         return;
     }
 
+    // At this point, iStart and nDelete are nonnegative numbers
+    // which may -still- not refer to valid data in the string. 
+    //
     mux_string *sStr = new mux_string(fargs[0]);
 
-    sStr->delete_Chars(nStart, nChars);
+    sStr->delete_Chars(iStart, nDelete);
     sStr->export_TextAnsi(buff, bufc);
 
     delete sStr;
@@ -9902,14 +9900,12 @@ static FUNCTION(fun_tr)
     if (nFrom != nTo)
     {
         safe_str("#-1 STRING LENGTHS MUST BE EQUAL", buff, bufc);
-        delete sStr;
-        delete sFrom;
-        delete sTo;
-        return;
     }
-
-    sStr->transform(*sFrom, *sTo);
-    sStr->export_TextAnsi(buff, bufc);
+    else
+    {
+        sStr->transform(*sFrom, *sTo);
+        sStr->export_TextAnsi(buff, bufc);
+    }
 
     delete sStr;
     delete sFrom;
