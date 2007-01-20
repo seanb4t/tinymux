@@ -124,9 +124,9 @@ void update_quotas(CLinearTimeAbsolute& ltaLast, const CLinearTimeAbsolute& ltaC
 }
 
 /* raw_notify_html() -- raw_notify() without the newline */
-void raw_notify_html(dbref player, const char *msg)
+void raw_notify_html(dbref player, mux_string &sMsg)
 {
-    if (!msg || !*msg)
+    if (0 == sMsg.length())
     {
         return;
     }
@@ -134,7 +134,7 @@ void raw_notify_html(dbref player, const char *msg)
     if (  mudstate.inpipe
        && player == mudstate.poutobj)
     {
-        safe_str(msg, mudstate.poutnew, &mudstate.poutbufc);
+        sMsg.export_TextAnsi(mudstate.poutnew, &mudstate.poutbufc);
         return;
     }
     if (  !Connected(player)
@@ -146,7 +146,7 @@ void raw_notify_html(dbref player, const char *msg)
     DESC *d;
     DESC_ITER_PLAYER(player, d)
     {
-        queue_string(d, msg);
+        queue_string(d, sMsg);
     }
 }
 
@@ -179,6 +179,34 @@ void raw_notify(dbref player, const char *msg)
     DESC_ITER_PLAYER(player, d)
     {
         queue_string(d, msg);
+        queue_write_LEN(d, "\r\n", 2);
+    }
+}
+
+void raw_notify(dbref player, mux_string &sMsg)
+{
+    if (0 == sMsg.length())
+    {
+        return;
+    }
+
+    if (  mudstate.inpipe
+       && player == mudstate.poutobj)
+    {
+        sMsg.export_TextAnsi(mudstate.poutnew, &mudstate.poutbufc);
+        safe_str("\r\n", mudstate.poutnew, &mudstate.poutbufc);
+        return;
+    }
+
+    if (!Connected(player))
+    {
+        return;
+    }
+
+    DESC *d;
+    DESC_ITER_PLAYER(player, d)
+    {
+        queue_string(d, sMsg);
         queue_write_LEN(d, "\r\n", 2);
     }
 }
@@ -476,6 +504,41 @@ void queue_string(DESC *d, const char *s)
     }
     p = encode_iac(p);
     queue_write(d, p);
+}
+
+void queue_string(DESC *d, mux_string &s)
+{
+    char *pBuff = alloc_lbuf("queue_string");
+    const char *pFinal = pBuff;
+
+    if (d->flags & DS_CONNECTED)
+    {
+        if (!Ansi(d->player))
+        {
+            s.export_TextPlain(pBuff);
+        }
+        else if (NoBleed(d->player))
+        {
+            s.export_TextAnsi(pBuff, NULL, 0, s.length(), LBUF_SIZE-1, ANSI_ENDGOAL_NOBLEED);
+        }
+        else
+        {
+            s.export_TextAnsi(pBuff);
+        }
+
+        if (NoAccents(d->player))
+        {
+            pFinal = strip_accents(pBuff);
+        }
+    }
+    else
+    {
+        s.export_TextPlain(pBuff);
+        pFinal = strip_accents(pBuff);
+    }
+    pFinal = encode_iac(pFinal);
+    queue_write(d, pFinal);
+    free_lbuf(pBuff);
 }
 
 void freeqs(DESC *d)
@@ -1814,7 +1877,7 @@ static const char *DumpInfoTable[] =
 
 static void dump_info(DESC *arg_desc)
 {
-    int nDumpInfoTable = 0;
+    size_t nDumpInfoTable = 0;
     while (  nDumpInfoTable < sizeof(DumpInfoTable)/sizeof(DumpInfoTable[0])
           && NULL != DumpInfoTable[nDumpInfoTable])
     {
@@ -1822,7 +1885,7 @@ static void dump_info(DESC *arg_desc)
     }
 
     const char **LocalDumpInfoTable = local_get_info_table();
-    int nLocalDumpInfoTable = 0;
+    size_t nLocalDumpInfoTable = 0;
     while (NULL != LocalDumpInfoTable[nLocalDumpInfoTable])
     {
         nLocalDumpInfoTable++;
@@ -1868,7 +1931,7 @@ static void dump_info(DESC *arg_desc)
         char *buf = alloc_lbuf("dump_info");
         char *bp  = buf;
 
-        int  i;
+        size_t i;
         bool bFirst = true;
         safe_str("Patches: ", buf, &bp);
         for (i = 0; i < nDumpInfoTable; i++)
