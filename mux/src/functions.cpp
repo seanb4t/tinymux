@@ -2993,51 +2993,51 @@ static FUNCTION(fun_extract)
         return;
     }
 
-    int start = mux_atol(fargs[1]);
-    int len = mux_atol(fargs[2]);
+    int iFirstWord = mux_atol(fargs[1]);
+    int nWordsToCopy = mux_atol(fargs[2]);
 
-    if (  start < 1
-       || len < 1)
+    if (  iFirstWord < 1
+       || nWordsToCopy < 1)
     {
         return;
     }
 
-    // Skip to the start of the string to save.
-    //
-    start--;
-    char *s = trim_space_sep(fargs[0], &sep);
-    while (  start
-          && s)
+    mux_string *sStr = new mux_string(fargs[0]);
+    mux_words *words = new mux_words;
+    words->m_s = sStr;
+
+    size_t nDelim = 0;
+    char *pDelim = strip_ansi(sep.str, &nDelim);
+    LBUF_OFFSET nWords = words->find_Words(pDelim, nDelim);
+
+    iFirstWord--;
+    if (iFirstWord < nWords)
     {
-        s = next_token(s, &sep);
-        start--;
+        if (nWords < iFirstWord + nWordsToCopy)
+        {
+            nWordsToCopy = nWords - iFirstWord;
+        }
+
+        bool bFirst = true;
+
+        for (LBUF_OFFSET i = static_cast<LBUF_OFFSET>(iFirstWord);
+             i < iFirstWord + nWordsToCopy;
+             i++)
+        {
+            if (!bFirst)
+            {
+                print_sep(&osep, buff, bufc);
+            }
+            else
+            {
+                bFirst = false;
+            }
+            words->export_WordAnsi(i, buff, bufc);
+        }
     }
 
-    // If we ran of the end of the string, return nothing.
-    //
-    if (!s || !*s)
-    {
-        return;
-    }
-
-    // Count off the words in the string to save.
-    //
-    bool bFirst = true;
-    while (  len
-          && s)
-    {
-        char *t = split_token(&s, &sep);
-        if (!bFirst)
-        {
-            print_sep(&osep, buff, bufc);
-        }
-        else
-        {
-            bFirst = false;
-        }
-        safe_str(t, buff, bufc);
-        len--;
-    }
+    delete sStr;
+    delete words;
 }
 
 // xlate() controls the subtle definition of a softcode boolean.
@@ -5427,7 +5427,7 @@ static FUNCTION(fun_attrcnt)
  * ---------------------------------------------------------------------------
  * * fun_reverse, fun_revwords: Reverse things.
  */
-
+#if 0
 typedef void MEMXFORM(char *dest, char *src, size_t n);
 static void ANSI_TransformTextReverseWithFunction
 (
@@ -5503,24 +5503,6 @@ static void ANSI_TransformTextReverseWithFunction
     memcpy(pBuffer, pANSI, nANSI);
 }
 
-static FUNCTION(fun_reverse)
-{
-    UNUSED_PARAMETER(executor);
-    UNUSED_PARAMETER(caller);
-    UNUSED_PARAMETER(enactor);
-    UNUSED_PARAMETER(eval);
-    UNUSED_PARAMETER(nfargs);
-    UNUSED_PARAMETER(cargs);
-    UNUSED_PARAMETER(ncargs);
-
-    mux_string *sStr = new mux_string(fargs[0]);
-
-    sStr->reverse();
-    sStr->export_TextAnsi(buff, bufc);
-
-    delete sStr;
-}
-
 static char ReverseWordsInText_Seperator;
 
 static void ReverseWordsInText(char *dest, char *src, size_t n)
@@ -5554,6 +5536,25 @@ static void ReverseWordsInText(char *dest, char *src, size_t n)
     }
     src[n] = chSave;
 }
+#endif
+
+static FUNCTION(fun_reverse)
+{
+    UNUSED_PARAMETER(executor);
+    UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(nfargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
+
+    mux_string *sStr = new mux_string(fargs[0]);
+
+    sStr->reverse();
+    sStr->export_TextAnsi(buff, bufc);
+
+    delete sStr;
+}
 
 static FUNCTION(fun_revwords)
 {
@@ -5563,13 +5564,43 @@ static FUNCTION(fun_revwords)
     {
         return;
     }
+
     SEP sep;
-    if (!OPTIONAL_DELIM(2, sep, DELIM_DFLT))
+    if (!OPTIONAL_DELIM(2, sep, DELIM_DFLT|DELIM_STRING))
     {
         return;
     }
-    ReverseWordsInText_Seperator = sep.str[0];
-    ANSI_TransformTextReverseWithFunction(buff, bufc, fargs[0], ReverseWordsInText);
+
+    SEP osep = sep;
+    if (!OPTIONAL_DELIM(3, osep, DELIM_NULL|DELIM_CRLF|DELIM_STRING|DELIM_INIT))
+    {
+        return;
+    }
+
+    mux_string *sStr = new mux_string(fargs[0]);
+    mux_words *words = new mux_words;
+    words->m_s = sStr;
+
+    size_t nDelim = 0;
+    char *pDelim = strip_ansi(sep.str, &nDelim);
+    LBUF_OFFSET nWords = words->find_Words(pDelim, nDelim);
+
+    bool bFirst = true;
+    for (LBUF_OFFSET i = 0; i < nWords; i++)
+    {
+        if (!bFirst)
+        {
+            print_sep(&osep, buff, bufc);
+        }
+        else
+        {
+            bFirst = false;
+        }
+        words->export_WordAnsi(nWords-i-1, buff, bufc);
+    }
+
+    delete sStr;
+    delete words;
 }
 
 /*
@@ -8218,133 +8249,52 @@ static FUNCTION(fun_isdbref)
 /* ---------------------------------------------------------------------------
  * trim: trim off unwanted white space.
  */
-
-static char* trim_fast_left(char* str, char delim)
-{
-    // We assume delim is never '\0'
-    //
-    while (*str == delim)
-    {
-        str++;
-    }
-    return str;
-}
-
-static void trim_fast_right(char* str, char delim)
-{
-    // We assume delim is never '\0'
-    //
-    char* last = NULL;
-    while (*str)
-    {
-        if (*str != delim)
-        {
-            last = str;
-        }
-        str++;
-    }
-
-    if (last == NULL)
-    {
-        return;
-    }
-
-    *(last+1) = '\0';
-}
-
-static char* trim_left(char* str, SEP* sep)
-{
-    if (1 == sep->n)
-    {
-        return trim_fast_left(str, sep->str[0]);
-    }
-    size_t cycle = 0;
-    size_t max = sep->n;
-    char* base = str-1;
-    for ( ; *str == sep->str[cycle]; str++)
-    {
-        if (max <= ++cycle)
-        {
-            cycle = 0;
-            base = str;
-        }
-    }
-    return base+1;
-}
-
-static void trim_right(char* str, SEP* sep)
-{
-    if (1 == sep->n)
-    {
-        trim_fast_right(str,sep->str[0]);
-        return;
-    }
-
-    int cycle = static_cast<int>(sep->n - 1);
-    size_t max = sep->n - 1;
-    int n = static_cast<int>(strlen(str));
-    size_t base = n;
-    n--;
-    for ( ; n >= 0 && str[n] == sep->str[cycle]; n--)
-    {
-        if (--cycle < 0)
-        {
-            cycle = max;
-            base = n;
-        }
-    }
-    *(str+base) = '\0';
-}
-
 static FUNCTION(fun_trim)
 {
-    SEP sep;
-    if (!OPTIONAL_DELIM(3, sep, DELIM_DFLT|DELIM_STRING))
-    {
-        return;
-    }
+    UNUSED_PARAMETER(executor);
+    UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
-#define TRIM_LEFT  1
-#define TRIM_RIGHT 2
+    bool bLeft = true, bRight = true;
+    const char *p = NULL;
+    size_t n = 0;
 
-    int trim;
     if (nfargs >= 2)
     {
         switch (mux_tolower(*fargs[1]))
         {
         case 'l':
-            trim = TRIM_LEFT;
+            bRight = false;
             break;
 
         case 'r':
-            trim = TRIM_RIGHT;
-            break;
-
-        default:
-            trim = TRIM_LEFT|TRIM_RIGHT;
+            bLeft = false;
             break;
         }
+
+        if (nfargs >= 3)
+        {
+            p = fargs[2];
+            n = strlen(p);
+        }
+    }
+
+    mux_string *sStr = new mux_string(fargs[0]);
+
+    if (0 == n)
+    {
+        sStr->trim(' ', bLeft, bRight);
     }
     else
     {
-        trim = TRIM_LEFT|TRIM_RIGHT;
+        sStr->trim(p, n, bLeft, bRight);
     }
 
-    char* str;
-    if (trim & TRIM_LEFT)
-    {
-        str = trim_left(fargs[0],&sep);
-    }
-    else
-    {
-        str = fargs[0];
-    }
-
-    if (trim & TRIM_RIGHT)
-    {
-        trim_right(str,&sep);
-    }
-    safe_str(str,buff,bufc);
+    sStr->export_TextAnsi(buff, bufc);
+    delete sStr;
 }
 
 static FUNCTION(fun_config)
@@ -10198,7 +10148,7 @@ static FUN builtin_function_list[] =
     {"REPLACE",     fun_replace,    MAX_ARG, 3,       4,         0, CA_PUBLIC},
     {"REST",        fun_rest,       MAX_ARG, 0,       2,         0, CA_PUBLIC},
     {"REVERSE",     fun_reverse,          1, 1,       1,         0, CA_PUBLIC},
-    {"REVWORDS",    fun_revwords,   MAX_ARG, 0, MAX_ARG,         0, CA_PUBLIC},
+    {"REVWORDS",    fun_revwords,   MAX_ARG, 0,       3,         0, CA_PUBLIC},
     {"RIGHT",       fun_right,      MAX_ARG, 2,       2,         0, CA_PUBLIC},
     {"RJUST",       fun_rjust,      MAX_ARG, 2,       3,         0, CA_PUBLIC},
     {"RLOC",        fun_rloc,       MAX_ARG, 2,       2,         0, CA_PUBLIC},
