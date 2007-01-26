@@ -4696,7 +4696,7 @@ bool mux_string::search
     {
         // We can optimize the single-character case.
         //
-        char *p = strchr(pTarget, pPatBuf[0]);
+        const char *p = strchr(pTarget, pPatBuf[0]);
         if (p)
         {
             i = p - pTarget;
@@ -4742,7 +4742,7 @@ bool mux_string::search
     {
         // We can optimize the single-character case.
         //
-        char *p = strchr(pTarget, sPattern.m_ach[0]);
+        const char *p = strchr(pTarget, sPattern.m_ach[0]);
         if (p)
         {
             i = p - pTarget;
@@ -5048,12 +5048,11 @@ void mux_string::truncate(size_t nLen)
     m_ach[m_n] = '\0';
 }
 
-mux_words::mux_words(void)
+mux_words::mux_words(const mux_string &sStr) : m_s(&sStr)
 {
-    m_aiWords[0] = 0;
-    m_aiWords[1] = 0;
+    m_aiWordBegins[0] = 0;
+    m_aiWordEnds[0] = 0;
     m_nWords = 0;
-    m_s = NULL;
 }
 
 void mux_words::export_WordAnsi(LBUF_OFFSET n, char *buff, char **bufc)
@@ -5063,8 +5062,8 @@ void mux_words::export_WordAnsi(LBUF_OFFSET n, char *buff, char **bufc)
         return;
     }
 
-    size_t iStart = m_aiWords[n*2];
-    size_t nLen = m_aiWords[n*2+1] - iStart;
+    size_t iStart = m_aiWordBegins[n];
+    size_t nLen = m_aiWordEnds[n] - iStart;
     m_s->export_TextAnsi(buff, bufc, iStart, nLen);
 }
 
@@ -5080,42 +5079,45 @@ LBUF_OFFSET mux_words::find_Words(void)
            && m_aControl[(unsigned char)(m_s->m_ach[i])])
         {
             bPrev = true;
-            m_aiWords[nWords*2+1] = i;
+            m_aiWordEnds[nWords] = i;
             nWords++;
         }
         else if (bPrev)
         {
             bPrev = false;
-            m_aiWords[nWords*2] = i;
+            m_aiWordBegins[nWords] = i;
         }
     }
     if (!bPrev)
     {
-        m_aiWords[nWords*2+1] = n;
+        m_aiWordEnds[nWords] = n;
         nWords++;
     }
     m_nWords = nWords;
     return m_nWords;
 }
 
-LBUF_OFFSET mux_words::find_Words(const char *pDelim, size_t nDelim)
+LBUF_OFFSET mux_words::find_Words(const char *pDelim)
 {
+    size_t nDelim = 0;
+    pDelim = strip_ansi(pDelim, &nDelim);
+
     size_t iPos = 0;
     LBUF_OFFSET iStart = 0;
     LBUF_OFFSET nWords = 0;
     bool bSucceeded = m_s->search(pDelim, &iPos, iStart);
 
     while (  bSucceeded
-          && nWords + 1 < LBUF_SIZE / 2)
+          && nWords + 1 < MAX_WORDS)
     {
-        m_aiWords[nWords*2] = iStart;
-        m_aiWords[nWords*2+1] = static_cast<LBUF_OFFSET>(iStart + iPos);
+        m_aiWordBegins[nWords] = iStart;
+        m_aiWordEnds[nWords] = static_cast<LBUF_OFFSET>(iStart + iPos);
         nWords++;
         iStart = static_cast<LBUF_OFFSET>(iStart + iPos + nDelim);
         bSucceeded = m_s->search(pDelim, &iPos, iStart);
     }
-    m_aiWords[nWords*2] = iStart;
-    m_aiWords[nWords*2+1] = static_cast<LBUF_OFFSET>(m_s->m_n);
+    m_aiWordBegins[nWords] = iStart;
+    m_aiWordEnds[nWords] = static_cast<LBUF_OFFSET>(m_s->m_n);
     nWords++;
     m_nWords = nWords;
     return nWords;
