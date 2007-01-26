@@ -2482,15 +2482,17 @@ FUNCTION(fun_elements)
         return;
     }
 
-    char *ptrs[LBUF_SIZE / 2];
-    bool bFirst = true;
-
     // Turn the first list into an array.
     //
-    char *wordlist = alloc_lbuf("fun_elements.wordlist");
-    mux_strncpy(wordlist, fargs[0], LBUF_SIZE-1);
-    int nwords = list2arr(ptrs, LBUF_SIZE / 2, wordlist, &sep);
+    mux_string *sStr = new mux_string(fargs[0]);
+    mux_words *words = new mux_words;
+    words->m_s = sStr;
 
+    size_t nDelim = 0;
+    char *pDelim = strip_ansi(sep.str, &nDelim);
+    LBUF_OFFSET nWords = words->find_Words(pDelim, nDelim);
+
+    bool bFirst = true;
     char *s = trim_space_sep(fargs[1], &sepSpace);
 
     // Go through the second list, grabbing the numbers and finding the
@@ -2500,8 +2502,7 @@ FUNCTION(fun_elements)
         char *r = split_token(&s, &sepSpace);
         int cur = mux_atol(r) - 1;
         if (  0 <= cur
-           && cur < nwords
-           && ptrs[cur])
+           && cur < static_cast<int>(nWords))
         {
             if (!bFirst)
             {
@@ -2511,10 +2512,12 @@ FUNCTION(fun_elements)
             {
                 bFirst = false;
             }
-            safe_str(ptrs[cur], buff, bufc);
+            words->export_WordAnsi(static_cast<LBUF_OFFSET>(cur), buff, bufc);
         }
     } while (s);
-    free_lbuf(wordlist);
+
+    delete sStr;
+    delete words;
 }
 
 /* ---------------------------------------------------------------------------
