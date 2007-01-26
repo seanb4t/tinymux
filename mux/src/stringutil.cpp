@@ -818,7 +818,7 @@ static void ANSI_Parse_m(ANSI_ColorState *pacsCurrent, size_t nANSI, const char 
 //
 static char *ANSI_TransitionColorBinary
 (
-    ANSI_ColorState *acsCurrent,
+    const ANSI_ColorState *acsCurrent,
     const ANSI_ColorState *pcsNext,
     size_t *nTransition,
     int  iEndGoal
@@ -4097,7 +4097,7 @@ void mux_string::edit(mux_string &sFrom, const mux_string &sTo)
     }
 }
 
-char mux_string::export_Char(size_t n)
+char mux_string::export_Char(size_t n) const
 {
     if (m_n <= n)
     {
@@ -4106,7 +4106,7 @@ char mux_string::export_Char(size_t n)
     return m_ach[n];
 }
 
-ANSI_ColorState mux_string::export_Color(size_t n)
+ANSI_ColorState mux_string::export_Color(size_t n) const
 {
     if (m_n <= n)
     {
@@ -4126,7 +4126,7 @@ ANSI_ColorState mux_string::export_Color(size_t n)
  * \return         None.
  */
 
-void mux_string::export_TextAnsi(char *buff, char **bufc, size_t nStart, size_t nLen, size_t nBuffer, int iEndGoal)
+void mux_string::export_TextAnsi(char *buff, char **bufc, size_t nStart, size_t nLen, size_t nBuffer, int iEndGoal) const
 {
     // Sanity check our arguments and find out how much room we have.
     // We assume we're outputting into an LBUF unless given a smaller nBuffer.
@@ -4253,7 +4253,7 @@ void mux_string::export_TextAnsi(char *buff, char **bufc, size_t nStart, size_t 
  * \return         None.
  */
 
-void mux_string::export_TextPlain(char *buff, char **bufc, size_t nStart, size_t nLen, size_t nBuffer)
+void mux_string::export_TextPlain(char *buff, char **bufc, size_t nStart, size_t nLen, size_t nBuffer) const
 {
     // Sanity check our arguments and find out how much room we have.
     // We assume we're outputting into an LBUF unless given a smaller nBuffer.
@@ -4863,6 +4863,117 @@ void mux_string::transformWithTable(const unsigned char xfrmTable[256], size_t n
     }
 }
 
+void mux_string::trim(const char ch, bool bLeft, bool bRight)
+{
+    if (  0 == m_n
+       || (  !bLeft
+          && !bRight ))
+    {
+        return;
+    }
+
+    if (bRight)
+    {
+        size_t iPos = m_n - 1;
+        while (  ch == m_ach[iPos]
+              && 0 < iPos)
+        {
+            iPos--;
+        }
+
+        if (iPos < m_n - 1)
+        {
+            m_n = iPos + 1;
+            m_ach[m_n] = '\0';
+        }
+    }
+
+    if (bLeft)
+    {
+        size_t iPos = 0;
+        while (  ch == m_ach[iPos]
+              && iPos < m_n)
+        {
+            iPos++;
+        }
+
+        if (0 < iPos)
+        {
+            delete_Chars(0, iPos);
+        }
+    }
+}
+
+void mux_string::trim(const char *p, bool bLeft, bool bRight)
+{
+    if (  0 == m_n
+       || NULL == p
+       || '\0' == p[0]
+       || (  !bLeft
+          && !bRight ))
+    {
+        return;
+    }
+
+    size_t n = strlen(p);
+
+    if (1 == n)
+    {
+        trim(p[0], bLeft, bRight);
+        return;
+    }
+    else
+    {
+        trim(p, n, bLeft, bRight);
+    }
+}
+
+void mux_string::trim(const char *p, size_t n, bool bLeft, bool bRight)
+{
+    if (  0 == m_n
+       || NULL == p
+       || 0 == n
+       || m_n < n
+       || (  !bLeft
+          && !bRight ))
+    {
+        return;
+    }
+
+    if (bRight)
+    {
+        size_t iPos = m_n - 1;
+        size_t iDist = n - 1;
+        while (  p[iDist] == m_ach[iPos]
+              && 0 < iPos)
+        {
+            iPos--;
+            iDist = (0 < iDist) ? iDist - 1 : n - 1;
+        }
+
+        if (iPos < m_n - 1)
+        {
+            m_n = iPos + 1;
+            m_ach[m_n] = '\0';
+        }
+    }
+
+    if (bLeft)
+    {
+        size_t iPos = 0;
+        while (  p[iPos % n] == m_ach[iPos]
+              && iPos < m_n)
+        {
+            iPos++;
+        }
+
+        if (0 < iPos)
+        {
+            delete_Chars(0, iPos);
+        }
+    }
+}
+
 void mux_string::truncate(size_t nLen)
 {
     if (m_n <= nLen)
@@ -4871,4 +4982,103 @@ void mux_string::truncate(size_t nLen)
     }
     m_n = nLen;
     m_ach[m_n] = '\0';
+}
+
+mux_words::mux_words(void)
+{
+    memset(m_aControl, false, sizeof(m_aControl));
+    m_aControl[(unsigned char)' '] = true;
+    m_aiWords[0] = 0;
+    m_nWords = 0;
+    m_s = NULL;
+}
+
+void mux_words::export_WordAnsi(LBUF_OFFSET n, char *buff, char **bufc)
+{
+    if (m_nWords < n)
+    {
+        return;
+    }
+
+    size_t iStart = m_aiWords[n*2];
+    size_t nLen = m_aiWords[n*2+1] - iStart;
+    m_s->export_TextAnsi(buff, bufc, iStart, nLen);
+}
+
+LBUF_OFFSET mux_words::find_Words(void)
+{
+    LBUF_OFFSET n = static_cast<LBUF_OFFSET>(m_s->m_n);
+    LBUF_OFFSET nWords = 0;
+    bool bPrev = true;
+
+    for (LBUF_OFFSET i = 0; i < n; i++)
+    {
+        if (  !bPrev
+           && m_aControl[(unsigned char)(m_s->m_ach[i])])
+        {
+            bPrev = true;
+            m_aiWords[nWords*2+1] = i;
+            nWords++;
+        }
+        else if (bPrev)
+        {
+            bPrev = false;
+            m_aiWords[nWords*2] = i;
+        }
+    }
+    if (!bPrev)
+    {
+        m_aiWords[nWords*2+1] = n;
+        nWords++;
+    }
+    m_nWords = nWords;
+    return m_nWords;
+}
+
+LBUF_OFFSET mux_words::find_Words(const char *pDelim, size_t nDelim)
+{
+    size_t iPos = 0;
+    LBUF_OFFSET iStart = 0;
+    LBUF_OFFSET nWords = 0;
+    bool bSucceeded = m_s->search(pDelim, &iPos, iStart);
+
+    while (  bSucceeded
+          && nWords + 1 < LBUF_SIZE / 2)
+    {
+        m_aiWords[nWords*2] = iStart;
+        m_aiWords[nWords*2+1] = static_cast<LBUF_OFFSET>(iStart + iPos);
+        nWords++;
+        iStart = static_cast<LBUF_OFFSET>(iStart + iPos + nDelim);
+        bSucceeded = m_s->search(pDelim, &iPos, iStart);
+    }
+    m_aiWords[nWords*2] = iStart;
+    m_aiWords[nWords*2+1] = static_cast<LBUF_OFFSET>(m_s->m_n);
+    nWords++;
+    m_nWords = nWords;
+    return nWords;
+}
+
+void mux_words::set_Control(const char *pControlSet)
+{
+    if (  NULL == pControlSet
+       || '\0' == pControlSet[0])
+    {
+        // Nothing to do.
+        //
+        return;
+    }
+
+    // Load set of characters.
+    //
+    memset(m_aControl, false, sizeof(m_aControl));
+    while (*pControlSet)
+    {
+        m_aControl[(unsigned char)*pControlSet] = true;
+        pControlSet++;
+    }
+}
+
+void mux_words::set_Control(const bool table[UCHAR_MAX+1])
+{
+    memcpy(m_aControl, table, sizeof(table));
 }

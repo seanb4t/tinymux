@@ -124,7 +124,7 @@ void update_quotas(CLinearTimeAbsolute& ltaLast, const CLinearTimeAbsolute& ltaC
 }
 
 /* raw_notify_html() -- raw_notify() without the newline */
-void raw_notify_html(dbref player, mux_string &sMsg)
+void raw_notify_html(dbref player, const mux_string &sMsg)
 {
     if (0 == sMsg.length())
     {
@@ -183,7 +183,7 @@ void raw_notify(dbref player, const char *msg)
     }
 }
 
-void raw_notify(dbref player, mux_string &sMsg)
+void raw_notify(dbref player, const mux_string &sMsg)
 {
     if (0 == sMsg.length())
     {
@@ -506,7 +506,7 @@ void queue_string(DESC *d, const char *s)
     queue_write(d, p);
 }
 
-void queue_string(DESC *d, mux_string &s)
+void queue_string(DESC *d, const mux_string &s)
 {
     char *pBuff = alloc_lbuf("queue_string");
     const char *pFinal = pBuff;
@@ -999,8 +999,8 @@ static void announce_connect(dbref player, DESC *d)
 
         default:
 
-            log_text(tprintf("Invalid zone #%d for %s(#%d) has bad type %d",
-                zone, Name(player), player, Typeof(zone)));
+            log_printf("Invalid zone #%d for %s(#%d) has bad type %d",
+                zone, PureName(player), player, Typeof(zone));
         }
     }
     free_lbuf(buf);
@@ -1166,8 +1166,8 @@ void announce_disconnect(dbref player, DESC *d, const char *reason)
                 break;
 
             default:
-                log_text(tprintf("Invalid zone #%d for %s(#%d) has bad type %d",
-                    zone, Name(player), player, Typeof(zone)));
+                log_printf("Invalid zone #%d for %s(#%d) has bad type %d",
+                    zone, PureName(player), player, Typeof(zone));
             }
         }
         free_lbuf(buf);
