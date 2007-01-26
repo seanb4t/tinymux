@@ -255,12 +255,12 @@ public:
     void append_TextPlain(const char *pStr, size_t nLen);
     void delete_Chars(size_t nStart, size_t nLen);
     void edit(mux_string &sFrom, const mux_string &sTo);
-    char export_Char(size_t n);
-    ANSI_ColorState export_Color(size_t n);
+    char export_Char(size_t n) const;
+    ANSI_ColorState export_Color(size_t n) const;
     void export_TextAnsi(char *buff, char **bufc = NULL, size_t nStart = 0, size_t nLen = LBUF_SIZE,
-                            size_t nBuffer = (LBUF_SIZE-1), int iEndGoal = ANSI_ENDGOAL_NORMAL);
+                            size_t nBuffer = (LBUF_SIZE-1), int iEndGoal = ANSI_ENDGOAL_NORMAL) const;
     void export_TextPlain(char *buff, char **bufc = NULL, size_t nStart = 0, size_t nLen = LBUF_SIZE,
-                            size_t nBuffer = (LBUF_SIZE-1));
+                            size_t nBuffer = (LBUF_SIZE-1)) const;
     void import(const char chIn);
     void import(dbref num);
     void import(INT64 iInt);
@@ -268,7 +268,7 @@ public:
     void import(const mux_string &sStr, size_t nStart = 0);
     void import(const char *pStr);
     void import(const char *pStr, size_t nLen);
-    size_t length(void);
+    size_t length(void) const;
     void prepend(const char cChar);
     void prepend(dbref num);
     void prepend(INT64 iInt);
@@ -286,6 +286,9 @@ public:
     void stripWithTable(const bool strip_table[UCHAR_MAX+1], size_t nStart = 0, size_t nLen = (LBUF_SIZE-1));
     void transform(mux_string &sFromSet, mux_string &sToSet, size_t nStart = 0, size_t nLen = (LBUF_SIZE-1));
     void transformWithTable(const unsigned char xfrmTable[256], size_t nStart = 0, size_t nLen = (LBUF_SIZE-1));
+    void trim(const char ch = ' ', bool bLeft = true, bool bRight = true); 
+    void trim(const char *p, bool bLeft = true, bool bRight = true); 
+    void trim(const char *p, size_t n, bool bLeft = true, bool bRight = true); 
     void truncate(size_t nLen);
 
     static void * operator new(size_t size)
@@ -301,6 +304,26 @@ public:
             free_string(p);
         }
     }
+
+    friend class mux_words;
+};
+
+class mux_words
+{
+private:
+    bool        m_aControl[UCHAR_MAX+1];
+    LBUF_OFFSET m_nWords;
+
+public:
+    LBUF_OFFSET m_aiWords[LBUF_SIZE];
+    mux_string *m_s;
+
+    mux_words(void);
+    void export_WordAnsi(LBUF_OFFSET n, char *buff, char **bufc = NULL);
+    LBUF_OFFSET find_Words(void);
+    LBUF_OFFSET find_Words(const char *pDelim, size_t nDelim);
+    void set_Control(const char *pControlSet);
+    void set_Control(const bool table[UCHAR_MAX+1]);
 };
 
 #endif // STRINGUTIL_H
