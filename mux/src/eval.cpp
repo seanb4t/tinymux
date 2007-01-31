@@ -785,7 +785,7 @@ static char *parse_arglist_lite( dbref executor, dbref caller, dbref enactor,
 
     char *tstr, *bp;
 
-    if (dstr == NULL)
+    if (NULL == dstr)
     {
         *nArgsParsed = 0;
         return NULL;
@@ -801,9 +801,11 @@ static char *parse_arglist_lite( dbref executor, dbref caller, dbref enactor,
     {
         peval = ((eval & ~EV_FCHECK)|EV_NOFCHECK);
     }
-    int arg = 0;
-    int iWhichDelim = 0;
+
+    int  arg = 0;
+    int  iWhichDelim = 0;
     char chSave = '\0';
+
     while (  arg < nfargs
           && dstr
           && iWhichDelim != 2)
@@ -816,28 +818,37 @@ static char *parse_arglist_lite( dbref executor, dbref caller, dbref enactor,
         {
             tstr = parse_to_lite(&dstr, '\0', ')', &nLen, &iWhichDelim);
         }
-        if (tstr)
-        {
-            chSave = tstr[nLen];
-            tstr[nLen] = '\0';
-        }
 
-        if (  iWhichDelim == 2
-           && arg == 0
-           && tstr[0] == '\0')
+        // The following recognizes and returns zero arguments. We avoid
+        // allocating an lbuf.
+        //
+        if (  2 == iWhichDelim
+           && 0 == arg
+           && 0 == nLen)
         {
             break;
         }
 
-        bp = fargs[arg] = alloc_lbuf("parse_arglist");
-        mux_exec(tstr, fargs[arg], &bp, executor, caller, enactor, peval,
-                 cargs, ncargs);
-        *bp = '\0';
-        arg++;
         if (tstr)
         {
+            // Prevent evaluation beyond the end of the argument (either at
+            // the comma or at the closing parenthesis).
+            //
+            chSave = tstr[nLen];
+            tstr[nLen] = '\0';
+
+            bp = fargs[arg] = alloc_lbuf("parse_arglist");
+            mux_exec(tstr, fargs[arg], &bp, executor, caller, enactor, peval,
+                     cargs, ncargs);
+
             tstr[nLen] = chSave;
         }
+        else
+        {
+            bp = fargs[arg] = alloc_lbuf("parse_arglist");
+        }
+        *bp = '\0';
+        arg++;
     }
     *nArgsParsed = arg;
     return dstr;
@@ -1252,7 +1263,7 @@ void mux_exec( char *pdstr, char *buff, char **bufc, dbref executor,
             if (  0 < nFun
                && nFun <= MAX_UFUN_NAME_LEN)
             {
-                // _strlwr(tbuf);
+                // _strlwr();
                 //
                 for (size_t iFun = 0; iFun < nFun; iFun++)
                 {
@@ -1915,12 +1926,6 @@ void mux_exec( char *pdstr, char *buff, char **bufc, dbref executor,
             tstr = pdstr++;
             mudstate.nStackNest++;
             tbuf = parse_to_lite(&pdstr, ']', '\0', &n, &at_space);
-            char chSave = '\0';
-            if (tbuf)
-            {
-                chSave = tbuf[n];
-                tbuf[n] = '\0';
-            }
             at_space = 0;
             if (pdstr == NULL)
             {
@@ -1933,16 +1938,19 @@ void mux_exec( char *pdstr, char *buff, char **bufc, dbref executor,
             }
             else
             {
+                // Prevent evaluation beyond the closing square bracket.
+                //
+                ch = tbuf[n];
+                tbuf[n] = '\0';
+
                 mudstate.nStackNest--;
                 mux_exec(tbuf, buff, bufc, executor, caller, enactor,
                     (eval | EV_FCHECK | EV_FMAND) & ~EV_TOP, cargs,
                     ncargs);
                 nBufferAvailable = LBUF_SIZE - (*bufc - buff) - 1;
                 pdstr--;
-            }
-            if (tbuf)
-            {
-                tbuf[n] = chSave;
+
+                tbuf[n] = ch;
             }
         }
 
@@ -1977,14 +1985,8 @@ void mux_exec( char *pdstr, char *buff, char **bufc, dbref executor,
             tstr = pdstr++;
             mudstate.nStackNest++;
             tbuf = parse_to_lite(&pdstr, '}', '\0', &n, &at_space);
-            char chSave = '\0';
-            if (tbuf)
-            {
-                chSave = tbuf[n];
-                tbuf[n] = '\0';
-            }
             at_space = 0;
-            if (pdstr == NULL)
+            if (NULL == pdstr)
             {
                 if (nBufferAvailable)
                 {
@@ -2005,21 +2007,27 @@ void mux_exec( char *pdstr, char *buff, char **bufc, dbref executor,
                     }
                 }
 
+                // Prevent evaluation beyond closing brace.
+                //
+                ch = tbuf[n];
+                tbuf[n] = '\0';
+
                 if (eval & EV_EVAL)
                 {
                     // Preserve leading spaces (Felan)
                     //
-                    if (*tbuf == ' ')
+                    i = 0;
+                    if (' ' == tbuf[0])
                     {
                         if (nBufferAvailable)
                         {
                             *(*bufc)++ = ' ';
                             nBufferAvailable--;
                         }
-                        tbuf++;
+                        i = 1;
                     }
 
-                    mux_exec(tbuf, buff, bufc, executor, caller, enactor,
+                    mux_exec(tbuf+i, buff, bufc, executor, caller, enactor,
                         (eval & ~(EV_STRIP_CURLY | EV_FCHECK | EV_TOP)),
                         cargs, ncargs);
                 }
@@ -2028,10 +2036,7 @@ void mux_exec( char *pdstr, char *buff, char **bufc, dbref executor,
                     mux_exec(tbuf, buff, bufc, executor, caller, enactor,
                         eval & ~EV_TOP, cargs, ncargs);
                 }
-                if (tbuf)
-                {
-                    tbuf[n] = chSave;
-                }
+                tbuf[n] = ch;
                 nBufferAvailable = LBUF_SIZE - (*bufc - buff) - 1;
 
                 if (!(eval & EV_STRIP_CURLY))
