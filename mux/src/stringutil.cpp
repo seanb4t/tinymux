@@ -5445,6 +5445,21 @@ LBUF_OFFSET mux_words::find_Words(const char *pDelim)
     return nWords;
 }
 
+void mux_words::ignore_Word(LBUF_OFFSET n)
+{
+    if (m_nWords <= n)
+    {
+        return;
+    }
+
+    for (LBUF_OFFSET i = n; i < m_nWords - 1; i++)
+    {
+        m_aiWordBegins[i] = m_aiWordBegins[i + 1];
+        m_aiWordEnds[i] = m_aiWordEnds[i + 1];
+    }
+    m_nWords--;
+}
+
 void mux_words::set_Control(const char *pControlSet)
 {
     if (  NULL == pControlSet
