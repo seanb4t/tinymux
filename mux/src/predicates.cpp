@@ -325,7 +325,7 @@ char *MakeCanonicalObjectName(const char *pName, size_t *pnName, bool *pbValid)
     //
     size_t nVisualWidth;
     size_t nBuf = ANSI_TruncateToField(pName, sizeof(Buf), Buf, MBUF_SIZE,
-        &nVisualWidth, ANSI_ENDGOAL_NORMAL);
+        &nVisualWidth);
 
     // Disallow pure ANSI names. There must be at least -something-
     // visible.
@@ -453,8 +453,7 @@ char *MakeCanonicalExitName(const char *pName, size_t *pnName, bool *pbValid)
             // semi-colon.
             //
             size_t vw;
-            ANSI_TruncateToField(pName, sizeof(Out), Out, n, &vw,
-                ANSI_ENDGOAL_NORMAL);
+            ANSI_TruncateToField(pName, sizeof(Out), Out, n, &vw);
 
             // vw should always be equal to n, but we'll just make sure.
             //
@@ -562,7 +561,7 @@ bool ok_password(const char *password, const char **pmsg)
     int num_lower = 0;
 
     const unsigned char *scan = (const unsigned char *)(password);
-    for ( ; *scan; scan = mux_NextCodePoint(scan))
+    for ( ; *scan; scan = utf8_NextCodePoint(scan))
     {
         if (  !mux_isprint(scan)
            || mux_isspace(*scan))
