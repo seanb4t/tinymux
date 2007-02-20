@@ -507,7 +507,7 @@ const unsigned char mux_StripAccents[256] =
 // Bytes in the middle of a sequence map to UTF8_CONTINUE.  Bytes which should
 // not appear map to UTF8_ILLEGAL.
 //
-const unsigned char mux_utf8[256] =
+const unsigned char utf8_FirstByte[256] =
 {
 //  0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
 //
@@ -530,51 +530,80 @@ const unsigned char mux_utf8[256] =
     4,  4,  4,  4,  4,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6   // F
 };
 
-// The following table maps existing 8-bit characters to UTF-16 which can
-// then be encoded into UTF-8.
+// The following table maps existing 8-bit characters to their corresponding
+// UTF8 sequences.
 //
-const UTF16 mux_ch2utf16[256] =
+const char *utf8_latin1[256] =
 {
-    0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007,
-    0x0008, 0x0009, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F,
-    0x0010, 0x0011, 0x0012, 0x0013, 0x0014, 0x0015, 0x0016, 0x0017,
-    0x0018, 0x0019, 0x001A, 0x001B, 0x001C, 0x001D, 0x001E, 0x001F,
-    0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027,
-    0x0028, 0x0029, 0x002A, 0x002B, 0x002C, 0x002D, 0x002E, 0x002F,
-    0x0030, 0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037,
-    0x0038, 0x0039, 0x003A, 0x003B, 0x003C, 0x003D, 0x003E, 0x003F,
-    0x0040, 0x0041, 0x0042, 0x0043, 0x0044, 0x0045, 0x0046, 0x0047,
-    0x0048, 0x0049, 0x004A, 0x004B, 0x004C, 0x004D, 0x004E, 0x004F,
-    0x0050, 0x0051, 0x0052, 0x0053, 0x0054, 0x0055, 0x0056, 0x0057,
-    0x0058, 0x0059, 0x005A, 0x005B, 0x005C, 0x005D, 0x005E, 0x005F,
-    0x0060, 0x0061, 0x0062, 0x0063, 0x0064, 0x0065, 0x0066, 0x0067,
-    0x0068, 0x0069, 0x006A, 0x006B, 0x006C, 0x006D, 0x006E, 0x006F,
-    0x0070, 0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077,
-    0x0078, 0x0079, 0x007A, 0x007B, 0x007C, 0x007D, 0x007E, 0x007F,
-    0x20AC, 0xFFFD, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
-    0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0xFFFD, 0x017D, 0xFFFD,
-    0xFFFD, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
-    0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0xFFFD, 0x017E, 0x0178,
-    0x00A0, 0x00A1, 0x00A2, 0x00A3, 0x00A4, 0x00A5, 0x00A6, 0x00A7,
-    0x00A8, 0x00A9, 0x00AA, 0x00AB, 0x00AC, 0x00AD, 0x00AE, 0x00AF,
-    0x00B0, 0x00B1, 0x00B2, 0x00B3, 0x00B4, 0x00B5, 0x00B6, 0x00B7,
-    0x00B8, 0x00B9, 0x00BA, 0x00BB, 0x00BC, 0x00BD, 0x00BE, 0x00BF,
-    0x00C0, 0x00C1, 0x00C2, 0x00C3, 0x00C4, 0x00C5, 0x00C6, 0x00C7,
-    0x00C8, 0x00C9, 0x00CA, 0x00CB, 0x00CC, 0x00CD, 0x00CE, 0x00CF,
-    0x00D0, 0x00D1, 0x00D2, 0x00D3, 0x00D4, 0x00D5, 0x00D6, 0x00D7,
-    0x00D8, 0x00D9, 0x00DA, 0x00DB, 0x00DC, 0x00DD, 0x00DE, 0x00DF,
-    0x00E0, 0x00E1, 0x00E2, 0x00E3, 0x00E4, 0x00E5, 0x00E6, 0x00E7,
-    0x00E8, 0x00E9, 0x00EA, 0x00EB, 0x00EC, 0x00ED, 0x00EE, 0x00EF,
-    0x00F0, 0x00F1, 0x00F2, 0x00F3, 0x00F4, 0x00F5, 0x00F6, 0x00F7,
-    0x00F8, 0x00F9, 0x00FA, 0x00FB, 0x00FC, 0x00FD, 0x00FE, 0x00FF
+    "",             "\x01",         "\x02",         "\x03",
+    "\x04",         "\x05",         "\x06",         "\x07",
+    "\x08",         "\x09",         "\x0A",         "\x0B",
+    "\x0C",         "\x0D",         "\x0E",         "\x0F",
+    "\x10",         "\x11",         "\x12",         "\x13",
+    "\x14",         "\x15",         "\x16",         "\x17",
+    "\x18",         "\x19",         "\x1A",         "\x1B",
+    "\x1C",         "\x1D",         "\x1E",         "\x1F",
+    "\x20",         "\x21",         "\x22",         "\x23",
+    "\x24",         "\x25",         "\x26",         "\x27",
+    "\x28",         "\x29",         "\x2A",         "\x2B",
+    "\x2C",         "\x2D",         "\x2E",         "\x2F",
+    "\x30",         "\x31",         "\x32",         "\x33",
+    "\x34",         "\x35",         "\x36",         "\x37",
+    "\x38",         "\x39",         "\x3A",         "\x3B",
+    "\x3C",         "\x3D",         "\x3E",         "\x3F",
+    "\x40",         "\x41",         "\x42",         "\x43",
+    "\x44",         "\x45",         "\x46",         "\x47",
+    "\x48",         "\x49",         "\x4A",         "\x4B",
+    "\x4C",         "\x4D",         "\x4E",         "\x4F",
+    "\x50",         "\x51",         "\x52",         "\x53",
+    "\x54",         "\x55",         "\x56",         "\x57",
+    "\x58",         "\x59",         "\x5A",         "\x5B",
+    "\x5C",         "\x5D",         "\x5E",         "\x5F",
+    "\x60",         "\x61",         "\x62",         "\x63",
+    "\x64",         "\x65",         "\x66",         "\x67",
+    "\x68",         "\x69",         "\x6A",         "\x6B",
+    "\x6C",         "\x6D",         "\x6E",         "\x6F",
+    "\x70",         "\x71",         "\x72",         "\x73",
+    "\x74",         "\x75",         "\x76",         "\x77",
+    "\x78",         "\x79",         "\x7A",         "\x7B",
+    "\x7C",         "\x7D",         "\x7E",         "\x7F",
+    "\xE2\x82\xAC", "\xEF\xBF\xBD", "\xE2\x80\x9A", "\xC6\x92",
+    "\xE2\x80\x9E", "\xE2\x80\xA6", "\xE2\x80\xA0", "\xE2\x80\xA1",
+    "\xCB\x86",     "\xE2\x80\xB0", "\xC5\xA0",     "\xE2\x80\xB9",
+    "\xC5\x92",     "\xEF\xBF\xBD", "\xC5\xBD",     "\xEF\xBF\xBD",
+    "\xEF\xBF\xBD", "\xE2\x80\x98", "\xE2\x80\x99", "\xE2\x80\x9C",
+    "\xE2\x80\x9D", "\xE2\x80\xA2", "\xE2\x80\x93", "\xE2\x80\x94",
+    "\xCB\x9C",     "\xE2\x84\xA2", "\xC5\xA1",     "\xE2\x80\xBA",
+    "\xC5\x93",     "\xEF\xBF\xBD", "\xC5\xBE",     "\xC5\xB8",
+    "\xC2\xA0",     "\xC2\xA1",     "\xC2\xA2",     "\xC2\xA3",
+    "\xC2\xA4",     "\xC2\xA5",     "\xC2\xA6",     "\xC2\xA7",
+    "\xC2\xA8",     "\xC2\xA9",     "\xC2\xAA",     "\xC2\xAB",
+    "\xC2\xAC",     "\xC2\xAD",     "\xC2\xAE",     "\xC2\xAF",
+    "\xC2\xB0",     "\xC2\xB1",     "\xC2\xB2",     "\xC2\xB3",
+    "\xC2\xB4",     "\xC2\xB5",     "\xC2\xB6",     "\xC2\xB7",
+    "\xC2\xB8",     "\xC2\xB9",     "\xC2\xBA",     "\xC2\xBB",
+    "\xC2\xBC",     "\xC2\xBD",     "\xC2\xBE",     "\xC2\xBF",
+    "\xC3\x80",     "\xC3\x81",     "\xC3\x82",     "\xC3\x83",
+    "\xC3\x84",     "\xC3\x85",     "\xC3\x86",     "\xC3\x87",
+    "\xC3\x88",     "\xC3\x89",     "\xC3\x8A",     "\xC3\x8B",
+    "\xC3\x8C",     "\xC3\x8D",     "\xC3\x8E",     "\xC3\x8F",
+    "\xC3\x90",     "\xC3\x91",     "\xC3\x92",     "\xC3\x93",
+    "\xC3\x94",     "\xC3\x95",     "\xC3\x96",     "\xC3\x97",
+    "\xC3\x98",     "\xC3\x99",     "\xC3\x9A",     "\xC3\x9B",
+    "\xC3\x9C",     "\xC3\x9D",     "\xC3\x9E",     "\xC3\x9F",
+    "\xC3\xA0",     "\xC3\xA1",     "\xC3\xA2",     "\xC3\xA3",
+    "\xC3\xA4",     "\xC3\xA5",     "\xC3\xA6",     "\xC3\xA7",
+    "\xC3\xA8",     "\xC3\xA9",     "\xC3\xAA",     "\xC3\xAB",
+    "\xC3\xAC",     "\xC3\xAD",     "\xC3\xAE",     "\xC3\xAF",
+    "\xC3\xB0",     "\xC3\xB1",     "\xC3\xB2",     "\xC3\xB3",
+    "\xC3\xB4",     "\xC3\xB5",     "\xC3\xB6",     "\xC3\xB7",
+    "\xC3\xB8",     "\xC3\xB9",     "\xC3\xBA",     "\xC3\xBB",
+    "\xC3\xBC",     "\xC3\xBD",     "\xC3\xBE",     "\xC3\xBF",
 };
 
 // 219 included, 1113893 excluded, 0 errors.
 // 12 states, 26 columns, 568 bytes
 //
-#define PRINT_START_STATE (0)
-#define PRINT_ACCEPTING_STATES_START (12)
-
 const unsigned char print_itt[256] =
 {
        0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
@@ -613,6 +642,45 @@ const unsigned char print_stt[12][26] =
     {  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  13,  12,  12,  12,  12,  12,  12,  12,  12}
 };
 
+// 224 code points.
+// 10 states, 171 columns, 3676 bytes
+//
+const unsigned char latin_itt[256] =
+{
+       0,   0,   0,   0,   0,   0,   0,   1,    2,   3,   4,   0,   0,   5,   0,   0,
+       0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   6,   0,   0,   0,   0,
+       7,   8,   9,  10,  11,  12,  13,  14,   15,  16,  17,  18,  19,  20,  21,  22,
+      23,  24,  25,  26,  27,  28,  29,  30,   31,  32,  33,  34,  35,  36,  37,   0,
+      38,  39,  40,  41,  42,  43,  44,  45,   46,  47,  48,  49,  50,  51,  52,  53,
+      54,  55,  56,  57,  58,  59,  60,  61,   62,  63,  64,  65,  66,  67,  68,  69,
+      70,  71,  72,  73,  74,  75,  76,  77,   78,  79,  80,  81,  82,  83,  84,  85,
+      86,  87,  88,  89,  90,  91,  92,  93,   94,  95,  96,  97,  98,  99, 100,   0,
+
+     101, 102, 103, 104, 105, 106, 107, 108,  109, 110, 111, 112, 113, 114, 115, 116,
+     117, 118, 119, 120, 121, 122, 123, 124,  125, 126, 127, 128, 129, 130, 131, 132,
+     133, 134, 135, 136, 137, 138, 139, 140,  141, 142, 143, 144, 145, 146, 147, 148,
+     149, 150, 151, 152, 153, 154, 155, 156,  157, 158, 159, 160, 161, 162, 163, 164,
+       0,   0, 165, 166,   0, 167, 168,   0,    0,   0,   0, 169,   0,   0,   0,   0,
+       0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
+       0,   0, 170,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
+       0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0
+
+};
+
+const unsigned short latin_stt[10][171] =
+{
+    {  73,  17,  18,  19,  20,  23,  37,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,  96,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,   1,   2,   3,   4,   5,   6},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,   0, 171, 172, 173, 174, 175, 176, 177,   0, 179,   0, 181, 182, 183, 184,   0, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201,  73,  73,  73,  73,  73,  73},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265,  73,  73,  73,  73,  73,  73},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 150, 166,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 148, 164,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 169,  73,  73,  73,  73, 152, 168,  73,  73,  73,  73,  73,  73,  73},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 141,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 146,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 162,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,   7,  73,   8,  73,   9,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 160, 161,  73,  73,  73, 155, 156, 140,  73, 157, 158, 142,  73, 144, 145, 159,  73,  73,  73, 143,  73,  73,  73,  73,  73,  73,  73,  73,  73, 147,  73,  73,  73,  73,  73,  73,  73,  73, 149, 165,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 138,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73},
+    {  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73, 163,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73,  73}
+};
+
 /*! \brief Validates UTF8 string and returns number of code points contained therein.
  *
  * \param pString   UTF8 string.
@@ -626,7 +694,7 @@ bool utf8_strlen(const UTF8 *pString, size_t &nString)
     int i = 0;
     while ('\0' != pString[i])
     {
-        unsigned char t = mux_utf8[pString[i]];
+        unsigned char t = utf8_FirstByte[pString[i]];
         if (UTF8_CONTINUE <= t)
         {
             return false;
@@ -636,7 +704,7 @@ bool utf8_strlen(const UTF8 *pString, size_t &nString)
         for (j = i + 1; j < i + t; j++)
         {
             if (  '\0' == pString[j]
-               || UTF8_CONTINUE != mux_utf8[pString[j]])
+               || UTF8_CONTINUE != utf8_FirstByte[pString[j]])
             {
                 return false;
             }
@@ -645,6 +713,31 @@ bool utf8_strlen(const UTF8 *pString, size_t &nString)
         i = i + t;
     }
     return true;
+}
+
+/*! \brief Convert UTF8 to latin1 with '?' for all unsupported characters.
+ *
+ * \param pString   UTF8 string.
+ * \return          Equivalent string in latin1 codeset.
+ */
+
+const char *ConvertToLatin(const UTF8 *pString)
+{
+    static char buffer[LBUF_SIZE];
+    char *q = buffer;
+
+    while ('\0' != *pString)
+    {
+        int iState = LATIN_START_STATE;
+        do
+        {
+            unsigned char ch = *pString++;
+            iState = latin_stt[iState][latin_itt[(unsigned char)ch]];
+        } while (iState < LATIN_ACCEPTING_STATES_START);
+        *q++ = (char)(iState - LATIN_ACCEPTING_STATES_START);
+    }
+    *q = '\0';
+    return buffer;
 }
 
 // ANSI_lex - This function parses a string and returns two token types.
@@ -803,12 +896,11 @@ char *strip_accents(const char *szString, size_t *pnString)
 #define ANSI_COLOR_INDEX_WHITE     7
 #define ANSI_COLOR_INDEX_DEFAULT   8
 
-static const ANSI_ColorState acsRestingStates[3] =
-{
-    {true,  false, false, false, false, ANSI_COLOR_INDEX_DEFAULT, ANSI_COLOR_INDEX_DEFAULT},
-    {false, false, false, false, false, ANSI_COLOR_INDEX_WHITE,   ANSI_COLOR_INDEX_DEFAULT},
-    {true,  false, false, false, false, ANSI_COLOR_INDEX_DEFAULT, ANSI_COLOR_INDEX_DEFAULT}
-};
+static const ANSI_ColorState csNormal =
+    {true,  false, false, false, false, ANSI_COLOR_INDEX_DEFAULT, ANSI_COLOR_INDEX_DEFAULT};
+
+static const ANSI_ColorState csNoBleed =
+    {false, false, false, false, false, ANSI_COLOR_INDEX_WHITE,   ANSI_COLOR_INDEX_DEFAULT};
 
 static void ANSI_Parse_m(ANSI_ColorState *pacsCurrent, size_t nANSI, const char *pANSI)
 {
@@ -848,7 +940,7 @@ static void ANSI_Parse_m(ANSI_ColorState *pacsCurrent, size_t nANSI, const char 
                 case 0:
                     // Normal.
                     //
-                    *pacsCurrent = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+                    *pacsCurrent = csNormal;
                     break;
 
                 case 1:
@@ -931,7 +1023,7 @@ static char *ANSI_TransitionColorBinary
     const ANSI_ColorState *acsCurrent,
     const ANSI_ColorState *pcsNext,
     size_t *nTransition,
-    int  iEndGoal
+    bool bNoBleed
 )
 {
     static char Buffer[ANSI_MAXIMUM_BINARY_TRANSITION_LENGTH+1];
@@ -950,7 +1042,7 @@ static char *ANSI_TransitionColorBinary
         // With NOBLEED, we can't stay in the normal mode. We must eventually
         // be on a white foreground.
         //
-        pcsNext = &acsRestingStates[iEndGoal];
+        pcsNext = bNoBleed ? &csNoBleed : &csNormal;
     }
 
     // Do we need to go through the normal state?
@@ -966,7 +1058,7 @@ static char *ANSI_TransitionColorBinary
     {
         memcpy(p, ANSI_NORMAL, sizeof(ANSI_NORMAL)-1);
         p += sizeof(ANSI_NORMAL)-1;
-        tmp = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+        tmp = csNormal;
     }
     if (tmp.bHighlite != pcsNext->bHighlite)
     {
@@ -1048,7 +1140,7 @@ static char *ANSI_TransitionColorEscape
         Buffer[i+1] = 'x';
         Buffer[i+2] = 'n';
         i = i + 3;
-        tmp = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+        tmp = csNormal;
     }
     if (tmp.bHighlite != acsNext->bHighlite)
     {
@@ -1103,10 +1195,10 @@ void ANSI_String_In_Init
 (
     struct ANSI_In_Context *pacIn,
     const char *szString,
-    int        iEndGoal
+    bool       bNoBleed
 )
 {
-    pacIn->m_cs = acsRestingStates[iEndGoal];
+    pacIn->m_cs = bNoBleed ? csNoBleed : csNormal;
     pacIn->m_p  = szString;
     pacIn->m_n  = strlen(szString);
 }
@@ -1117,12 +1209,12 @@ void ANSI_String_Out_Init
     char  *pField,
     size_t nField,
     size_t vwMax,
-    int    iEndGoal
+    bool   bNoBleed
 )
 {
-    pacOut->m_cs       = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+    pacOut->m_cs       = csNormal;
     pacOut->m_bDone    = false;
-    pacOut->m_iEndGoal = iEndGoal;
+    pacOut->m_bNoBleed = bNoBleed;
     pacOut->m_n        = 0;
     pacOut->m_nMax     = nField;
     pacOut->m_p        = pField;
@@ -1209,28 +1301,25 @@ void ANSI_String_Copy
             size_t nFieldNeeded = 0;
 
             size_t nTransitionFinal = 0;
-            if (pacOut->m_iEndGoal <= ANSI_ENDGOAL_NOBLEED)
+            // If we lay down -any- of the TEXT part, we need to make
+            // sure we always leave enough room to get back to the
+            // required final ANSI color state.
+            //
+            if (memcmp( &(pacIn->m_cs),
+                        pacOut->m_bNoBleed ? &csNoBleed : &csNormal,
+                        sizeof(ANSI_ColorState)) != 0)
             {
-                // If we lay down -any- of the TEXT part, we need to make
-                // sure we always leave enough room to get back to the
-                // required final ANSI color state.
+                // The color state of the TEXT isn't the final state,
+                // so how much room will the transition back to the
+                // final state take?
                 //
-                if (memcmp( &(pacIn->m_cs),
-                            &acsRestingStates[pacOut->m_iEndGoal],
-                            sizeof(ANSI_ColorState)) != 0)
-                {
-                    // The color state of the TEXT isn't the final state,
-                    // so how much room will the transition back to the
-                    // final state take?
-                    //
-                    ANSI_TransitionColorBinary( &(pacIn->m_cs),
-                                                &acsRestingStates[pacOut->m_iEndGoal],
-                                                &nTransitionFinal,
-                                                pacOut->m_iEndGoal);
+                ANSI_TransitionColorBinary( &(pacIn->m_cs),
+                                            pacOut->m_bNoBleed ? &csNoBleed : &csNormal,
+                                            &nTransitionFinal,
+                                            pacOut->m_bNoBleed);
 
-                    nFieldNeeded += nTransitionFinal;
+                nFieldNeeded += nTransitionFinal;
                 }
-            }
 
             // If we lay down -any- of the TEXT part, it needs to be
             // the right color.
@@ -1240,7 +1329,7 @@ void ANSI_String_Copy
                 ANSI_TransitionColorBinary( &(pacOut->m_cs),
                                             &(pacIn->m_cs),
                                             &nTransition,
-                                            pacOut->m_iEndGoal);
+                                            pacOut->m_bNoBleed);
             nFieldNeeded += nTransition;
 
             // If we find that there is no room for any of the TEXT,
@@ -1347,18 +1436,15 @@ size_t ANSI_String_Finalize
 )
 {
     char *pField = pacOut->m_p;
-    if (pacOut->m_iEndGoal <= ANSI_ENDGOAL_NOBLEED)
+    size_t nTransition = 0;
+    char *pTransition =
+        ANSI_TransitionColorBinary( &(pacOut->m_cs),
+                                    pacOut->m_bNoBleed ? &csNoBleed : &csNormal,
+                                    &nTransition, pacOut->m_bNoBleed);
+    if (nTransition)
     {
-        size_t nTransition = 0;
-        char *pTransition =
-            ANSI_TransitionColorBinary( &(pacOut->m_cs),
-                                        &acsRestingStates[pacOut->m_iEndGoal],
-                                        &nTransition, pacOut->m_iEndGoal);
-        if (nTransition)
-        {
-            memcpy(pField, pTransition, nTransition);
-            pField += nTransition;
-        }
+        memcpy(pField, pTransition, nTransition);
+        pField += nTransition;
     }
     *pField = '\0';
     pacOut->m_n += pField - pacOut->m_p;
@@ -1378,7 +1464,7 @@ size_t ANSI_TruncateToField
     char *pField0,
     size_t maxVisualWidth,
     size_t *pnVisualWidth,
-    int  iEndGoal
+    bool bNoBleed
 )
 {
     if (!szString)
@@ -1388,8 +1474,8 @@ size_t ANSI_TruncateToField
     }
     struct ANSI_In_Context aic;
     struct ANSI_Out_Context aoc;
-    ANSI_String_In_Init(&aic, szString, iEndGoal);
-    ANSI_String_Out_Init(&aoc, pField0, nField, maxVisualWidth, iEndGoal);
+    ANSI_String_In_Init(&aic, szString, bNoBleed);
+    ANSI_String_Out_Init(&aoc, pField0, nField, maxVisualWidth, bNoBleed);
     ANSI_String_Copy(&aoc, &aic, maxVisualWidth);
     return ANSI_String_Finalize(&aoc, pnVisualWidth);
 }
@@ -1400,7 +1486,7 @@ char *ANSI_TruncateAndPad_sbuf(const char *pString, size_t nMaxVisualWidth, char
     size_t nAvailable = SBUF_SIZE - nMaxVisualWidth;
     size_t nVisualWidth;
     size_t nLen = ANSI_TruncateToField(pString, nAvailable,
-        pStringModified, nMaxVisualWidth, &nVisualWidth, ANSI_ENDGOAL_NORMAL);
+        pStringModified, nMaxVisualWidth, &nVisualWidth);
     for (size_t i = nMaxVisualWidth - nVisualWidth; i > 0; i--)
     {
         pStringModified[nLen] = fill;
@@ -1419,7 +1505,7 @@ char *normal_to_white(const char *szString)
                           Buffer,
                           sizeof(Buffer),
                           &nVisualWidth,
-                          ANSI_ENDGOAL_NOBLEED
+                          true
                         );
     return Buffer;
 }
@@ -1513,7 +1599,7 @@ char *translate_string(const char *szString, bool bConvert)
 
     ANSI_ColorState csCurrent;
     ANSI_ColorState csPrevious;
-    csCurrent = acsRestingStates[ANSI_ENDGOAL_NOBLEED];
+    csCurrent = csNoBleed;
     csPrevious = csCurrent;
     const unsigned char *MU_EscapeChar = (bConvert)? MU_EscapeConvert : MU_EscapeNoConvert;
     while (nString)
@@ -2104,7 +2190,7 @@ void utf8_safe_chr(const UTF8 *src, char *buff, char **bufc)
     size_t nLen;
     size_t nLeft;
     if (  NULL == src
-       || UTF8_CONTINUE <= (nLen = mux_utf8[*src])
+       || UTF8_CONTINUE <= (nLen = utf8_FirstByte[*src])
        || (nLeft = LBUF_SIZE - (*bufc - buff) - 1) < nLen)
     {
         return;
@@ -2168,7 +2254,7 @@ UTF8 *ConvertToUTF8
 
 UTF32 ConvertFromUTF8(const UTF8 *pString)
 {
-    size_t t = mux_utf8[*pString];
+    size_t t = utf8_FirstByte[*pString];
     if (UTF8_CONTINUE <= t)
     {
         return UNI_EOF;
@@ -2184,7 +2270,7 @@ UTF32 ConvertFromUTF8(const UTF8 *pString)
     }
     else if (2 == t)
     {
-        if (UTF8_CONTINUE != mux_utf8[pString[1]])
+        if (UTF8_CONTINUE != utf8_FirstByte[pString[1]])
         {
             return UNI_EOF;
         }
@@ -2193,8 +2279,8 @@ UTF32 ConvertFromUTF8(const UTF8 *pString)
     }
     else if (3 == t)
     {
-        if (  UTF8_CONTINUE != mux_utf8[pString[1]]
-           || UTF8_CONTINUE != mux_utf8[pString[2]])
+        if (  UTF8_CONTINUE != utf8_FirstByte[pString[1]]
+           || UTF8_CONTINUE != utf8_FirstByte[pString[2]])
         {
             return UNI_EOF;
         }
@@ -2204,9 +2290,9 @@ UTF32 ConvertFromUTF8(const UTF8 *pString)
     }
     else if (4 == t)
     {
-        if (  UTF8_CONTINUE != mux_utf8[pString[1]]
-           || UTF8_CONTINUE != mux_utf8[pString[2]]
-           || UTF8_CONTINUE != mux_utf8[pString[3]])
+        if (  UTF8_CONTINUE != utf8_FirstByte[pString[1]]
+           || UTF8_CONTINUE != utf8_FirstByte[pString[2]]
+           || UTF8_CONTINUE != utf8_FirstByte[pString[3]])
         {
             return UNI_EOF;
         }
@@ -2222,7 +2308,7 @@ UTF32 ConvertFromUTF8(const UTF8 *pString)
 
     if (  ch < UNI_SUR_HIGH_START
        || (  UNI_SUR_LOW_END < ch
-          && UNI_MAX_LEGAL_UTF32))
+          && ch <= UNI_MAX_LEGAL_UTF32))
     {
         return ch;
     }
@@ -4102,7 +4188,7 @@ void mux_string::append(const char cChar)
         if (0 != m_ncs)
         {
             realloc_m_pcs(m_n + 1);
-            m_pcs[m_n] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+            m_pcs[m_n] = csNormal;
         }
         m_n++;
         m_ach[m_n] = '\0';
@@ -4165,7 +4251,7 @@ void mux_string::append(const mux_string &sStr, size_t nStart, size_t nLen)
         realloc_m_pcs(m_n + nLen);
         for (size_t i = 0; i < m_n; i++)
         {
-            m_pcs[i] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+            m_pcs[i] = csNormal;
         }
     }
 
@@ -4177,7 +4263,7 @@ void mux_string::append(const mux_string &sStr, size_t nStart, size_t nLen)
     {
         for (size_t i = 0; i < nLen; i++)
         {
-            m_pcs[m_n+i] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+            m_pcs[m_n+i] = csNormal;
         }
     }
 
@@ -4266,7 +4352,7 @@ void mux_string::append_TextPlain(const char *pStr)
         realloc_m_pcs(m_n + nLen);
         for (size_t i = 0; i < nLen; i++)
         {
-            m_pcs[m_n+i] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+            m_pcs[m_n+i] = csNormal;
         }
     }
 
@@ -4297,7 +4383,7 @@ void mux_string::append_TextPlain(const char *pStr, size_t nLen)
         realloc_m_pcs(m_n + nLen);
         for (size_t i = 0; i < nLen; i++)
         {
-            m_pcs[m_n+i] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+            m_pcs[m_n+i] = csNormal;
         }
     }
 
@@ -4487,7 +4573,7 @@ ANSI_ColorState mux_string::export_Color(size_t n) const
     if (  m_n <= n
        || 0 == m_ncs)
     {
-        return acsRestingStates[ANSI_ENDGOAL_NORMAL];
+        return csNormal;
     }
     return m_pcs[n];
 }
@@ -4527,7 +4613,7 @@ void mux_string::export_TextAnsi
     size_t nStart,
     size_t nLen,
     size_t nBuffer,
-    int iEndGoal
+    bool bNoBleed
 ) const
 {
     // Sanity check our arguments and find out how much room we have.
@@ -4583,7 +4669,7 @@ void mux_string::export_TextAnsi
     size_t nPos = nStart;
     bool bPlentyOfRoom =
         (nAvail > (nLen + 1) * (ANSI_MAXIMUM_BINARY_TRANSITION_LENGTH + 1));
-    ANSI_ColorState csEndGoal = acsRestingStates[iEndGoal];
+    ANSI_ColorState csEndGoal = bNoBleed ? csNoBleed : csNormal;
     size_t nCopied = 0;
 
     if (bPlentyOfRoom)
@@ -4595,7 +4681,7 @@ void mux_string::export_TextAnsi
             {
                 safe_copy_str(ANSI_TransitionColorBinary( &csPrev,
                                                           &(m_pcs[nPos]),
-                                                          &nCopied, iEndGoal),
+                                                          &nCopied, bNoBleed),
                               buff, bufc, nBuffer);
                 csPrev = m_pcs[nPos];
             }
@@ -4605,7 +4691,7 @@ void mux_string::export_TextAnsi
         if (0 != memcmp(&csPrev, &csEndGoal, sizeof(ANSI_ColorState)))
         {
             safe_copy_str(ANSI_TransitionColorBinary( &csPrev, &csEndGoal,
-                                                      &nCopied, iEndGoal),
+                                                      &nCopied, bNoBleed),
                           buff, bufc, nBuffer);
         }
         **bufc = '\0';
@@ -4623,11 +4709,11 @@ void mux_string::export_TextAnsi
             {
                 nNeededBefore = nNeededAfter;
                 ANSI_TransitionColorBinary( &(m_pcs[nPos]), &csEndGoal,
-                                            &nCopied, iEndGoal);
+                                            &nCopied, bNoBleed);
                 nNeededAfter = nCopied;
                 char *pTransition =
                     ANSI_TransitionColorBinary( &csPrev, &(m_pcs[nPos]),
-                                                &nCopied, iEndGoal);
+                                                &nCopied, bNoBleed);
                 if (nBuffer < (*bufc-buff) + nCopied + 1 + nNeededAfter)
                 {
                     // There isn't enough room to add the color sequence,
@@ -4642,7 +4728,7 @@ void mux_string::export_TextAnsi
             {
                 safe_copy_str(ANSI_TransitionColorBinary( &csPrev,
                                                           &(m_pcs[nPos]),
-                                                          &nCopied, iEndGoal),
+                                                          &nCopied, bNoBleed),
                               buff, bufc, nBuffer);
                 nNeededAfter = 0;
             }
@@ -4658,7 +4744,7 @@ void mux_string::export_TextAnsi
     if (nNeededAfter)
     {
        safe_copy_str(ANSI_TransitionColorBinary( &csPrev, &csEndGoal,
-                                                 &nCopied, iEndGoal),
+                                                 &nCopied, bNoBleed),
                      buff, bufc, nBuffer);
     }
     **bufc = '\0';
@@ -4888,7 +4974,7 @@ void mux_string::import(const char *pStr, size_t nLen)
 
     size_t nPos = 0;
     static ANSI_ColorState acsTemp[LBUF_SIZE];
-    ANSI_ColorState cs = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+    ANSI_ColorState cs = csNormal;
     size_t nAnsiLen = 0;
     bool bColor = false;
 
@@ -4923,7 +5009,7 @@ void mux_string::import(const char *pStr, size_t nLen)
             nAnsiLen = nTokenLength0;
         }
         ANSI_Parse_m(&cs, nAnsiLen, pStr+nPos);
-        if (0 != memcmp(&cs, &acsRestingStates[ANSI_ENDGOAL_NORMAL], sizeof(cs)))
+        if (0 != memcmp(&cs, &csNormal, sizeof(cs)))
         {
             bColor = true;
         }
@@ -4957,7 +5043,7 @@ void mux_string::prepend(const char cChar)
     {
         realloc_m_pcs(1 + nMove);
         memmove(m_pcs + 1, m_pcs, nMove * sizeof(m_pcs[0]));
-        m_pcs[0] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+        m_pcs[0] = csNormal;
     }
 
     m_n = 1 + nMove;
@@ -5114,11 +5200,11 @@ void mux_string::replace_Chars
             realloc_m_pcs(m_n);
             for (size_t i = 0; i < nStart; i++)
             {
-                m_pcs[i] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+                m_pcs[i] = csNormal;
             }
             for (size_t i = 0; i < nMove; i++)
             {
-                m_pcs[i+nStart+nTo] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+                m_pcs[i+nStart+nTo] = csNormal;
             }
         }
     }
@@ -5133,7 +5219,7 @@ void mux_string::replace_Chars
     {
         for (size_t i = 0; i < nTo; i++)
         {
-            m_pcs[nStart + i] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+            m_pcs[nStart + i] = csNormal;
         }
     }
 
@@ -5276,12 +5362,12 @@ void mux_string::set_Color(size_t n, ANSI_ColorState csColor)
         return;
     }
     if (  0 == m_ncs
-       && 0 != memcmp(&csColor, &acsRestingStates[ANSI_ENDGOAL_NORMAL], sizeof(csColor)))
+       && 0 != memcmp(&csColor, &csNormal, sizeof(csColor)))
     {
         realloc_m_pcs(m_n);
         for (LBUF_OFFSET i = 0; i < m_n; i++)
         {
-            m_pcs[i] = acsRestingStates[ANSI_ENDGOAL_NORMAL];
+            m_pcs[i] = csNormal;
         }
     }
     if (0 != m_ncs)
