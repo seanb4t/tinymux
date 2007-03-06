@@ -604,7 +604,7 @@ const char *utf8_latin1[256] =
 // 219 included, 1113893 excluded, 0 errors.
 // 12 states, 26 columns, 568 bytes
 //
-const unsigned char print_itt[256] =
+const unsigned char cl_print_itt[256] =
 {
        0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
        0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
@@ -626,7 +626,7 @@ const unsigned char print_itt[256] =
 
 };
 
-const unsigned char print_stt[12][26] =
+const unsigned char cl_print_stt[12][26] =
 {
     {  12,  13,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,   1,   2,   3,   4,   5,   6,  10},
     {  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  12,  13,  13,  13,  13,  13,  13,  13,  13,  12,  12,  12,  12,  12,  12,  12},
@@ -5223,6 +5223,8 @@ void mux_string::replace_Chars
     size_t nTo = sTo.m_n;
     size_t nMove = 0;
     size_t nCopy = nTo;
+    size_t i;
+
     if (nLen != nTo)
     {
         nMove = m_n - (nStart + nLen);
@@ -5257,11 +5259,11 @@ void mux_string::replace_Chars
         else if (0 != sTo.m_ncs)
         {
             realloc_m_pcs(m_n);
-            for (size_t i = 0; i < nStart; i++)
+            for (i = 0; i < nStart; i++)
             {
                 m_pcs[i] = csNormal;
             }
-            for (size_t i = 0; i < nMove; i++)
+            for (i = 0; i < nMove; i++)
             {
                 m_pcs[i+nStart+nTo] = csNormal;
             }
@@ -5276,7 +5278,7 @@ void mux_string::replace_Chars
     }
     else if (0 != m_ncs)
     {
-        for (size_t i = 0; i < nTo; i++)
+        for (i = 0; i < nTo; i++)
         {
             m_pcs[nStart + i] = csNormal;
         }
