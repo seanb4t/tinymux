@@ -7195,7 +7195,6 @@ static FUNCTION(fun_terminfo)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    long nConnected = -1;
     DESC *d = NULL;
     if (is_rational(fargs[0]))
     {
@@ -7244,23 +7243,30 @@ static FUNCTION(fun_terminfo)
         }
     }
     
-    if (!d) {
+    if (!d)
+    {
         safe_str("#-1 NOT CONNECTED", buff, bufc);
         return;
     }
     
-    if (d->nvt_ttype_him_value) {
+    if (d->nvt_ttype_him_value)
+    {
         safe_str(d->nvt_ttype_him_value, buff, bufc);
         safe_str(" telnet", buff, bufc);
     }
-    else {
+    else
+    {
         safe_str("unknown", buff, bufc);
-        if (d->nvt_naws_him_state || d->nvt_sga_him_state || d->nvt_eor_him_state) {
+        if (  d->nvt_naws_him_state
+           || d->nvt_sga_him_state
+           || d->nvt_eor_him_state)
+        {
             safe_str(" telnet", buff, bufc);
         }
     }
     
-    if (Html(d->player)) {
+    if (Html(d->player))
+    {
         safe_str(" pueblo", buff, bufc);
     }
 }
@@ -9507,15 +9513,22 @@ static FUNCTION(fun_ord)
     UNUSED_PARAMETER(ncargs);
 
     size_t n;
-    char *p  = strip_ansi(fargs[0], &n);
-    if (n == 1)
+    UTF8 *p  = (UTF8 *)strip_ansi(fargs[0]);
+    if (utf8_strlen(p, n))
     {
-        unsigned char ch = p[0];
-        safe_ltoa(ch, buff, bufc);
+        if (1 == n)
+        {
+            UTF32 ch = ConvertFromUTF8(p);
+            safe_ltoa(ch, buff, bufc);
+        }
+        else
+        {
+            safe_str("#-1 FUNCTION EXPECTS ONE CHARACTER", buff, bufc);
+        }
     }
     else
     {
-        safe_str("#-1 FUNCTION EXPECTS ONE CHARACTER", buff, bufc);
+        safe_str("#-1 STRING IS INVALID", buff, bufc);
     }
 }
 
@@ -9540,15 +9553,12 @@ static FUNCTION(fun_chr)
         safe_str("#-1 ARGUMENT MUST BE A NUMBER", buff, bufc);
         return;
     }
+
     int ch = mux_atol(fargs[0]);
-    if (  ch < 0
-       || (int) UCHAR_MAX < ch)
+    UTF8 *p = ConvertToUTF8(ch);
+    if (mux_isprint(p))
     {
-        safe_str("#-1 THIS ISN'T UNICODE", buff, bufc);
-    }
-    else if (mux_isprint(ch))
-    {
-        safe_chr(ch, buff, bufc);
+        safe_str((char *)(p), buff, bufc);
     }
     else
     {
@@ -9576,7 +9586,7 @@ static FUNCTION(fun_stripaccents)
 
 // Base Letter: AaCcEeIiNnOoUuYy?!<>sPpD
 //
-static const unsigned char AccentCombo1[256] =
+static const unsigned char AccentCombo1[128] =
 {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 //
@@ -9588,20 +9598,11 @@ static const unsigned char AccentCombo1[256] =
    22, 0, 0, 0, 0,13, 0, 0, 0,15, 0, 0, 0, 0, 0, 0,  // 5
     0, 2, 0, 4, 0, 6, 0, 0, 0, 8, 0, 0, 0, 0,10,12,  // 6
    23, 0, 0,21, 0,14, 0, 0, 0,16, 0, 0, 0, 0, 0, 0,  // 7
-
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 8
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 9
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // A
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // B
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // C
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // D
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // E
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   // F
 };
 
 // Accent:      `'^~:o,u"B|-&Ee
 //
-static const unsigned char AccentCombo2[256] =
+static const unsigned char AccentCombo2[128] =
 {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 //
@@ -9613,15 +9614,6 @@ static const unsigned char AccentCombo2[256] =
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0,  // 5
     1, 0, 0, 0, 0,15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6,  // 6
     0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0,11, 0, 4, 0,  // 7
-
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 8
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 9
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // A
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // B
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // C
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // D
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // E
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   // F
 };
 
 static const unsigned char AccentCombo3[24][16] =
@@ -9670,36 +9662,50 @@ static FUNCTION(fun_accent)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    size_t n = strlen(fargs[0]);
-    if (n != strlen(fargs[1]))
+    const UTF8 *p = (UTF8 *)fargs[0];
+    const UTF8 *q = (UTF8 *)fargs[1];
+
+    size_t n0, n1;
+    if (  !utf8_strlen(p, n0)
+       || !utf8_strlen(q, n1))
+    {
+        safe_str("#-1 STRINGS ARE INVALID", buff, bufc);
+        return;
+    }
+
+    if (n0 != n1)
     {
         safe_str("#-1 STRING LENGTHS MUST BE EQUAL", buff, bufc);
         return;
     }
 
-    const unsigned char *p = (unsigned char *)fargs[0];
-    const unsigned char *q = (unsigned char *)fargs[1];
-
-    while (*p)
+    while ('\0' != *p)
     {
-        unsigned char ch = '\0';
-        unsigned char ch0 = AccentCombo1[(unsigned char)*p];
-        if (0 < ch0)
+        UTF8 ch = '\0';
+        UTF8 ch0 = *p;
+        if (  UTF8_SIZE1 == utf8_FirstByte[ch0]
+           && (0 < (ch0 = AccentCombo1[ch0])))
         {
-            unsigned char ch1 = AccentCombo2[(unsigned char)*q];
-            if (0 < ch1)
+            UTF8 ch1 = *q;
+            if (  UTF8_SIZE1 == utf8_FirstByte[ch1]
+               && (0 < (ch1 = AccentCombo2[ch1])))
             {
                 ch  = AccentCombo3[ch0-1][ch1];
             }
         }
-        if (!mux_isprint(ch))
-        {
-            ch = *p;
-        }
-        safe_chr(ch, buff, bufc);
 
-        p++;
-        q++;
+        const UTF8 *t = utf8_latin1(ch);
+        if (mux_isprint(t))
+        {
+            utf8_safe_chr(t, buff, bufc);
+        }
+        else
+        {
+            utf8_safe_chr(p, buff, bufc);
+        }
+
+        p = utf8_NextCodePoint(p);
+        q = utf8_NextCodePoint(q);
     }
 }
 

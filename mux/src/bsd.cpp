@@ -298,7 +298,7 @@ static DWORD WINAPI SlaveProc(LPVOID lpParameter)
                                         bAllDone = true;
                                         break;
                                     }
-                                    if (mux_isprint(*p))
+                                    if (mux_isprint_old(*p))
                                     {
                                         szIdent[nIdent++] = *p;
                                     }
@@ -2337,6 +2337,8 @@ DESC *initializesock(SOCKET s, struct sockaddr_in *a)
     d->raw_input_at = NULL;
     d->nOption = 0;
     d->raw_input_state = NVT_IS_NORMAL;
+    d->raw_codepoint_state = CL_PRINT_START_STATE;
+    d->raw_codepoint_length = 0;
     d->nvt_sga_him_state = OPTION_NO;
     d->nvt_sga_us_state = OPTION_NO;
     d->nvt_eor_him_state = OPTION_NO;
@@ -3110,8 +3112,8 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
         d->raw_input_at = d->raw_input->cmd;
     }
 
-    int nInputBytes = 0;
-    int nLostBytes  = 0;
+    size_t nInputBytes = 0;
+    size_t nLostBytes  = 0;
 
     char *p    = d->raw_input_at;
     char *pend = d->raw_input->cmd + (LBUF_SIZE - sizeof(CBLKHDR) - 1);
@@ -3127,19 +3129,48 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
         switch (iAction)
         {
         case 1:
+            // TODO: This needs to be gated on the client's ability to handle UTF8.
+            // We need to negotiate it.
+            //
             // Action 1 - Accept CHR(X).
             //
-            if (mux_isprint(ch))
+            d->raw_codepoint_state = cl_print_stt[d->raw_codepoint_state][cl_print_itt[ch]];
+            if (  1 == d->raw_codepoint_state - CL_PRINT_ACCEPTING_STATES_START
+               && p < pend)
             {
-                if (p < pend)
+                // Save the byte and reset the state machine.  This is
+                // the most frequently-occuring case.
+                //
+                *p++ = ch;
+                nInputBytes += d->raw_codepoint_length + 1;
+                d->raw_codepoint_length = 0;
+                d->raw_codepoint_state = CL_PRINT_START_STATE;
+            }
+            else if (  d->raw_codepoint_state < CL_PRINT_ACCEPTING_STATES_START
+                    && p < pend)
+            {
+                // Save the byte and we're done for now.
+                //
+                *p++ = ch;
+                d->raw_codepoint_length++;
+            }
+            else
+            {
+                // The code point is not printable or there isn't enough room.
+                // Back out any bytes in this code point.
+                //
+                if (pend <= p)
                 {
-                    *p++ = ch;
-                    nInputBytes++;
+                    nLostBytes += d->raw_codepoint_length + 1;
                 }
-                else
+
+                p -= d->raw_codepoint_length;
+                if (p < d->raw_input->cmd)
                 {
-                    nLostBytes++;
+                    p = d->raw_input->cmd;
                 }
+                d->raw_codepoint_length = 0;
+                d->raw_codepoint_state = CL_PRINT_START_STATE;
             }
             d->raw_input_state = NVT_IS_NORMAL;
             break;
@@ -3377,7 +3408,7 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
                 switch (d->aOption[0])
                 {
                 case TELNET_NAWS:
-                    if (m == 5)
+                    if (5 == m)
                     {
                         d->width  = (d->aOption[1] << 8 ) | d->aOption[2];
                         d->height = (d->aOption[3] << 8 ) | d->aOption[4];
@@ -3385,15 +3416,21 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
                     break;
                     
                 case TELNET_TTYPE:
-                    if (d->aOption[1] == TELNETSB_IS) {
-                        if (d->nvt_ttype_him_value) {
+                    if (TELNETSB_IS == d->aOption[1])
+                    {
+                        if (d->nvt_ttype_him_value)
+                        {
                             free(d->nvt_ttype_him_value);
                             d->nvt_ttype_him_value = NULL;
                         }
-                        d->nvt_ttype_him_value = (char *)malloc(m);
-                        memset(d->nvt_ttype_him_value,0,m);
-                        // Skip past the TTYPE bit and the TELQUAL_IS bit...
-                        memcpy(d->nvt_ttype_him_value,&d->aOption[2],m - 2);
+                        
+                        // Skip past the TTYPE and TELQUAL_IS bytes.
+                        //
+                        size_t nTermType = m-2;
+                        unsigned char *pTermType = &d->aOption[2];
+                        d->nvt_ttype_him_value = (char *)malloc(nTermType+1);
+                        memcpy(d->nvt_ttype_him_value, pTermType, nTermType);
+                        d->nvt_ttype_him_value[nTermType] = '\0';
                     }
                     break;
                 }

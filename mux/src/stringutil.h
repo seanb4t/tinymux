@@ -8,7 +8,7 @@
 #ifndef STRINGUTIL_H
 #define STRINGUTIL_H
 
-extern const bool mux_isprint[256];
+extern const bool mux_isprint_old[256];
 extern const bool mux_isdigit[256];
 extern const bool mux_isxdigit[256];
 extern const bool mux_isazAZ[256];
@@ -28,7 +28,17 @@ extern const unsigned char mux_toupper[256];
 extern const unsigned char mux_tolower[256];
 extern const unsigned char mux_StripAccents[256];
 
-#define mux_isprint(x) (mux_isprint[(unsigned char)(x)])
+#define UTF8_SIZE1     1
+#define UTF8_SIZE2     2
+#define UTF8_SIZE3     3
+#define UTF8_SIZE4     4
+#define UTF8_CONTINUE  5
+#define UTF8_ILLEGAL   6
+extern const unsigned char utf8_FirstByte[256];
+extern const char *utf8_latin1[256];
+#define utf8_latin1(x) ((const UTF8 *)utf8_latin1[(unsigned char)x])
+
+#define mux_isprint_old(x) (mux_isprint_old[(unsigned char)(x)])
 #define mux_isdigit(x) (mux_isdigit[(unsigned char)(x)])
 #define mux_isxdigit(x)(mux_isxdigit[(unsigned char)(x)])
 #define mux_isazAZ(x)  (mux_isazAZ[(unsigned char)(x)])
@@ -48,6 +58,102 @@ extern const unsigned char mux_StripAccents[256];
 #define mux_issecure(x)           (mux_issecure[(unsigned char)(x)])
 #define mux_isescape(x)           (mux_isescape[(unsigned char)(x)])
 #define mux_StripAccents(x)       (mux_StripAccents[(unsigned char)(x)])
+
+#define UNI_EOF ((UTF32)-1)
+
+#define UNI_REPLACEMENT_CHAR ((UTF32)0x0000FFFDUL)
+#define UNI_MAX_BMP          ((UTF32)0x0000FFFFUL)
+#define UNI_MAX_UTF16        ((UTF32)0x0010FFFFUL)
+#define UNI_MAX_UTF32        ((UTF32)0x7FFFFFFFUL)
+#define UNI_MAX_LEGAL_UTF32  ((UTF32)0x0010FFFFUL)
+#define UNI_SUR_HIGH_START   ((UTF32)0x0000D800UL)
+#define UNI_SUR_HIGH_END     ((UTF32)0x0000DBFFUL)
+#define UNI_SUR_LOW_START    ((UTF32)0x0000DC00UL)
+#define UNI_SUR_LOW_END      ((UTF32)0x0000DFFFUL)
+#define UNI_PU1_START        ((UTF32)0x0000E000UL)
+#define UNI_PU1_END          ((UTF32)0x0000F8FFUL)
+#define UNI_PU2_START        ((UTF32)0x000F0000UL)
+#define UNI_PU2_END          ((UTF32)0x000FFFFDUL)
+#define UNI_PU3_START        ((UTF32)0x00100000UL)
+#define UNI_PU3_END          ((UTF32)0x0010FFFDUL)
+
+#define utf8_NextCodePoint(x)      (x + utf8_FirstByte[(unsigned char)*x])
+
+// utf/cl_Printable.txt
+//
+// 219 included, 1113893 excluded, 0 errors.
+// 12 states, 26 columns, 568 bytes
+//
+#define CL_PRINT_START_STATE (0)
+#define CL_PRINT_ACCEPTING_STATES_START (12)
+extern const unsigned char cl_print_itt[256];
+extern const unsigned char cl_print_stt[12][26];
+
+inline bool mux_isprint(const unsigned char *p)
+{
+    int iState = CL_PRINT_START_STATE;
+    do
+    {
+        unsigned char ch = *p++;
+        iState = cl_print_stt[iState][cl_print_itt[(unsigned char)ch]];
+    } while (iState < CL_PRINT_ACCEPTING_STATES_START);
+    return ((iState - CL_PRINT_ACCEPTING_STATES_START) == 1) ? true : false;
+}
+
+// utf/cl_AttrNameInitial.txt
+//
+// 129 included, 1113983 excluded, 0 errors.
+// 5 states, 10 columns, 306 bytes
+//
+#define CL_ATTRNAMEINITIAL_START_STATE (0)
+#define CL_ATTRNAMEINITIAL_ACCEPTING_STATES_START (5)
+extern const unsigned char cl_attrnameinitial_itt[256];
+extern const unsigned char cl_attrnameinitial_stt[5][10];
+
+inline bool mux_isattrnameinitial(const unsigned char *p)
+{
+    int iState = CL_ATTRNAMEINITIAL_START_STATE;
+    do
+    {
+        unsigned char ch = *p++;
+        iState = cl_attrnameinitial_stt[iState][cl_attrnameinitial_itt[(unsigned char)ch]];
+    } while (iState < CL_ATTRNAMEINITIAL_ACCEPTING_STATES_START);
+    return ((iState - CL_ATTRNAMEINITIAL_ACCEPTING_STATES_START) == 1) ? true : false;
+}
+
+// utf/cl_AttrName.txt
+//
+// 155 included, 1113957 excluded, 0 errors.
+// 5 states, 10 columns, 306 bytes
+//
+#define CL_ATTRNAME_START_STATE (0)
+#define CL_ATTRNAME_ACCEPTING_STATES_START (5)
+extern const unsigned char cl_attrname_itt[256];
+extern const unsigned char cl_attrname_stt[5][10];
+
+inline bool mux_isattrname(const unsigned char *p)
+{
+    int iState = CL_ATTRNAME_START_STATE;
+    do
+    {
+        unsigned char ch = *p++;
+        iState = cl_attrname_stt[iState][cl_attrname_itt[(unsigned char)ch]];
+    } while (iState < CL_ATTRNAME_ACCEPTING_STATES_START);
+    return ((iState - CL_ATTRNAME_ACCEPTING_STATES_START) == 1) ? true : false;
+}
+
+// utf/tr_UTF8_Latin1.txt
+//
+// 224 code points.
+// 10 states, 171 columns, 3676 bytes
+//
+#define TR_LATIN_START_STATE (0)
+#define TR_LATIN_ACCEPTING_STATES_START (10)
+extern const unsigned char tr_latin_itt[256];
+extern const unsigned short tr_latin_stt[10][171];
+const char *ConvertToLatin(const UTF8 *pString);
+
+bool utf8_strlen(const UTF8 *pString, size_t &nString);
 
 int ANSI_lex(size_t nString, const char *pString, size_t *nLengthToken0, size_t *nLengthToken1);
 #define TOKEN_TEXT_ANSI 0 // Text sequence + optional ANSI sequence.
@@ -103,7 +209,7 @@ struct ANSI_In_Context
 
 struct ANSI_Out_Context
 {
-    int             m_iEndGoal;
+    bool            m_bNoBleed;
     ANSI_ColorState m_cs;
     bool            m_bDone; // some constraint was met.
     char           *m_p;
@@ -113,16 +219,12 @@ struct ANSI_Out_Context
     size_t          m_vwMax;
 };
 
-#define ANSI_ENDGOAL_NORMAL  0
-#define ANSI_ENDGOAL_NOBLEED 1
-#define ANSI_ENDGOAL_LEAK    2
-
-void ANSI_String_In_Init(struct ANSI_In_Context *pacIn, const char *szString, int iEndGoal);
-void ANSI_String_Out_Init(struct ANSI_Out_Context *pacOut, char *pField, size_t nField, size_t vwMax, int iEndGoal);
-void ANSI_String_Copy(struct ANSI_Out_Context *pacOut, struct ANSI_In_Context *pacIn, size_t vwMax);
+void ANSI_String_In_Init(struct ANSI_In_Context *pacIn, const char *szString, bool bNoBleed = false);
+void ANSI_String_Out_Init(struct ANSI_Out_Context *pacOut, char *pField, size_t nField, size_t vwMax, bool bNoBleed = false);
+void ANSI_String_Copy(struct ANSI_Out_Context *pacOut, struct ANSI_In_Context *pacIn);
 size_t ANSI_String_Finalize(struct ANSI_Out_Context *pacOut, size_t *pnVisualWidth);
 char *ANSI_TruncateAndPad_sbuf(const char *pString, size_t nMaxVisualWidth, char fill = ' ');
-size_t ANSI_TruncateToField(const char *szString, size_t nField, char *pField, size_t maxVisual, size_t *nVisualWidth, int iEndGoal);
+size_t ANSI_TruncateToField(const char *szString, size_t nField, char *pField, size_t maxVisual, size_t *nVisualWidth, bool bNoBleed = false);
 char *strip_ansi(const char *szString, size_t *pnString = 0);
 char *strip_accents(const char *szString, size_t *pnString = 0);
 char *normal_to_white(const char *);
@@ -151,6 +253,9 @@ void safe_copy_str(const char *src, char *buff, char **bufp, size_t nSizeOfBuffe
 void safe_copy_str_lbuf(const char *src, char *buff, char **bufp);
 size_t safe_copy_buf(const char *src, size_t nLen, char *buff, char **bufp);
 size_t safe_fill(char *buff, char **bufc, char chFile, size_t nSpaces);
+void utf8_safe_chr(const UTF8 *src, char *buff, char **bufp);
+UTF8 *ConvertToUTF8(UTF32 ch);
+UTF32 ConvertFromUTF8(const UTF8 *p);
 void mux_strncpy(char *dest, const char *src, size_t nSizeOfBuffer);
 bool matches_exit_from_list(char *, const char *);
 char *translate_string(const char *, bool);
@@ -280,7 +385,7 @@ public:
         size_t nStart = 0,
         size_t nLen = LBUF_SIZE,
         size_t nBuffer = (LBUF_SIZE-1),
-        int iEndGoal = ANSI_ENDGOAL_NORMAL
+        bool bNoBleed = false
     ) const;
     void export_TextPlain
     (

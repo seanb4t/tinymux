@@ -764,7 +764,7 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
                 tstr = getstring_noalloc(f, true, &nBuffer);
                 buff = alloc_lbuf("dbread.s_Name");
                 (void)ANSI_TruncateToField(tstr, MBUF_SIZE, buff, MBUF_SIZE,
-                    &nVisualWidth, ANSI_ENDGOAL_NORMAL);
+                    &nVisualWidth);
                 s_Name(i, buff);
                 free_lbuf(buff);
 
@@ -932,7 +932,7 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
             return -1;
 
         default:
-            if (mux_isprint(ch))
+            if (mux_isprint_old(ch))
             {
                 Log.tinyprintf(ENDLINE "Illegal character '%c' near object #%d" ENDLINE, ch, i);
             }
