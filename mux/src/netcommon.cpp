@@ -503,10 +503,10 @@ void queue_string(DESC *d, const char *s)
         p = strip_accents(p);
     }
 
-    // TODO: This needs to be gated on the client's ability to handle UTF8.
-    // We need to negotiate it.
-    //
-    //p = ConvertToLatin((UTF8 *)p);
+
+    if (!d->nvt_charset_utf8)
+    	p = ConvertToLatin((UTF8 *)p);
+
     p = encode_iac(p);
     queue_write(d, p);
 }
@@ -538,10 +538,8 @@ void queue_string(DESC *d, const mux_string &s)
         pFinal = strip_accents(Buffer);
     }
 
-    // TODO: This needs to be gated on the client's ability to handle UTF8.
-    // We need to negotiate it.
-    //
-    //pFinal = ConvertToLatin((UTF8 *)pFinal);
+    if (!d->nvt_charset_utf8)
+	    pFinal = ConvertToLatin((UTF8 *)pFinal);
     pFinal = encode_iac(pFinal);
     queue_write(d, pFinal);
 }
@@ -2372,7 +2370,7 @@ static bool check_connect(DESC *d, char *msg)
             }
             else
             {
-                buff = atr_get(player, A_LAST, &aowner, &aflags);
+                buff = atr_get("check_connect.2375", player, A_LAST, &aowner, &aflags);
                 if (*buff == '\0')
                     fcache_dump(d, FC_CREA_NEW);
                 else
@@ -3260,7 +3258,7 @@ void fetch_ConnectionInfoFields(dbref target, long anFields[4])
 {
     dbref aowner;
     int   aflags;
-    char *pConnInfo = atr_get(target, A_CONNINFO, &aowner, &aflags);
+    char *pConnInfo = atr_get("fetch_ConnectionInfoFields.3263", target, A_CONNINFO, &aowner, &aflags);
     char *aFields[5];
     ParseConnectionInfoString(pConnInfo, aFields);
 
@@ -3302,7 +3300,7 @@ long fetch_ConnectionInfoField(dbref target, int iField)
 {
     dbref aowner;
     int   aflags;
-    char *pConnInfo = atr_get(target, A_CONNINFO, &aowner, &aflags);
+    char *pConnInfo = atr_get("fetch_ConnectionInfoField.3305", target, A_CONNINFO, &aowner, &aflags);
     char *aFields[5];
     ParseConnectionInfoString(pConnInfo, aFields);
 
@@ -3322,7 +3320,7 @@ CLinearTimeAbsolute fetch_logouttime(dbref target)
 {
     dbref aowner;
     int   aflags;
-    char *pConnInfo = atr_get(target, A_CONNINFO, &aowner, &aflags);
+    char *pConnInfo = atr_get("fetch_logouttime.3325", target, A_CONNINFO, &aowner, &aflags);
     char *aFields[5];
     ParseConnectionInfoString(pConnInfo, aFields);
 
