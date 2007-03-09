@@ -591,7 +591,8 @@ void freeqs(DESC *d)
     d->nvt_naws_us_state  = OPTION_NO;
     d->nvt_ttype_him_state = OPTION_NO;
     d->nvt_ttype_us_state = OPTION_NO;
-    if (d->nvt_ttype_him_value) {
+    if (d->nvt_ttype_him_value)
+    {
         free(d->nvt_ttype_him_value);
         d->nvt_ttype_him_value = NULL;
     }
@@ -873,11 +874,12 @@ static void announce_connect(dbref player, DESC *d)
     
     // Check for UNICODE forced on
     //
-    if (Unicode(player)) {
-	    DESC_ITER_PLAYER(player, dtemp)
-    	{
-        	dtemp->nvt_charset_utf8 = true;
-	    } 	
+    if (Unicode(player))
+    {
+        DESC_ITER_PLAYER(player, dtemp)
+        {
+            dtemp->nvt_charset_utf8 = true;
+        }
     }
 
     // Reset vacation flag.
