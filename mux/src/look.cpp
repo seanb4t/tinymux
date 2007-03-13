@@ -93,7 +93,7 @@ static int WhichRealm(dbref what, bool bPeering)
         char *buff;
         dbref owner;
         int flags;
-        int iPeeringRealm = get_atr("PEERING_REALM");
+        int iPeeringRealm = get_atr((UTF8 *)"PEERING_REALM");
         if (0 < iPeeringRealm)
         {
             buff = atr_get("WhichRealm.99", what, iPeeringRealm, &owner, &flags);
@@ -123,7 +123,7 @@ static int HandleObfuscation(dbref looker, dbref lookee, int threshhold)
         int iObfuscateLevel = 0;
         dbref owner;
         int flags;
-        buff = atr_get("HandleObfuscation.126", lookee, get_atr("OBF_LEVEL"), &owner, &flags);
+        buff = atr_get("HandleObfuscation.126", lookee, get_atr((UTF8 *)"OBF_LEVEL"), &owner, &flags);
         if (*buff)
         {
             iObfuscateLevel = mux_atol(buff);
@@ -142,7 +142,7 @@ static int HandleObfuscation(dbref looker, dbref lookee, int threshhold)
             int iHeightenSensesLevel = 0;
             if (isHeightenedSenses(looker))
             {
-                buff = atr_get("HandleObfuscation.145", looker, get_atr("HSS_LEVEL"), &owner, &flags);
+                buff = atr_get("HandleObfuscation.145", looker, get_atr((UTF8 *)"HSS_LEVEL"), &owner, &flags);
                 if (*buff)
                 {
                     iHeightenSensesLevel = mux_atol(buff);
@@ -343,24 +343,24 @@ static void LetDescriptionsDefault(dbref thing, int *piDESC, int *piADESC, int R
     switch (RealmDirective & REALM_DO_MASK)
     {
     case REALM_DO_SHOW_OBFDESC:
-        iDesc = get_atr("OBFDESC");
+        iDesc = get_atr((UTF8 *)"OBFDESC");
         break;
 
     case REALM_DO_SHOW_WRAITHDESC:
-        iDesc = get_atr("WRAITHDESC");
+        iDesc = get_atr((UTF8 *)"WRAITHDESC");
         *piADESC = 0;
         break;
 
     case REALM_DO_SHOW_UMBRADESC:
-        iDesc = get_atr("UMBRADESC");
+        iDesc = get_atr((UTF8 *)"UMBRADESC");
         break;
 
     case REALM_DO_SHOW_MATRIXDESC:
-        iDesc = get_atr("MATRIXDESC");
+        iDesc = get_atr((UTF8 *)"MATRIXDESC");
         break;
 
     case REALM_DO_SHOW_FAEDESC:
-        iDesc = get_atr("FAEDESC");
+        iDesc = get_atr((UTF8 *)"FAEDESC");
         break;
     }
 
