@@ -661,7 +661,7 @@ const UTF8 *Moniker(dbref thing)
     // Compare accent-stripped, ansi-stripped version of @moniker against
     // accent-stripped, ansi-stripped version of @name.
     //
-    const UTF8 *pPureName = strip_accents(PureName(thing));
+    const UTF8 *pPureName = (UTF8 *)ConvertToAscii(PureName(thing));
     UTF8 *pPureNameCopy = StringClone(pPureName);
 
     size_t nMoniker;
@@ -669,7 +669,7 @@ const UTF8 *Moniker(dbref thing)
     int    aflags;
     UTF8 *pMoniker = atr_get_LEN(thing, A_MONIKER, &aowner, &aflags,
         &nMoniker);
-    UTF8 *pPureMoniker = strip_accents(strip_ansi(pMoniker));
+    const UTF8 *pPureMoniker = (UTF8 *)ConvertToAscii(strip_ansi(pMoniker));
 
     const UTF8 *pReturn = NULL;
     static UTF8 tbuff[LBUF_SIZE];
@@ -1567,9 +1567,9 @@ bool Commer(dbref thing)
 
     bool bFoundListens = false;
 
-    UTF8 *as;
     atr_push();
     UTF8 *buff = alloc_lbuf("Commer");
+    unsigned char *as;
     for (int atr = atr_head(thing, &as); atr; atr = atr_next(&as))
     {
         ATTR *ap = atr_num(atr);
@@ -2492,8 +2492,8 @@ void atr_free(dbref thing)
     db[thing].nALAlloc = 0;
     db[thing].nALUsed  = 0;
 #else // MEMORY_BASED
-    UTF8 *as;
     atr_push();
+    unsigned char *as;
     for (int atr = atr_head(thing, &as); atr; atr = atr_next(&as))
     {
         atr_clr(thing, atr);
@@ -2520,8 +2520,8 @@ void atr_cpy(dbref dest, dbref source, bool bInternal)
 {
     dbref owner = Owner(dest);
 
-    UTF8 *as;
     atr_push();
+    unsigned char *as;
     for (int atr = atr_head(source, &as); atr; atr = atr_next(&as))
     {
         int   aflags;
@@ -2569,8 +2569,8 @@ void atr_chown(dbref obj)
 {
     dbref owner = Owner(obj);
 
-    UTF8 *as;
     atr_push();
+    unsigned char *as;
     for (int atr = atr_head(obj, &as); atr; atr = atr_next(&as))
     {
         int   aflags;
@@ -2682,7 +2682,7 @@ int atr_head(dbref thing, unsigned char **attrp)
         ISOUTOFMEMORY(atr);
         atr->thing = thing;
         atr->count = 1;
-        *attrp = (char *)atr;
+        *attrp = (unsigned char *)atr;
         return db[thing].pALHead[0].number;
     }
     return 0;

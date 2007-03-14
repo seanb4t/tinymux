@@ -1445,7 +1445,7 @@ FUNCTION(fun_format)
     if (  fieldsize < 1
        || 80 < fieldsize)
     {
-        safe_str("#-1 ILLEGAL FIELDSIZE", buff, bufc);
+        safe_str((UTF8 *)"#-1 ILLEGAL FIELDSIZE", buff, bufc);
         return;
     }
 
@@ -1454,7 +1454,7 @@ FUNCTION(fun_format)
     strip_ansi(fargs[3], &n3);
     if (fieldsize + n2 + n3 > 79)
     {
-        safe_str("#-1 COMBINED FIELD TOO LARGE", buff, bufc);
+        safe_str((UTF8 *)"#-1 COMBINED FIELD TOO LARGE", buff, bufc);
         return;
     }
 
@@ -1473,16 +1473,16 @@ FUNCTION(fun_format)
 FUNCTION(fun_text)
 {
     FILE *textconf;
-    if (!mux_fopen(&textconf, "textfiles.conf", "r"))
+    if (!mux_fopen(&textconf, (UTF8 *)"textfiles.conf", (UTF8 *)"r"))
     {
         // Can't open the file.
         //
-        safe_str("#-1 TEXTFILES.CONF MISSING", buff, bufc);
+        safe_str((UTF8 *)"#-1 TEXTFILES.CONF MISSING", buff, bufc);
         return;
     }
 
     UTF8 mybuffer[80];
-    while (fgets(mybuffer, 80, textconf))
+    while (fgets((char *)mybuffer, 80, textconf))
     {
         int index = 0;
         while (mybuffer[index])
@@ -1501,15 +1501,15 @@ FUNCTION(fun_text)
         if (!strcmp((char *)mybuffer, (char *)fargs[0]))
         {
             FILE *myfile;
-            if (!mux_fopen(&myfile, fargs[0], "r"))
+            if (!mux_fopen(&myfile, fargs[0], (UTF8 *)"r"))
             {
                 /* But not here!? */
                 fclose(textconf);
-                safe_str("#-1 FILE DOES NOT EXIST",buff,bufc);
+                safe_str((UTF8 *)"#-1 FILE DOES NOT EXIST",buff,bufc);
                 return;
             }
 
-            while (fgets(mybuffer, 80, myfile))
+            while (fgets((char *)mybuffer, 80, myfile))
             {
                 index = 0;
                 while (mybuffer[index])
@@ -1526,7 +1526,7 @@ FUNCTION(fun_text)
 
                 if ('&' == mybuffer[0])
                 {
-                    if (!mux_stricmp(fargs[1]+strspn(fargs[1]," "), mybuffer+2))
+                    if (!mux_stricmp(fargs[1]+strspn((char *)fargs[1], " "), mybuffer+2))
                     {
                         /* At this point I've found the file and the entry */
                         int thischar;
@@ -1553,12 +1553,12 @@ FUNCTION(fun_text)
             }
             fclose(textconf);
             fclose(myfile);
-            safe_str("#-1 ENTRY NOT FOUND", buff, bufc);
+            safe_str((UTF8 *)"#-1 ENTRY NOT FOUND", buff, bufc);
             return;
         }
     }
     fclose(textconf);
-    safe_str("#-1 FILE NOT LISTED",buff,bufc);
+    safe_str((UTF8 *)"#-1 FILE NOT LISTED",buff,bufc);
 }
 
 #endif // FIRANMUX
@@ -4428,13 +4428,13 @@ static FUNCTION(fun_hasrxlevel)
     it = match_thing(executor, fargs[0]);
     if (!Good_obj(it))
     {
-        safe_str("#-1 NOT FOUND", buff, bufc);
+        safe_str((UTF8 *)"#-1 NOT FOUND", buff, bufc);
         return;
     }
     rl = find_rlevel(fargs[1]);
     if (!rl)
     {
-        safe_str("#-1 INVALID RLEVEL", buff, bufc);
+        safe_str((UTF8 *)"#-1 INVALID RLEVEL", buff, bufc);
         return;
     }
     if (Examinable(executor, it))
@@ -4450,7 +4450,7 @@ static FUNCTION(fun_hasrxlevel)
     }
     else
     {
-        safe_str("#-1 PERMISSION DENIED", buff, bufc);
+        safe_str((UTF8 *)"#-1 PERMISSION DENIED", buff, bufc);
     }
 }
 
@@ -4462,13 +4462,13 @@ static FUNCTION(fun_hastxlevel)
     it = match_thing(executor, fargs[0]);
     if (!Good_obj(it))
     {
-        safe_str("#-1 NOT FOUND", buff, bufc);
+        safe_str((UTF8 *)"#-1 NOT FOUND", buff, bufc);
         return;
     }
     rl = find_rlevel(fargs[1]);
     if (!rl)
     {
-        safe_str("#-1 INVALID RLEVEL", buff, bufc);
+        safe_str((UTF8 *)"#-1 INVALID RLEVEL", buff, bufc);
         return;
     }
     if (Examinable(executor, it))
@@ -4484,7 +4484,7 @@ static FUNCTION(fun_hastxlevel)
     }
     else
     {
-        safe_str("#-1 PERMISSION DENIED", buff, bufc);
+        safe_str((UTF8 *)"#-1 PERMISSION DENIED", buff, bufc);
     }
 }
 
@@ -4505,7 +4505,7 @@ static FUNCTION(fun_listrlevels)
     }
     if (mudconf.no_levels < 1)
     {
-        safe_str("#-1 NO REALITY LEVELS DEFINED", buff, bufc);
+        safe_str((UTF8 *)"#-1 NO REALITY LEVELS DEFINED", buff, bufc);
     }
     else
     {
@@ -4531,23 +4531,27 @@ static FUNCTION(fun_rxlevel)
     it = match_thing(executor, fargs[0]);
     if (!Good_obj(it))
     {
-        safe_str("#-1 NOT FOUND", buff, bufc);
+        safe_str((UTF8 *)"#-1 NOT FOUND", buff, bufc);
         return;
     }
     if (Examinable(executor, it))
     {
         lev = RxLevel(it);
         levelbuff[0]='\0';
-        for(i = 0; i < mudconf.no_levels; ++i)
-            if((lev & mudconf.reality_level[i].value) == mudconf.reality_level[i].value)
+        for (i = 0; i < mudconf.no_levels; ++i)
+        {
+            if ((lev & mudconf.reality_level[i].value) == mudconf.reality_level[i].value)
             {
-                strcat(levelbuff, mudconf.reality_level[i].name);
-                strcat(levelbuff, " ");
+                strcat((char *)levelbuff, (char *)mudconf.reality_level[i].name);
+                strcat((char *)levelbuff, " ");
             }
+        }
         safe_tprintf_str(buff, bufc, "%s", levelbuff);
     }
     else
-        safe_str("#-1 PERMISSION DENIED", buff, bufc);
+    {
+        safe_str((UTF8 *)"#-1 PERMISSION DENIED", buff, bufc);
+    }
 }
 
 static FUNCTION(fun_txlevel)
@@ -4560,7 +4564,7 @@ static FUNCTION(fun_txlevel)
     it = match_thing(executor, fargs[0]);
     if (!Good_obj(it))
     {
-        safe_str("#-1 NOT FOUND", buff, bufc);
+        safe_str((UTF8 *)"#-1 NOT FOUND", buff, bufc);
         return;
     }
     if (Examinable(executor, it))
@@ -4570,13 +4574,13 @@ static FUNCTION(fun_txlevel)
         for(i = 0; i < mudconf.no_levels; ++i)
             if((lev & mudconf.reality_level[i].value) == mudconf.reality_level[i].value)
             {
-                strcat(levelbuff, mudconf.reality_level[i].name);
-                strcat(levelbuff, " ");
+                strcat((char *)levelbuff, (char *)mudconf.reality_level[i].name);
+                strcat((char *)levelbuff, " ");
             }
         safe_tprintf_str(buff, bufc, "%s", levelbuff);
     }
     else
-        safe_str("#-1 PERMISSION DENIED", buff, bufc);
+        safe_str((UTF8 *)"#-1 PERMISSION DENIED", buff, bufc);
 }
 #endif // REALITY_LVLS
 
@@ -5102,7 +5106,7 @@ static FUNCTION(fun_lcstr)
 
     mux_string *sStr = new mux_string(fargs[0]);
 
-    sStr->transformWithTable(mux_tolower);
+    sStr->transform_Ascii(mux_tolower_ascii);
     sStr->export_TextAnsi(buff, bufc);
 
     delete sStr;
@@ -5120,7 +5124,7 @@ static FUNCTION(fun_ucstr)
 
     mux_string *sStr = new mux_string(fargs[0]);
 
-    sStr->transformWithTable(mux_toupper);
+    sStr->transform_Ascii(mux_toupper_ascii);
     sStr->export_TextAnsi(buff, bufc);
 
     delete sStr;
@@ -5138,7 +5142,7 @@ static FUNCTION(fun_capstr)
 
     mux_string *sStr = new mux_string(fargs[0]);
 
-    sStr->transformWithTable(mux_toupper, 0, 1);
+    sStr->transform_Ascii(mux_toupper_ascii, 0, 1);
     sStr->export_TextAnsi(buff, bufc);
 
     delete sStr;
@@ -6438,7 +6442,7 @@ FUNCTION(fun_sql)
 {
     if (!mush_database)
     {
-        safe_str("#-1 NO DATABASE", buff, bufc);
+        safe_str((UTF8 *)"#-1 NO DATABASE", buff, bufc);
         return;
     }
 
@@ -6472,14 +6476,14 @@ FUNCTION(fun_sql)
     if (mysql_ping(mush_database))
     {
         free_lbuf(curr);
-        safe_str("#-1 SQL UNAVAILABLE", buff, bufc);
+        safe_str((UTF8 *)"#-1 SQL UNAVAILABLE", buff, bufc);
         return;
     }
 
-    if (mysql_real_query(mush_database, cp, strlen((char *)cp)))
+    if (mysql_real_query(mush_database, (char *)cp, strlen((char *)cp)))
     {
         free_lbuf(curr);
-        safe_str("#-1 QUERY ERROR", buff, bufc);
+        safe_str((UTF8 *)"#-1 QUERY ERROR", buff, bufc);
         return;
     }
 
@@ -6502,7 +6506,7 @@ FUNCTION(fun_sql)
             {
                 print_sep(&sepColumn, buff, bufc);
             }
-            safe_str(row[loop], buff, bufc);
+            safe_str((UTF8 *)row[loop], buff, bufc);
         }
         row = mysql_fetch_row(result);
         if (row)
