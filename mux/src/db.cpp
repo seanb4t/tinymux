@@ -242,6 +242,7 @@ ATTR AttrTableSpecial[] =
     {(UTF8 *)"*PASSWORD",   A_PASS,     AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
     {(UTF8 *)"*PRIVILEGES", A_PRIVS,    AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
     {(UTF8 *)"*MONEY",      A_MONEY,    AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {NULL,                  0,          0}
 };
 
 char *aszSpecialDBRefNames[1-NOPERM] =
@@ -1153,7 +1154,7 @@ UTF8 *MakeCanonicalAttributeCommand(const UTF8 *pName, size_t *pnName, bool *pbV
     }
 
     static UTF8 Buffer[SBUF_SIZE];
-    int nLeft = SBUF_SIZE-2;
+    size_t nLeft = SBUF_SIZE-2;
     UTF8 *p = Buffer;
     size_t n;
 
@@ -3535,6 +3536,7 @@ void load_restart_db(void)
         memset(d->nvt_him_state, OPTION_NO, 256);
         memset(d->nvt_us_state, OPTION_NO, 256);
         d->raw_codepoint_length = 0;
+        d->ttype = NULL;
         if (3 == version)
         {
             d->raw_input_state              = getref(f);
