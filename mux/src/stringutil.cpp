@@ -1440,54 +1440,6 @@ int ANSI_lex(size_t nString, const UTF8 *pString, size_t *nLengthToken0, size_t 
     }
 }
 
-UTF8 *strip_ansi(const UTF8 *szString, size_t *pnString)
-{
-    static UTF8 Buffer[LBUF_SIZE];
-    UTF8 *pBuffer = Buffer;
-
-    const UTF8 *pString = szString;
-    if (!pString)
-    {
-        if (pnString)
-        {
-            *pnString = 0;
-        }
-        *pBuffer = '\0';
-        return Buffer;
-    }
-    size_t nString = strlen((char *)szString);
-
-    while (nString)
-    {
-        size_t nTokenLength0;
-        size_t nTokenLength1;
-        int iType = ANSI_lex(nString, pString, &nTokenLength0, &nTokenLength1);
-
-        if (iType == TOKEN_TEXT_ANSI)
-        {
-            memcpy(pBuffer, pString, nTokenLength0);
-            pBuffer += nTokenLength0;
-
-            size_t nSkipLength = nTokenLength0 + nTokenLength1;
-            nString -= nSkipLength;
-            pString += nSkipLength;
-        }
-        else
-        {
-            // TOKEN_ANSI
-            //
-            nString -= nTokenLength0;
-            pString += nTokenLength0;
-        }
-    }
-    if (pnString)
-    {
-        *pnString = pBuffer - Buffer;
-    }
-    *pBuffer = '\0';
-    return Buffer;
-}
-
 #define ANSI_COLOR_INDEX_BLACK     0
 #define ANSI_COLOR_INDEX_RED       1
 #define ANSI_COLOR_INDEX_GREEN     2
@@ -1736,11 +1688,21 @@ static UTF8 *ANSI_TransitionColorBinary
     return Buffer;
 }
 
-// The following is really 21 (%xn%xh%xu%xi%xf%xR%xr) but we are being conservative
+// Maximum binary transition length is:
 //
-#define ANSI_MAXIMUM_ESCAPE_TRANSITION_LENGTH 42
+//   COLOR_RESET      "%xn"
+// + COLOR_INTENSE    "%xh"
+// + COLOR_UNDERLINE  "%xu"
+// + COLOR_BLINK      "%xf"
+// + COLOR_INVERSE    "%xi"
+// + COLOR_FG_RED     "%xr"
+// + COLOR_BG_WHITE   "%xW"
+//
+// Each of the seven codes is 3 bytes or 21 bytes total.
+//
+#define ANSI_MAXIMUM_ESCAPE_TRANSITION_LENGTH 21
 
-// Generate the minimal MU ANSI %-sequence that will transition from one color state
+// Generate the minimal color %-sequence that will transition from one color state
 // to another.
 //
 static UTF8 *ANSI_TransitionColorEscape
@@ -2171,17 +2133,14 @@ UTF8 *convert_color(const UTF8 *pString, bool bNoBleed)
     while ('\0' != *pString)
     {
         unsigned int iCode = mux_color(pString);
-        if (iCode <= COLOR_LAST_CODE)
+        if (COLOR_UNDEFINED == iCode)
         {
-            if (COLOR_UNDEFINED == iCode)
-            {
-                utf8_safe_chr(pString, aBuffer, &pBuffer);
-            }
-            else
-            {
-                memcpy(pBuffer, aColorSequences[iCode].pAnsi, aColorSequences[iCode].nAnsi);
-                pBuffer += aColorSequences[iCode].nAnsi;
-            }
+            utf8_safe_chr(pString, aBuffer, &pBuffer);
+        }
+        else
+        {
+            memcpy(pBuffer, aColorSequences[iCode].pAnsi, aColorSequences[iCode].nAnsi);
+            pBuffer += aColorSequences[iCode].nAnsi;
         }
         pString = utf8_NextCodePoint(pString);
     }
@@ -2189,19 +2148,44 @@ UTF8 *convert_color(const UTF8 *pString, bool bNoBleed)
     return aBuffer;
 }
 
-UTF8 *strip_color(const UTF8 *pString)
+UTF8 *strip_color(const UTF8 *pString, size_t *pnBytes, size_t *pnPoints)
 {
     static UTF8 aBuffer[LBUF_SIZE];
     UTF8 *pBuffer = aBuffer;
+
+    if (NULL == pString)
+    {
+        if (NULL != pnBytes)
+        {
+            *pnBytes = 0;
+        }
+        if (NULL != pnPoints)
+        {
+            *pnPoints = 0;
+        }
+        *pBuffer = '\0';
+        return aBuffer;
+    }
+
+    size_t nPoints = 0;
     while ('\0' != *pString)
     {
         if (COLOR_UNDEFINED == mux_color(pString))
         {
             utf8_safe_chr(pString, aBuffer, &pBuffer);
+            nPoints++;
         }
         pString = utf8_NextCodePoint(pString);
     }
     *pBuffer = '\0';
+    if (NULL != pnBytes)
+    {
+        *pnBytes = pBuffer - aBuffer;
+    }
+    if (NULL != pnPoints)
+    {
+        *pnPoints = nPoints;
+    }
     return aBuffer;
 }
 
@@ -2819,7 +2803,7 @@ UTF8 *BufferCloneLen(const UTF8 *pBuffer, unsigned int nBuffer)
 #endif // 0
 
 /* ---------------------------------------------------------------------------
- * safe_copy_str, safe_copy_chr - Copy buffers, watching for overflows.
+ * safe_copy_str - Copy buffers, watching for overflows.
  */
 
 void safe_copy_str(const UTF8 *src, UTF8 *buff, UTF8 **bufp, size_t nSizeOfBuffer)
@@ -4290,7 +4274,7 @@ bool ItemToList_AddInteger64(ITL *pContext, INT64 i64)
     return true;
 }
 
-bool ItemToList_AddStringLEN(ITL *pContext, size_t nStr, UTF8 *pStr)
+bool ItemToList_AddStringLEN(ITL *pContext, size_t nStr, const UTF8 *pStr)
 {
     size_t nLen = nStr;
     if (  !pContext->bFirst
@@ -4327,9 +4311,9 @@ bool ItemToList_AddStringLEN(ITL *pContext, size_t nStr, UTF8 *pStr)
     return true;
 }
 
-bool ItemToList_AddString(ITL *pContext, UTF8 *pStr)
+bool ItemToList_AddString(ITL *pContext, const UTF8 *pStr)
 {
-    size_t nStr = strlen((char *)pStr);
+    size_t nStr = strlen((const char *)pStr);
     return ItemToList_AddStringLEN(pContext, nStr, pStr);
 }
 
@@ -4455,7 +4439,7 @@ size_t DCL_CDECL mux_vsnprintf(UTF8 *buff, size_t count, const char *fmt, va_lis
     size_t len;
 #if defined(WIN32)
 #if !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
-    int cc = vsnprintf_s(buff, count, _TRUNCATE, fmt, va);
+    int cc = vsnprintf_s((char *)buff, count, _TRUNCATE, fmt, va);
 #else // _MSC_VER
     int cc = _vsnprintf((char *)buff, count, fmt, va);
 #endif // _MSC_VER
@@ -5039,24 +5023,9 @@ mux_string::~mux_string(void)
     realloc_m_pcs(0);
 }
 
-void mux_string::append(const UTF8 cChar)
-{
-    if (m_n < LBUF_SIZE-1)
-    {
-        m_ach[m_n] = cChar;
-        if (0 != m_ncs)
-        {
-            realloc_m_pcs(m_n + 1);
-            m_pcs[m_n] = csNormal;
-        }
-        m_n++;
-        m_ach[m_n] = '\0';
-    }
-}
-
 void mux_string::append(dbref num)
 {
-    append('#');
+    append_TextPlain((const UTF8 *)"#", 1);
     append_TextPlain(mux_ltoa_t(num));
 }
 
@@ -5580,7 +5549,7 @@ void mux_string::export_TextAnsi
                 *bufc += nTransition;
                 csPrev = m_pcs[nPos];
             }
-            safe_copy_chr(m_ach[nPos], buff, bufc, nBuffer);
+            safe_copy_chr_ascii(m_ach[nPos], buff, bufc, nBuffer);
             nPos++;
         }
         if (0 != memcmp(&csPrev, &csEndGoal, sizeof(ANSI_ColorState)))
@@ -5632,7 +5601,7 @@ void mux_string::export_TextAnsi
             *bufc += nTransition;
             csPrev = m_pcs[nPos];
         }
-        safe_copy_chr(m_ach[nPos], buff, bufc, nBuffer);
+        safe_copy_chr_ascii(m_ach[nPos], buff, bufc, nBuffer);
         nPos++;
     }
     pTransition = ANSI_TransitionColorBinary( &csPrev, &csEndGoal,
@@ -5713,32 +5682,6 @@ void mux_string::export_TextPlain
     memcpy(*bufc, m_ach+nStart, nLen * sizeof(m_ach[0]));
     *bufc += nLen;
     **bufc = '\0';
-}
-
-/*! \brief Imports a single normal-colored character.
- *
- * Results in an empty mux_string if the specified character does
- * not form a valid one-character string, e.g. ESC or NUL.
- *
- * \param chIn     Normal character.
- * \return         None.
- */
-
-void mux_string::import(const UTF8 chIn)
-{
-    realloc_m_pcs(0);
-
-    if (  ESC_CHAR != chIn
-       && '\0' != chIn)
-    {
-        m_ach[0] = chIn;
-        m_n = 1;
-    }
-    else
-    {
-        m_n = 0;
-    }
-    m_ach[m_n] = '\0';
 }
 
 /*! \brief Converts and Imports a dbref.
@@ -6166,7 +6109,7 @@ bool mux_string::search
     // Strip ANSI from pattern.
     //
     size_t nPat = 0;
-    UTF8 *pPatBuf = strip_ansi(pPattern, &nPat);
+    UTF8 *pPatBuf = strip_color(pPattern, &nPat);
     const UTF8 *pTarget = m_ach + nStart;
 
     size_t i = 0;
@@ -6631,7 +6574,7 @@ LBUF_OFFSET mux_words::find_Words(void)
 LBUF_OFFSET mux_words::find_Words(const UTF8 *pDelim)
 {
     size_t nDelim = 0;
-    pDelim = strip_ansi(pDelim, &nDelim);
+    pDelim = strip_color(pDelim, &nDelim);
 
     size_t iPos = 0;
     LBUF_OFFSET iStart = 0;
