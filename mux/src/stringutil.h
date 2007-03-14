@@ -8,6 +8,8 @@
 #ifndef STRINGUTIL_H
 #define STRINGUTIL_H
 
+#define T(x)    ((const UTF8 *)x)
+
 extern const bool mux_isprint_ascii[256];
 extern const bool mux_isprint_latin1[256];
 extern const bool mux_isdigit[256];
@@ -368,9 +370,8 @@ void ANSI_String_Copy(struct ANSI_Out_Context *pacOut, struct ANSI_In_Context *p
 size_t ANSI_String_Finalize(struct ANSI_Out_Context *pacOut, size_t *pnVisualWidth);
 UTF8 *ANSI_TruncateAndPad_sbuf(const UTF8 *pString, size_t nMaxVisualWidth, UTF8 fill = ' ');
 size_t ANSI_TruncateToField(const UTF8 *szString, size_t nField, UTF8 *pField, size_t maxVisual, size_t *nVisualWidth, bool bNoBleed = false);
-UTF8 *strip_ansi(const UTF8 *szString, size_t *pnString = 0);
 UTF8 *convert_color(const UTF8 *pString, bool bNoBleed);
-UTF8 *strip_color(const UTF8 *pString);
+UTF8 *strip_color(const UTF8 *pString, size_t *pnLength = 0, size_t *pnPoints = 0);
 UTF8 *normal_to_white(const UTF8 *);
 UTF8 *munge_space(const UTF8 *);
 UTF8 *trim_spaces(UTF8 *);
@@ -397,7 +398,8 @@ void safe_copy_str(const UTF8 *src, UTF8 *buff, UTF8 **bufp, size_t nSizeOfBuffe
 void safe_copy_str_lbuf(const UTF8 *src, UTF8 *buff, UTF8 **bufp);
 size_t safe_copy_buf(const UTF8 *src, size_t nLen, UTF8 *buff, UTF8 **bufp);
 size_t safe_fill(UTF8 *buff, UTF8 **bufc, UTF8 chFile, size_t nSpaces);
-void utf8_safe_chr(const UTF8 *src, UTF8 *buff, UTF8 **bufp);
+void safe_chr_utf8(const UTF8 *src, UTF8 *buff, UTF8 **bufp);
+#define utf8_safe_chr safe_chr_utf8
 UTF8 *ConvertToUTF8(UTF32 ch);
 UTF8 *ConvertToUTF8(const char *p, size_t *pn);
 UTF32 ConvertFromUTF8(const UTF8 *p);
@@ -423,8 +425,8 @@ void ItemToList_Init(ITL *pContext, UTF8 *arg_buff, UTF8 **arg_bufc,
     UTF8 arg_chPrefix = 0, UTF8 arg_chSep = ' ');
 bool ItemToList_AddInteger(ITL *pContext, int i);
 bool ItemToList_AddInteger64(ITL *pContext, INT64 i);
-bool ItemToList_AddString(ITL *pContext, UTF8 *pStr);
-bool ItemToList_AddStringLEN(ITL *pContext, size_t nStr, UTF8 *pStr);
+bool ItemToList_AddString(ITL *pContext, const UTF8 *pStr);
+bool ItemToList_AddStringLEN(ITL *pContext, size_t nStr, const UTF8 *pStr);
 void ItemToList_Final(ITL *pContext);
 
 size_t DCL_CDECL mux_vsnprintf(UTF8 *buff, size_t count, const char *fmt, va_list va);
@@ -500,7 +502,6 @@ public:
     mux_string(const mux_string &sStr);
     mux_string(const UTF8 *pStr);
     ~mux_string(void);
-    void append(const UTF8 cChar);
     void append(dbref num);
     void append(INT64 iInt);
     void append(long lLong);
@@ -541,7 +542,6 @@ public:
         size_t nLen = LBUF_SIZE,
         size_t nBuffer = (LBUF_SIZE-1)
     ) const;
-    void import(const UTF8 chIn);
     void import(dbref num);
     void import(INT64 iInt);
     void import(long lLong);
@@ -605,7 +605,7 @@ public:
     static void * operator new(size_t size)
     {
         mux_assert(size == sizeof(mux_string));
-        return alloc_string((UTF8 *)"new");
+        return alloc_string("new");
     }
 
     static void operator delete(void *p)

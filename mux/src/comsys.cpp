@@ -694,12 +694,12 @@ void load_comsystem_V0123(FILE *fp)
 
             // Convert entire line to UTF-8 including ANSI escapes.
             //
-            UTF8 *pBufferUnicode = ConvertToUTF8((char *)temp, &nHeader);
+            pBufferUnicode = ConvertToUTF8((char *)temp, &nHeader);
             if (MAX_HEADER_LEN < nHeader)
             {
                 nHeader = MAX_HEADER_LEN;
                 while (  0 < nHeader
-                      && UTF8_CONTINUE <= utf8_FirstByte[(unsigned char)temp[nHeader-1]])
+                      && UTF8_CONTINUE <= utf8_FirstByte[(unsigned char)pBufferUnicode[nHeader-1]])
                 {
                     nHeader--;
                 }
@@ -1468,7 +1468,7 @@ void SendChannelMessage
                 atr_add(ch->chan_obj, pattr->number, mux_ltoa_t(logmax), GOD,
                     AF_CONST|AF_NOPROG|AF_NOPARSE);
             }
-            UTF8 *p = (UTF8 *)tprintf("HISTORY_%d", iMod(ch->num_messages, logmax));
+            UTF8 *p = tprintf("HISTORY_%d", iMod(ch->num_messages, logmax));
             int atr = mkattr(GOD, p);
             if (0 < atr)
             {
@@ -1747,7 +1747,7 @@ void do_comlast(dbref player, struct channel *ch, int arg)
     for (int count = 0; count < arg; count++)
     {
         histnum++;
-        pattr = atr_str((UTF8 *)tprintf("HISTORY_%d", iMod(histnum, logmax)));
+        pattr = atr_str(tprintf("HISTORY_%d", iMod(histnum, logmax)));
         if (pattr)
         {
             message = atr_get("do_comlast.1436", obj, pattr->number, &aowner, &aflags);
@@ -1797,7 +1797,7 @@ static bool do_chanlog(dbref player, UTF8 *channel, UTF8 *arg)
     {
         for (int count = 0; count <= oldnum; count++)
         {
-            ATTR *hist = atr_str((UTF8 *)tprintf("HISTORY_%d", count));
+            ATTR *hist = atr_str(tprintf("HISTORY_%d", count));
             if (hist)
             {
                 atr_clr(ch->chan_obj, hist->number);
@@ -2150,12 +2150,14 @@ void do_createchannel(dbref executor, dbref caller, dbref enactor, int eval, int
     }
     else
     {
-        // The given channel name does contain ANSI.
+        // The given channel name does contain color.
         //
         memcpy(newchannel->header, Buffer, nChannel+1);
-        pNameNoANSI = strip_ansi(Buffer, &nNameNoANSI);
+        pNameNoANSI = strip_color(Buffer, &nNameNoANSI);
     }
 
+    // TODO: Truncation needs to be fixed.
+    //
     if (nNameNoANSI > MAX_CHANNEL_LEN)
     {
         nNameNoANSI = MAX_CHANNEL_LEN;
@@ -2652,7 +2654,7 @@ void do_channelwho(dbref executor, dbref caller, dbref enactor, int eval, int ke
               || See_Hidden(executor)))
         {
             buff = unparse_object(executor, user->who, false);
-            mux_sprintf(temp, sizeof(temp), "%-29.29s %-6.6s %-6.6s", strip_ansi(buff),
+            mux_sprintf(temp, sizeof(temp), "%-29.29s %-6.6s %-6.6s", strip_color(buff),
                 user->bUserIsOn ? "on " : "off",
                 isPlayer(user->who) ? "yes" : "no ");
             raw_notify(executor, temp);
