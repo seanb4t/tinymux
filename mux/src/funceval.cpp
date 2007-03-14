@@ -58,7 +58,7 @@ bool parse_and_get_attrib
     if (!parse_attrib(executor, fargs[0], thing, &ap))
     {
         *thing = executor;
-        ap = atr_str((UTF8 *)fargs[0]);
+        ap = atr_str(fargs[0]);
     }
 
     // Make sure we got a good attribute.
@@ -731,7 +731,7 @@ FUNCTION(fun_set)
     if (*p)
     {
         *p++ = 0;
-        int atr = mkattr(executor, (UTF8 *)fargs[1]);
+        int atr = mkattr(executor, fargs[1]);
         if (atr <= 0)
         {
             safe_str((UTF8 *)"#-1 UNABLE TO CREATE ATTRIBUTE", buff, bufc);
@@ -795,8 +795,7 @@ static size_t GenCode(UTF8 *pCode, size_t nCode, const UTF8 *pCodeASCII)
 {
     // Strip out the ANSI.
     //
-    size_t nIn;
-    UTF8 *pIn = strip_ansi(pCodeASCII, &nIn);
+    UTF8 *pIn = strip_color(pCodeASCII);
 
     // Process the printable characters.
     //
@@ -837,7 +836,7 @@ static UTF8 *crypt_code(UTF8 *code, UTF8 *text, bool type)
     }
 
     static UTF8 textbuff[LBUF_SIZE];
-    UTF8 *p = strip_ansi(text);
+    UTF8 *p = strip_color(text);
     size_t nq = nCode;
     size_t ip = 0;
     size_t iq = 0;
@@ -1126,7 +1125,7 @@ FUNCTION(fun_stripansi)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    safe_str(strip_ansi(fargs[0]), buff, bufc);
+    safe_str(strip_color(fargs[0]), buff, bufc);
 }
 
 // Borrowed from PennMUSH 1.50
@@ -1153,7 +1152,7 @@ FUNCTION(fun_zfun)
 
     // Find the user function attribute.
     //
-    int attrib = get_atr((UTF8 *)fargs[0]);
+    int attrib = get_atr(fargs[0]);
     if (!attrib)
     {
         safe_str((UTF8 *)"#-1 NO SUCH USER FUNCTION", buff, bufc);
@@ -1305,7 +1304,7 @@ FUNCTION(fun_table)
     UTF8 *pPaddingEnd = NULL;
     if (nfargs == 6 && *fargs[5])
     {
-        pPaddingStart = strip_ansi(fargs[5]);
+        pPaddingStart = strip_color(fargs[5]);
         pPaddingEnd = (UTF8 *)strchr((char *)pPaddingStart, '\0');
     }
 
@@ -1484,7 +1483,7 @@ static size_t mem_usage(dbref thing)
     for (int ca = atr_head(thing, &as); ca; ca = atr_next(&as))
     {
         size_t nLen;
-        const UTF8 *str = (UTF8 *)atr_get_raw_LEN(thing, ca, &nLen);
+        const UTF8 *str = atr_get_raw_LEN(thing, ca, &nLen);
         k += nLen+1;
         ATTR *pattr = atr_num(ca);
         if (pattr)
@@ -2159,7 +2158,7 @@ static void hasattr_handler(UTF8 *buff, UTF8 **bufc, dbref executor, UTF8 *fargs
         return;
     }
 
-    ATTR *pattr = atr_str((UTF8 *)fargs[1]);
+    ATTR *pattr = atr_str(fargs[1]);
     bool result = false;
     if (pattr)
     {
@@ -2248,7 +2247,7 @@ static void default_handler(UTF8 *buff, UTF8 **bufc, dbref executor,
     if (!parse_attrib(executor, objattr, &thing, &pattr))
     {
         thing = executor;
-        pattr = atr_str((UTF8 *)objattr);
+        pattr = atr_str(objattr);
     }
     free_lbuf(objattr);
 
@@ -3960,7 +3959,7 @@ FUNCTION(fun_valid)
     }
     else if (!mux_stricmp(fargs[0], (UTF8 *)"attrname"))
     {
-        MakeCanonicalAttributeName((UTF8 *)fargs[1], &nValidName, &bValid);
+        MakeCanonicalAttributeName(fargs[1], &nValidName, &bValid);
     }
     else if (!mux_stricmp(fargs[0], (UTF8 *)"comalias"))
     {

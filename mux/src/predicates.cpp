@@ -338,7 +338,7 @@ UTF8 *MakeCanonicalObjectName(const UTF8 *pName, size_t *pnName, bool *pbValid)
     // Get the stripped version (Visible parts without color info).
     //
     size_t nStripped;
-    UTF8 *pStripped = strip_ansi(Buf, &nStripped);
+    UTF8 *pStripped = strip_color(Buf, &nStripped);
 
     // Do not allow LOOKUP_TOKEN, NUMBER_TOKEN, NOT_TOKEN, or SPACE
     // as the first character, or SPACE as the last character
@@ -393,7 +393,7 @@ UTF8 *MakeCanonicalExitName(const UTF8 *pName, size_t *pnName, bool *pbValid)
     // Build the non-ANSI version so that we can parse for semicolons
     // safely.
     //
-    UTF8 *pStripped = strip_ansi(pName);
+    UTF8 *pStripped = strip_color(pName);
     UTF8 *pBuf = Buf;
     safe_mb_str(pStripped, Buf, &pBuf);
     *pBuf = '\0';
@@ -2626,7 +2626,7 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int eval, int key,
     case 6:
         // Get action attribute.
         //
-        ap = atr_str((UTF8 *)args[5]);
+        ap = atr_str(args[5]);
         if (ap)
         {
             awhat = ap->number;
@@ -2643,7 +2643,7 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int eval, int key,
     case 4:
         // Get others message attribute.
         //
-        ap = atr_str((UTF8 *)args[3]);
+        ap = atr_str(args[3]);
         if (ap && (ap->number > 0))
         {
             owhat = ap->number;
@@ -2660,7 +2660,7 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int eval, int key,
     case 2:
         // Get enactor message attribute.
         //
-        ap = atr_str((UTF8 *)args[1]);
+        ap = atr_str(args[1]);
         if (ap && (ap->number > 0))
         {
             what = ap->number;
