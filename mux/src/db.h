@@ -25,12 +25,12 @@
                       ((l) < mudconf.parent_nest_lim)); \
                      (p)=Parent(p), (l)++)
 
-int get_atr(char *name);
+int get_atr(UTF8 *name);
 
 typedef struct attr ATTR;
 struct attr
 {
-    const char *name;   // This has to be first.  braindeath.
+    const UTF8 *name;   // This has to be first.  braindeath.
     int number;         // attr number
     int flags;
 };
@@ -39,14 +39,14 @@ struct attr
 typedef struct atrlist ATRLIST;
 struct atrlist
 {
-    char *data;     /* Attribute text. */
+    UTF8 *data;     /* Attribute text. */
     int size;       /* Length of attribute */
     int number;     /* Attribute number. */
 };
 #endif // MEMORY_BASED
 
-char *MakeCanonicalAttributeName(const char *pName, size_t *pnName, bool *pbValid);
-char *MakeCanonicalAttributeCommand(const char *pName, size_t *pnName, bool *pbValid);
+UTF8 *MakeCanonicalAttributeName(const UTF8 *pName, size_t *pnName, bool *pbValid);
+UTF8 *MakeCanonicalAttributeCommand(const UTF8 *pName, size_t *pnName, bool *pbValid);
 
 typedef struct stack STACK;
 struct stack
@@ -56,7 +56,7 @@ struct stack
 };
 
 extern ATTR *atr_num(int anum);
-extern ATTR *atr_str(char *s);
+extern ATTR *atr_str(const UTF8 *s);
 
 extern ATTR AttrTable[];
 
@@ -125,7 +125,7 @@ struct boolexp
 #define AMBIGUOUS   (-2)    /* multiple possibilities, for matchers */
 #define HOME        (-3)    /* virtual room, represents mover's home */
 #define NOPERM      (-4)    /* Error status, no permission */
-extern char *aszSpecialDBRefNames[1-NOPERM];
+extern UTF8 *aszSpecialDBRefNames[1-NOPERM];
 
 typedef struct object OBJ;
 struct object
@@ -165,15 +165,15 @@ struct object
     int     throttled_attributes;
     int     throttled_mail;
 
-    char    *purename;
-    char    *moniker;
+    UTF8    *purename;
+    UTF8    *moniker;
 
 #ifdef MEMORY_BASED
     ATRLIST *pALHead;   /* The head of the attribute list.       */
     int      nALAlloc;  /* Size of the allocated attribute list. */
     int      nALUsed;   /* Used portion of the attribute list.   */
 #else
-    char    *name;
+    UTF8    *name;
 #endif // MEMORY_BASED
 };
 
@@ -235,11 +235,11 @@ void load_restart_db(void);
 dbref    getref(FILE *);
 void putref(FILE *, dbref);
 void free_boolexp(BOOLEXP *);
-dbref    parse_dbref(const char *);
+dbref    parse_dbref(const UTF8 *);
 bool ThrottleMail(dbref executor);
 bool ThrottleAttributeNames(dbref executor);
 bool ThrottlePlayerCreate(void);
-int  mkattr(dbref executor, char *);
+int  mkattr(dbref executor, const UTF8 *);
 void al_store(void);
 void db_grow(dbref);
 void db_free(void);
@@ -248,8 +248,8 @@ dbref    db_read(FILE *, int *, int *, int *);
 dbref    db_write(FILE *, int, int);
 void destroy_thing(dbref);
 void destroy_exit(dbref);
-void putstring(FILE *f, const char *s);
-char *getstring_noalloc(FILE *f, bool new_strings, size_t *pnBuffer);
+void putstring(FILE *f, const UTF8 *s);
+void *getstring_noalloc(FILE *f, bool new_strings, size_t *pnBuffer);
 void init_attrtab(void);
 int GrowFiftyPercent(int x, int low, int high);
 

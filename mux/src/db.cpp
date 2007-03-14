@@ -41,204 +41,217 @@ struct atrcount
     int count;
 };
 
-// list of attributes
+// List of Attributes.
 //
 ATTR AttrTable[] =
 {
-    {"Aahear",      A_AAHEAR,   AF_ODARK | AF_NOPROG},
-    {"Aclone",      A_ACLONE,   AF_ODARK | AF_NOPROG},
-    {"Aconnect",    A_ACONNECT, AF_ODARK | AF_NOPROG},
-    {"Adesc",       A_ADESC,    AF_ODARK | AF_NOPROG},
-    {"Adfail",      A_ADFAIL,   AF_ODARK | AF_NOPROG},
-    {"Adisconnect", A_ADISCONNECT, AF_ODARK | AF_NOPROG},
-    {"Adrop",       A_ADROP,    AF_ODARK | AF_NOPROG},
-    {"Aefail",      A_AEFAIL,   AF_ODARK | AF_NOPROG},
-    {"Aenter",      A_AENTER,   AF_ODARK | AF_NOPROG},
-    {"Afail",       A_AFAIL,    AF_ODARK | AF_NOPROG},
-    {"Agfail",      A_AGFAIL,   AF_ODARK | AF_NOPROG},
-    {"Ahear",       A_AHEAR,    AF_ODARK | AF_NOPROG},
-    {"Akill",       A_AKILL,    AF_ODARK | AF_NOPROG},
-    {"Aleave",      A_ALEAVE,   AF_ODARK | AF_NOPROG},
-    {"Alfail",      A_ALFAIL,   AF_ODARK | AF_NOPROG},
-    {"Alias",       A_ALIAS,    AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_PRIVATE | AF_CONST | AF_VISUAL},
-    {"Allowance",   A_ALLOWANCE, AF_MDARK | AF_NOPROG | AF_WIZARD},
-    {"Amail",       A_AMAIL,    AF_ODARK | AF_NOPROG},
-    {"Amhear",      A_AMHEAR,   AF_ODARK | AF_NOPROG},
-    {"Amove",       A_AMOVE,    AF_ODARK | AF_NOPROG},
-    {"Apay",        A_APAY,     AF_ODARK | AF_NOPROG},
-    {"Arfail",      A_ARFAIL,   AF_ODARK | AF_NOPROG},
-    {"Asucc",       A_ASUCC,    AF_ODARK | AF_NOPROG},
-    {"Atfail",      A_ATFAIL,   AF_ODARK | AF_NOPROG},
-    {"Atport",      A_ATPORT,   AF_ODARK | AF_NOPROG},
-    {"Atofail",     A_ATOFAIL,  AF_ODARK | AF_NOPROG},
-    {"Aufail",      A_AUFAIL,   AF_ODARK | AF_NOPROG},
-    {"Ause",        A_AUSE,     AF_ODARK | AF_NOPROG},
-    {"Away",        A_AWAY,     AF_ODARK | AF_NOPROG},
-    {"Charges",     A_CHARGES,  AF_ODARK | AF_NOPROG},
-    {"CmdCheck",    A_CMDCHECK, AF_DARK | AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_PRIVATE | AF_CONST},
-    {"Comjoin",     A_COMJOIN,  AF_ODARK | AF_NOPROG},
-    {"Comleave",    A_COMLEAVE, AF_ODARK | AF_NOPROG},
-    {"Comment",     A_COMMENT,  AF_MDARK | AF_WIZARD},
-    {"Comoff",      A_COMOFF,   AF_ODARK | AF_NOPROG},
-    {"Comon",       A_COMON,    AF_ODARK | AF_NOPROG},
-    {"ConFormat",   A_CONFORMAT, AF_ODARK | AF_NOPROG},
-    {"Cost",        A_COST,     AF_ODARK | AF_NOPROG},
-    {"Created",     A_CREATED,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_GOD},
-    {"Daily",       A_DAILY,    AF_ODARK | AF_NOPROG},
-    {"Desc",        A_DESC,     AF_VISUAL | AF_NOPROG},
-    {"DefaultLock", A_LOCK,     AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"DescFormat",  A_DESCFORMAT, AF_ODARK | AF_NOPROG},
-    {"Destroyer",   A_DESTROYER, AF_MDARK | AF_WIZARD | AF_NOPROG},
-    {"Dfail",       A_DFAIL,    AF_ODARK | AF_NOPROG},
-    {"Drop",        A_DROP,     AF_ODARK | AF_NOPROG},
-    {"DropLock",    A_LDROP,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Ealias",      A_EALIAS,   AF_ODARK | AF_NOPROG},
-    {"Efail",       A_EFAIL,    AF_ODARK | AF_NOPROG},
-    {"Enter",       A_ENTER,    AF_ODARK | AF_NOPROG},
-    {"EnterLock",   A_LENTER,   AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"ExitFormat",  A_EXITFORMAT, AF_ODARK | AF_NOPROG},
-    {"ExitTo",      A_EXITVARDEST, AF_ODARK | AF_NOPROG | AF_WIZARD},
-    {"Fail",        A_FAIL,     AF_ODARK | AF_NOPROG},
-    {"Filter",      A_FILTER,   AF_ODARK | AF_NOPROG},
-    {"Forwardlist", A_FORWARDLIST, AF_ODARK | AF_NOPROG | AF_NOCMD | AF_CONST},
-    {"GetFromLock", A_LGET,     AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Gfail",       A_GFAIL,    AF_ODARK | AF_NOPROG},
-    {"GiveLock",    A_LGIVE,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Idesc",       A_IDESC,    AF_ODARK | AF_NOPROG},
-    {"Idle",        A_IDLE,     AF_ODARK | AF_NOPROG},
-    {"IdleTimeout", A_IDLETMOUT, AF_ODARK | AF_NOPROG},
-    {"Infilter",    A_INFILTER, AF_ODARK | AF_NOPROG},
-    {"Inprefix",    A_INPREFIX, AF_ODARK | AF_NOPROG},
-    {"Kill",        A_KILL,     AF_ODARK | AF_NOPROG},
-    {"Lalias",      A_LALIAS,   AF_ODARK | AF_NOPROG},
-    {"Last",        A_LAST,     AF_WIZARD | AF_NOCMD | AF_NOPROG | AF_NOCLONE},
-    {"Lastpage",    A_LASTPAGE, AF_INTERNAL | AF_NOCMD | AF_NOPROG | AF_GOD | AF_PRIVATE},
-    {"Lastsite",    A_LASTSITE, AF_ODARK | AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_GOD},
-    {"LastIP",      A_LASTIP,   AF_ODARK | AF_NOPROG | AF_NOCMD | AF_GOD},
-    {"Leave",       A_LEAVE,    AF_ODARK | AF_NOPROG},
-    {"LeaveLock",   A_LLEAVE,   AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Lfail",       A_LFAIL,    AF_ODARK | AF_NOPROG},
-    {"LinkLock",    A_LLINK,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Listen",      A_LISTEN,   AF_ODARK | AF_NOPROG},
-    {"Logindata",   A_LOGINDATA, AF_MDARK | AF_NOPROG | AF_NOCMD | AF_CONST},
-    {"Mailcurf",    A_MAILCURF, AF_MDARK | AF_WIZARD | AF_NOPROG | AF_NOCLONE},
-    {"Mailflags",   A_MAILFLAGS, AF_MDARK | AF_WIZARD | AF_NOPROG | AF_NOCLONE},
-    {"Mailfolders", A_MAILFOLDERS, AF_MDARK | AF_WIZARD | AF_NOPROG | AF_NOCLONE},
-    {"MailLock",    A_LMAIL,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Mailmsg",     A_MAILMSG,  AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
-    {"Mailsub",     A_MAILSUB,  AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
-    {"Mailsucc",    A_MAIL,     AF_ODARK | AF_NOPROG},
-    {"Mailto",      A_MAILTO,   AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
-    {"Mfail",       A_MFAIL,    AF_ODARK | AF_NOPROG},
-    {"Modified",    A_MODIFIED, AF_ODARK | AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_GOD},
-    {"Moniker",     A_MONIKER,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_CONST},
-    {"Move",        A_MOVE,     AF_ODARK | AF_NOPROG},
-    {"Name",        A_NAME,     AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
-    {"NameFormat",  A_NAMEFORMAT, AF_ODARK | AF_NOPROG | AF_WIZARD},
-    {"Odesc",       A_ODESC,    AF_ODARK | AF_NOPROG},
-    {"Odfail",      A_ODFAIL,   AF_ODARK | AF_NOPROG},
-    {"Odrop",       A_ODROP,    AF_ODARK | AF_NOPROG},
-    {"Oefail",      A_OEFAIL,   AF_ODARK | AF_NOPROG},
-    {"Oenter",      A_OENTER,   AF_ODARK | AF_NOPROG},
-    {"Ofail",       A_OFAIL,    AF_ODARK | AF_NOPROG},
-    {"Ogfail",      A_OGFAIL,   AF_ODARK | AF_NOPROG},
-    {"Okill",       A_OKILL,    AF_ODARK | AF_NOPROG},
-    {"Oleave",      A_OLEAVE,   AF_ODARK | AF_NOPROG},
-    {"Olfail",      A_OLFAIL,   AF_ODARK | AF_NOPROG},
-    {"Omove",       A_OMOVE,    AF_ODARK | AF_NOPROG},
-    {"Opay",        A_OPAY,     AF_ODARK | AF_NOPROG},
-    {"OpenLock",    A_LOPEN,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Orfail",      A_ORFAIL,   AF_ODARK | AF_NOPROG},
-    {"Osucc",       A_OSUCC,    AF_ODARK | AF_NOPROG},
-    {"Otfail",      A_OTFAIL,   AF_ODARK | AF_NOPROG},
-    {"Otport",      A_OTPORT,   AF_ODARK | AF_NOPROG},
-    {"Otofail",     A_OTOFAIL,  AF_ODARK | AF_NOPROG},
-    {"Oufail",      A_OUFAIL,   AF_ODARK | AF_NOPROG},
-    {"Ouse",        A_OUSE,     AF_ODARK | AF_NOPROG},
-    {"Oxenter",     A_OXENTER,  AF_ODARK | AF_NOPROG},
-    {"Oxleave",     A_OXLEAVE,  AF_ODARK | AF_NOPROG},
-    {"Oxtport",     A_OXTPORT,  AF_ODARK | AF_NOPROG},
-    {"PageLock",    A_LPAGE,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"ParentLock",  A_LPARENT,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Pay",         A_PAY,      AF_ODARK | AF_NOPROG},
-    {"Prefix",      A_PREFIX,   AF_ODARK | AF_NOPROG},
-    {"ProgCmd",     A_PROGCMD,  AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
-    {"QueueMax",    A_QUEUEMAX, AF_MDARK | AF_WIZARD | AF_NOPROG},
-    {"Quota",       A_QUOTA,    AF_MDARK | AF_NOPROG | AF_GOD | AF_NOCMD | AF_NOCLONE},
-    {"ReceiveLock", A_LRECEIVE, AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Reject",      A_REJECT,   AF_ODARK | AF_NOPROG},
-    {"Rfail",       A_RFAIL,    AF_ODARK | AF_NOPROG},
-    {"Rquota",      A_RQUOTA,   AF_MDARK | AF_NOPROG | AF_GOD | AF_NOCMD | AF_NOCLONE},
-    {"Runout",      A_RUNOUT,   AF_ODARK | AF_NOPROG},
-    {"SayString",   A_SAYSTRING, AF_ODARK | AF_NOPROG},
-    {"Semaphore",   A_SEMAPHORE, AF_ODARK | AF_NOPROG | AF_WIZARD | AF_NOCMD | AF_NOCLONE},
-    {"Sex",         A_SEX,      AF_VISUAL | AF_NOPROG},
-    {"Signature",   A_SIGNATURE, AF_ODARK | AF_NOPROG},
-    {"SpeechMod",   A_SPEECHMOD, AF_ODARK | AF_NOPROG},
-    {"SpeechLock",  A_LSPEECH,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Startup",     A_STARTUP,  AF_ODARK | AF_NOPROG},
-    {"Succ",        A_SUCC,     AF_ODARK | AF_NOPROG},
-    {"TeloutLock",  A_LTELOUT,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Tfail",       A_TFAIL,    AF_ODARK | AF_NOPROG},
-    {"Timeout",     A_TIMEOUT,  AF_MDARK | AF_NOPROG | AF_WIZARD},
-    {"Tport",       A_TPORT,    AF_ODARK | AF_NOPROG},
-    {"TportLock",   A_LTPORT,   AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"Tofail",      A_TOFAIL,   AF_ODARK | AF_NOPROG},
-    {"Ufail",       A_UFAIL,    AF_ODARK | AF_NOPROG},
-    {"Use",         A_USE,      AF_ODARK | AF_NOPROG},
-    {"UseLock",     A_LUSE,     AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"UserLock",    A_LUSER,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
-    {"VA",          A_VA,       AF_ODARK},
-    {"VB",          A_VA + 1,   AF_ODARK},
-    {"VC",          A_VA + 2,   AF_ODARK},
-    {"VD",          A_VA + 3,   AF_ODARK},
-    {"VE",          A_VA + 4,   AF_ODARK},
-    {"VF",          A_VA + 5,   AF_ODARK},
-    {"VG",          A_VA + 6,   AF_ODARK},
-    {"VH",          A_VA + 7,   AF_ODARK},
-    {"VI",          A_VA + 8,   AF_ODARK},
-    {"VJ",          A_VA + 9,   AF_ODARK},
-    {"VK",          A_VA + 10,  AF_ODARK},
-    {"VL",          A_VA + 11,  AF_ODARK},
-    {"VM",          A_VA + 12,  AF_ODARK},
-    {"VN",          A_VA + 13,  AF_ODARK},
-    {"VO",          A_VA + 14,  AF_ODARK},
-    {"VP",          A_VA + 15,  AF_ODARK},
-    {"VQ",          A_VA + 16,  AF_ODARK},
-    {"VR",          A_VA + 17,  AF_ODARK},
-    {"VS",          A_VA + 18,  AF_ODARK},
-    {"VT",          A_VA + 19,  AF_ODARK},
-    {"VU",          A_VA + 20,  AF_ODARK},
-    {"VV",          A_VA + 21,  AF_ODARK},
-    {"VW",          A_VA + 22,  AF_ODARK},
-    {"VX",          A_VA + 23,  AF_ODARK},
-    {"VY",          A_VA + 24,  AF_ODARK},
-    {"VZ",          A_VA + 25,  AF_ODARK},
-    {"VRML_URL",    A_VRML_URL, AF_ODARK | AF_NOPROG},
-    {"HTDesc",      A_HTDESC,   AF_NOPROG},
-    {"Reason",      A_REASON,   AF_PRIVATE | AF_MDARK | AF_NOPROG | AF_NOCMD | AF_GOD},
+    {(UTF8 *)"Aahear",      A_AAHEAR,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Aclone",      A_ACLONE,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Aconnect",    A_ACONNECT, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Adesc",       A_ADESC,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Adfail",      A_ADFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Adisconnect", A_ADISCONNECT, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Adrop",       A_ADROP,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Aefail",      A_AEFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Aenter",      A_AENTER,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Afail",       A_AFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Agfail",      A_AGFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Ahear",       A_AHEAR,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Akill",       A_AKILL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Aleave",      A_ALEAVE,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Alfail",      A_ALFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Alias",       A_ALIAS,    AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_PRIVATE | AF_CONST | AF_VISUAL},
+    {(UTF8 *)"Allowance",   A_ALLOWANCE, AF_MDARK | AF_NOPROG | AF_WIZARD},
+    {(UTF8 *)"Amail",       A_AMAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Amhear",      A_AMHEAR,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Amove",       A_AMOVE,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Apay",        A_APAY,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Arfail",      A_ARFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Asucc",       A_ASUCC,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Atfail",      A_ATFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Atport",      A_ATPORT,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Atofail",     A_ATOFAIL,  AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Aufail",      A_AUFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Ause",        A_AUSE,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Away",        A_AWAY,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Charges",     A_CHARGES,  AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"CmdCheck",    A_CMDCHECK, AF_DARK | AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_PRIVATE | AF_CONST},
+    {(UTF8 *)"Comjoin",     A_COMJOIN,  AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Comleave",    A_COMLEAVE, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Comment",     A_COMMENT,  AF_MDARK | AF_WIZARD},
+    {(UTF8 *)"Comoff",      A_COMOFF,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Comon",       A_COMON,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"ConFormat",   A_CONFORMAT, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Cost",        A_COST,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Created",     A_CREATED,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_GOD},
+    {(UTF8 *)"Daily",       A_DAILY,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Desc",        A_DESC,     AF_VISUAL | AF_NOPROG},
+    {(UTF8 *)"DefaultLock", A_LOCK,     AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"DescFormat",  A_DESCFORMAT, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Destroyer",   A_DESTROYER, AF_MDARK | AF_WIZARD | AF_NOPROG},
+    {(UTF8 *)"Dfail",       A_DFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Drop",        A_DROP,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"DropLock",    A_LDROP,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Ealias",      A_EALIAS,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Efail",       A_EFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Enter",       A_ENTER,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"EnterLock",   A_LENTER,   AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"ExitFormat",  A_EXITFORMAT, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"ExitTo",      A_EXITVARDEST, AF_ODARK | AF_NOPROG | AF_WIZARD},
+    {(UTF8 *)"Fail",        A_FAIL,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Filter",      A_FILTER,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Forwardlist", A_FORWARDLIST, AF_ODARK | AF_NOPROG | AF_NOCMD | AF_CONST},
+    {(UTF8 *)"GetFromLock", A_LGET,     AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Gfail",       A_GFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"GiveLock",    A_LGIVE,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Idesc",       A_IDESC,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Idle",        A_IDLE,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"IdleTimeout", A_IDLETMOUT, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Infilter",    A_INFILTER, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Inprefix",    A_INPREFIX, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Kill",        A_KILL,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Lalias",      A_LALIAS,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Last",        A_LAST,     AF_WIZARD | AF_NOCMD | AF_NOPROG | AF_NOCLONE},
+    {(UTF8 *)"Lastpage",    A_LASTPAGE, AF_INTERNAL | AF_NOCMD | AF_NOPROG | AF_GOD | AF_PRIVATE},
+    {(UTF8 *)"Lastsite",    A_LASTSITE, AF_ODARK | AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_GOD},
+    {(UTF8 *)"LastIP",      A_LASTIP,   AF_ODARK | AF_NOPROG | AF_NOCMD | AF_GOD},
+    {(UTF8 *)"Leave",       A_LEAVE,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"LeaveLock",   A_LLEAVE,   AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Lfail",       A_LFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"LinkLock",    A_LLINK,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Listen",      A_LISTEN,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Logindata",   A_LOGINDATA, AF_MDARK | AF_NOPROG | AF_NOCMD | AF_CONST},
+    {(UTF8 *)"Mailcurf",    A_MAILCURF, AF_MDARK | AF_WIZARD | AF_NOPROG | AF_NOCLONE},
+    {(UTF8 *)"Mailflags",   A_MAILFLAGS, AF_MDARK | AF_WIZARD | AF_NOPROG | AF_NOCLONE},
+    {(UTF8 *)"Mailfolders", A_MAILFOLDERS, AF_MDARK | AF_WIZARD | AF_NOPROG | AF_NOCLONE},
+    {(UTF8 *)"MailLock",    A_LMAIL,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Mailmsg",     A_MAILMSG,  AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"Mailsub",     A_MAILSUB,  AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"Mailsucc",    A_MAIL,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Mailto",      A_MAILTO,   AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"Mfail",       A_MFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Modified",    A_MODIFIED, AF_ODARK | AF_NOPROG | AF_NOCMD | AF_NOCLONE | AF_GOD},
+    {(UTF8 *)"Moniker",     A_MONIKER,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_CONST},
+    {(UTF8 *)"Move",        A_MOVE,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Name",        A_NAME,     AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"NameFormat",  A_NAMEFORMAT, AF_ODARK | AF_NOPROG | AF_WIZARD},
+    {(UTF8 *)"Odesc",       A_ODESC,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Odfail",      A_ODFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Odrop",       A_ODROP,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Oefail",      A_OEFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Oenter",      A_OENTER,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Ofail",       A_OFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Ogfail",      A_OGFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Okill",       A_OKILL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Oleave",      A_OLEAVE,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Olfail",      A_OLFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Omove",       A_OMOVE,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Opay",        A_OPAY,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"OpenLock",    A_LOPEN,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Orfail",      A_ORFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Osucc",       A_OSUCC,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Otfail",      A_OTFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Otport",      A_OTPORT,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Otofail",     A_OTOFAIL,  AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Oufail",      A_OUFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Ouse",        A_OUSE,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Oxenter",     A_OXENTER,  AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Oxleave",     A_OXLEAVE,  AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Oxtport",     A_OXTPORT,  AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"PageLock",    A_LPAGE,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"ParentLock",  A_LPARENT,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Pay",         A_PAY,      AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Prefix",      A_PREFIX,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"ProgCmd",     A_PROGCMD,  AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"QueueMax",    A_QUEUEMAX, AF_MDARK | AF_WIZARD | AF_NOPROG},
+    {(UTF8 *)"Quota",       A_QUOTA,    AF_MDARK | AF_NOPROG | AF_GOD | AF_NOCMD | AF_NOCLONE},
+    {(UTF8 *)"ReceiveLock", A_LRECEIVE, AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Reject",      A_REJECT,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Rfail",       A_RFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Rquota",      A_RQUOTA,   AF_MDARK | AF_NOPROG | AF_GOD | AF_NOCMD | AF_NOCLONE},
+    {(UTF8 *)"Runout",      A_RUNOUT,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"SayString",   A_SAYSTRING, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Semaphore",   A_SEMAPHORE, AF_ODARK | AF_NOPROG | AF_WIZARD | AF_NOCMD | AF_NOCLONE},
+    {(UTF8 *)"Sex",         A_SEX,      AF_VISUAL | AF_NOPROG},
+    {(UTF8 *)"Signature",   A_SIGNATURE, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"SpeechMod",   A_SPEECHMOD, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"SpeechLock",  A_LSPEECH,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Startup",     A_STARTUP,  AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Succ",        A_SUCC,     AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"TeloutLock",  A_LTELOUT,  AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Tfail",       A_TFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Timeout",     A_TIMEOUT,  AF_MDARK | AF_NOPROG | AF_WIZARD},
+    {(UTF8 *)"Tport",       A_TPORT,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"TportLock",   A_LTPORT,   AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"Tofail",      A_TOFAIL,   AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Ufail",       A_UFAIL,    AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"Use",         A_USE,      AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"UseLock",     A_LUSE,     AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"UserLock",    A_LUSER,    AF_ODARK | AF_NOPROG | AF_NOCMD | AF_IS_LOCK},
+    {(UTF8 *)"VA",          A_VA,       AF_ODARK},
+    {(UTF8 *)"VB",          A_VA + 1,   AF_ODARK},
+    {(UTF8 *)"VC",          A_VA + 2,   AF_ODARK},
+    {(UTF8 *)"VD",          A_VA + 3,   AF_ODARK},
+    {(UTF8 *)"VE",          A_VA + 4,   AF_ODARK},
+    {(UTF8 *)"VF",          A_VA + 5,   AF_ODARK},
+    {(UTF8 *)"VG",          A_VA + 6,   AF_ODARK},
+    {(UTF8 *)"VH",          A_VA + 7,   AF_ODARK},
+    {(UTF8 *)"VI",          A_VA + 8,   AF_ODARK},
+    {(UTF8 *)"VJ",          A_VA + 9,   AF_ODARK},
+    {(UTF8 *)"VK",          A_VA + 10,  AF_ODARK},
+    {(UTF8 *)"VL",          A_VA + 11,  AF_ODARK},
+    {(UTF8 *)"VM",          A_VA + 12,  AF_ODARK},
+    {(UTF8 *)"VN",          A_VA + 13,  AF_ODARK},
+    {(UTF8 *)"VO",          A_VA + 14,  AF_ODARK},
+    {(UTF8 *)"VP",          A_VA + 15,  AF_ODARK},
+    {(UTF8 *)"VQ",          A_VA + 16,  AF_ODARK},
+    {(UTF8 *)"VR",          A_VA + 17,  AF_ODARK},
+    {(UTF8 *)"VS",          A_VA + 18,  AF_ODARK},
+    {(UTF8 *)"VT",          A_VA + 19,  AF_ODARK},
+    {(UTF8 *)"VU",          A_VA + 20,  AF_ODARK},
+    {(UTF8 *)"VV",          A_VA + 21,  AF_ODARK},
+    {(UTF8 *)"VW",          A_VA + 22,  AF_ODARK},
+    {(UTF8 *)"VX",          A_VA + 23,  AF_ODARK},
+    {(UTF8 *)"VY",          A_VA + 24,  AF_ODARK},
+    {(UTF8 *)"VZ",          A_VA + 25,  AF_ODARK},
+    {(UTF8 *)"VRML_URL",    A_VRML_URL, AF_ODARK | AF_NOPROG},
+    {(UTF8 *)"HTDesc",      A_HTDESC,   AF_NOPROG},
+    {(UTF8 *)"Reason",      A_REASON,   AF_PRIVATE | AF_MDARK | AF_NOPROG | AF_NOCMD | AF_GOD},
 #ifdef GAME_DOOFERMUX
-    {"RegInfo",     A_REGINFO,  AF_PRIVATE | AF_MDARK | AF_NOPROG | AF_NOCMD | AF_WIZARD},
+    {(UTF8 *)"RegInfo",     A_REGINFO,  AF_PRIVATE | AF_MDARK | AF_NOPROG | AF_NOCMD | AF_WIZARD},
 #endif // GAME_DOOFERMUX
-    {"ConnInfo",    A_CONNINFO, AF_PRIVATE | AF_MDARK | AF_NOPROG | AF_NOCMD | AF_GOD},
-    {"*Password",   A_PASS,     AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
-    {"*Privileges", A_PRIVS,    AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
-    {"*Money",      A_MONEY,    AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"ConnInfo",    A_CONNINFO, AF_PRIVATE | AF_MDARK | AF_NOPROG | AF_NOCMD | AF_GOD},
 #ifdef REALITY_LVLS
-    {"Rlevel",      A_RLEVEL,   AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"Rlevel",      A_RLEVEL,   AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
 #endif // REALITY_LVLS
 #if defined(FIRANMUX)
-    {"Color",       A_COLOR,    AF_ODARK},
-    {"Alead",       A_ALEAD,    AF_ODARK | AF_WIZARD},
-    {"Lead",        A_LEAD,     AF_ODARK | AF_NOPROG | AF_WIZARD},
-    {"Olead",       A_OLEAD,    AF_ODARK | AF_NOPROG | AF_WIZARD},
+    {(UTF8 *)"Color",       A_COLOR,    AF_ODARK},
+    {(UTF8 *)"Alead",       A_ALEAD,    AF_ODARK | AF_WIZARD},
+    {(UTF8 *)"Lead",        A_LEAD,     AF_ODARK | AF_NOPROG | AF_WIZARD},
+    {(UTF8 *)"Olead",       A_OLEAD,    AF_ODARK | AF_NOPROG | AF_WIZARD},
 #endif // FIRANMUX
-    {NULL,          0,          0}
+    {NULL,                  0,          0}
 };
 
-char *aszSpecialDBRefNames[1-NOPERM] =
+// The following 'special' attributes adopt invalid names to make them
+// inaccessible to softcode.  A small price of this is that we must
+// manually upper-case them in the table.
+//
+ATTR AttrTableSpecial[] =
 {
-    "", "*NOTHING*", "*AMBIGUOUS*", "*HOME*", "*NOPERMISSION*"
+    {(UTF8 *)"*PASSWORD",   A_PASS,     AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"*PRIVILEGES", A_PRIVS,    AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {(UTF8 *)"*MONEY",      A_MONEY,    AF_DARK | AF_NOPROG | AF_NOCMD | AF_INTERNAL},
+    {NULL,                  0,          0}
+};
+
+UTF8 *aszSpecialDBRefNames[1-NOPERM] =
+{
+    (UTF8 *)"",
+    (UTF8 *)"*NOTHING*",
+    (UTF8 *)"*AMBIGUOUS*",
+    (UTF8 *)"*HOME*",
+    (UTF8 *)"*NOPERMISSION*"
 };
 
 /* ---------------------------------------------------------------------------
@@ -353,7 +366,7 @@ void fwdlist_clr(dbref thing)
  * fwdlist_load: Load text into a forwardlist.
  */
 
-FWDLIST *fwdlist_load(dbref player, char *atext)
+FWDLIST *fwdlist_load(dbref player, UTF8 *atext)
 {
     FWDLIST *fp = NULL;
     try
@@ -380,8 +393,8 @@ FWDLIST *fwdlist_load(dbref player, char *atext)
 
         if (NULL != fp->data)
         {
-            char *tp = alloc_lbuf("fwdlist_load.str");
-            char *bp = tp;
+            UTF8 *tp = alloc_lbuf("fwdlist_load.str");
+            UTF8 *bp = tp;
             mux_strncpy(tp, atext, LBUF_SIZE-1);
 
             int count = 0;
@@ -397,7 +410,7 @@ FWDLIST *fwdlist_load(dbref player, char *atext)
 
                 // Remember string.
                 //
-                char *dp;
+                UTF8 *dp;
                 for (dp = bp; *bp && !mux_isspace(*bp); bp++)
                 {
                     ; // Nothing.
@@ -470,7 +483,7 @@ FWDLIST *fwdlist_load(dbref player, char *atext)
  * fwdlist_rewrite: Generate a text string from a FWDLIST buffer.
  */
 
-int fwdlist_rewrite(FWDLIST *fp, char *atext)
+int fwdlist_rewrite(FWDLIST *fp, UTF8 *atext)
 {
     int count = 0;
     atext[0] = '\0';
@@ -478,7 +491,7 @@ int fwdlist_rewrite(FWDLIST *fp, char *atext)
     if (  fp
        && fp->count)
     {
-        char *bp = atext;
+        UTF8 *bp = atext;
         ITL pContext;
         ItemToList_Init(&pContext, atext, &bp, '#');
         for (int i = 0; i < fp->count; i++)
@@ -497,7 +510,7 @@ int fwdlist_rewrite(FWDLIST *fp, char *atext)
 /* ---------------------------------------------------------------------------
  * fwdlist_ck:  Check a list of dbref numbers to forward to for AUDIBLE
  */
-bool fwdlist_ck(dbref player, dbref thing, int anum, char *atext)
+bool fwdlist_ck(dbref player, dbref thing, int anum, UTF8 *atext)
 {
     UNUSED_PARAMETER(anum);
 
@@ -540,7 +553,7 @@ FWDLIST *fwdlist_get(dbref thing)
     {
         dbref aowner;
         int   aflags;
-        char *tp = atr_get("fwdlist_get.543", thing, A_FORWARDLIST, &aowner, &aflags);
+        UTF8 *tp = atr_get("fwdlist_get.543", thing, A_FORWARDLIST, &aowner, &aflags);
         fp = fwdlist_load(GOD, tp);
         free_lbuf(tp);
     }
@@ -556,7 +569,7 @@ FWDLIST *fwdlist_get(dbref thing)
 // Name, PureName, Moniker, s_Moniker, and s_Name: Get or set object's
 // various names.
 //
-const char *Name(dbref thing)
+const UTF8 *Name(dbref thing)
 {
     if (thing < 0)
     {
@@ -566,14 +579,14 @@ const char *Name(dbref thing)
     dbref aowner;
     int aflags;
 #ifdef MEMORY_BASED
-    static char tbuff[LBUF_SIZE];
+    static UTF8 tbuff[LBUF_SIZE];
     atr_get_str(tbuff, thing, A_NAME, &aowner, &aflags);
     return tbuff;
 #else // MEMORY_BASED
     if (!db[thing].name)
     {
         size_t len;
-        char *pName = atr_get_LEN(thing, A_NAME, &aowner, &aflags, &len);
+        UTF8 *pName = atr_get_LEN(thing, A_NAME, &aowner, &aflags, &len);
         db[thing].name = StringCloneLen(pName, len);
         free_lbuf(pName);
     }
@@ -581,7 +594,7 @@ const char *Name(dbref thing)
 #endif // MEMORY_BASED
 }
 
-const char *PureName(dbref thing)
+const UTF8 *PureName(dbref thing)
 {
     if (thing < 0)
     {
@@ -591,7 +604,7 @@ const char *PureName(dbref thing)
     dbref aowner;
     int aflags;
 
-    char *pName, *pPureName;
+    UTF8 *pName, *pPureName;
     if (mudconf.cache_names)
     {
         if (!db[thing].purename)
@@ -612,7 +625,7 @@ const char *PureName(dbref thing)
             }
             else
             {
-                nName = strlen(db[thing].name);
+                nName = strlen((char *)db[thing].name);
             }
             pName = db[thing].name;
             pPureName = strip_ansi(pName, &nPureName);
@@ -634,7 +647,7 @@ const char *PureName(dbref thing)
     return pPureName;
 }
 
-const char *Moniker(dbref thing)
+const UTF8 *Moniker(dbref thing)
 {
     if (thing < 0)
     {
@@ -648,19 +661,19 @@ const char *Moniker(dbref thing)
     // Compare accent-stripped, ansi-stripped version of @moniker against
     // accent-stripped, ansi-stripped version of @name.
     //
-    const char *pPureName = strip_accents(PureName(thing));
-    char *pPureNameCopy = StringClone(pPureName);
+    const UTF8 *pPureName = (UTF8 *)ConvertToAscii(PureName(thing));
+    UTF8 *pPureNameCopy = StringClone(pPureName);
 
     size_t nMoniker;
     dbref  aowner;
     int    aflags;
-    char *pMoniker = atr_get_LEN(thing, A_MONIKER, &aowner, &aflags,
+    UTF8 *pMoniker = atr_get_LEN(thing, A_MONIKER, &aowner, &aflags,
         &nMoniker);
-    char *pPureMoniker = strip_accents(strip_ansi(pMoniker));
+    const UTF8 *pPureMoniker = (UTF8 *)ConvertToAscii(strip_ansi(pMoniker));
 
-    const char *pReturn = NULL;
-    static char tbuff[LBUF_SIZE];
-    if (strcmp(pPureNameCopy, pPureMoniker) == 0)
+    const UTF8 *pReturn = NULL;
+    static UTF8 tbuff[LBUF_SIZE];
+    if (strcmp((char *)pPureNameCopy, (char *)pPureMoniker) == 0)
     {
         // The stripped version of @moniker is the same as the stripped
         // version of @name, so (possibly cache and) use the unstripped
@@ -671,7 +684,7 @@ const char *Moniker(dbref thing)
 #ifdef MEMORY_BASED
             db[thing].moniker = StringCloneLen(pMoniker, nMoniker);
 #else // MEMORY_BASED
-            if (strcmp(pMoniker, Name(thing)) == 0)
+            if (strcmp((char *)pMoniker, (char *)Name(thing)) == 0)
             {
                 db[thing].moniker = db[thing].name;
             }
@@ -721,7 +734,7 @@ const char *Moniker(dbref thing)
     return pReturn;
 }
 
-void s_Name(dbref thing, const char *s)
+void s_Name(dbref thing, const UTF8 *s)
 {
     atr_add_raw(thing, A_NAME, s);
 #ifndef MEMORY_BASED
@@ -761,7 +774,7 @@ void s_Name(dbref thing, const char *s)
     }
 }
 
-void s_Moniker(dbref thing, const char *s)
+void s_Moniker(dbref thing, const UTF8 *s)
 {
     atr_add_raw(thing, A_MONIKER, s);
     if (mudconf.cache_names)
@@ -780,7 +793,7 @@ void s_Moniker(dbref thing, const char *s)
     }
 }
 
-void s_Pass(dbref thing, const char *s)
+void s_Pass(dbref thing, const UTF8 *s)
 {
     atr_add_raw(thing, A_PASS, s);
 }
@@ -796,8 +809,8 @@ void do_attribute
     dbref enactor,
     int   key,
     int   nargs,
-    char *aname,
-    char *value
+    UTF8 *aname,
+    UTF8 *value
 )
 {
     UNUSED_PARAMETER(caller);
@@ -809,7 +822,7 @@ void do_attribute
     size_t nName;
     bool bValid = false;
     ATTR *va = NULL;
-    char *pName = MakeCanonicalAttributeName(aname, &nName, &bValid);
+    UTF8 *pName = MakeCanonicalAttributeName((UTF8 *)aname, &nName, &bValid);
     if (bValid)
     {
         va = (ATTR *)vattr_find_LEN(pName, nName);
@@ -817,12 +830,12 @@ void do_attribute
 
     if (NULL == va)
     {
-        notify(executor, "No such user-named attribute.");
+        notify(executor, (UTF8 *)"No such user-named attribute.");
         return;
     }
 
     int f;
-    char *sp;
+    UTF8 *sp;
     ATTR *va2;
     bool negate, success;
 
@@ -835,7 +848,7 @@ void do_attribute
         mux_strupr(value);
         MUX_STRTOK_STATE tts;
         mux_strtok_src(&tts, value);
-        mux_strtok_ctl(&tts, " ");
+        mux_strtok_ctl(&tts, (UTF8 *)" ");
         sp = mux_strtok_parse(&tts);
         success = false;
         while (sp != NULL)
@@ -873,7 +886,7 @@ void do_attribute
             sp = mux_strtok_parse(&tts);
         }
         if (success && !Quiet(executor))
-            notify(executor, "Attribute access changed.");
+            notify(executor, (UTF8 *)"Attribute access changed.");
         break;
 
     case ATTRIB_RENAME:
@@ -881,26 +894,31 @@ void do_attribute
         {
             // Save the old name for use later.
             //
-            char OldName[SBUF_SIZE];
-            char *pOldName = OldName;
-            safe_sb_str(pName, OldName, &pOldName);
+            UTF8 OldName[SBUF_SIZE];
+            UTF8 *pOldName = OldName;
+            safe_sb_str((UTF8 *)pName, (UTF8 *)OldName, (UTF8 **)&pOldName);
             *pOldName = '\0';
             size_t nOldName = pOldName - OldName;
 
             // Make sure the new name doesn't already exist. This checks
             // the built-in and user-defined data structures.
             //
-            va2 = atr_str(value);
+            va2 = atr_str((UTF8 *)value);
             if (va2)
             {
-                notify(executor, "An attribute with that name already exists.");
+                notify(executor, (UTF8 *)"An attribute with that name already exists.");
                 return;
             }
-            pName = MakeCanonicalAttributeName(value, &nName, &bValid);
-            if (!bValid || vattr_rename_LEN(OldName, nOldName, pName, nName) == NULL)
-                notify(executor, "Attribute rename failed.");
+            pName = MakeCanonicalAttributeName((UTF8 *)value, &nName, &bValid);
+            if (  !bValid
+               || vattr_rename_LEN(OldName, nOldName, pName, nName) == NULL)
+            {
+                notify(executor, (UTF8 *)"Attribute rename failed.");
+            }
             else
-                notify(executor, "Attribute renamed.");
+            {
+                notify(executor, (UTF8 *)"Attribute renamed.");
+            }
         }
         break;
 
@@ -909,7 +927,7 @@ void do_attribute
         // Remove the attribute.
         //
         vattr_delete_LEN(pName, nName);
-        notify(executor, "Attribute deleted.");
+        notify(executor, (UTF8 *)"Attribute deleted.");
         break;
     }
 }
@@ -925,8 +943,8 @@ void do_fixdb
     dbref enactor,
     int   key,
     int   nargs,
-    char *arg1,
-    char *arg2
+    UTF8 *arg1,
+    UTF8 *arg2
 )
 {
     UNUSED_PARAMETER(caller);
@@ -958,7 +976,7 @@ void do_fixdb
         break;
     }
 
-    char *pValidName;
+    UTF8 *pValidName;
     switch (key)
     {
     case FIXDB_OWNER:
@@ -1009,18 +1027,18 @@ void do_fixdb
         {
             if (!ValidatePlayerName(arg2))
             {
-                notify(executor, "That's not a good name for a player.");
+                notify(executor, (UTF8 *)"That's not a good name for a player.");
                 return;
             }
             pValidName = arg2;
             if (lookup_player(NOTHING, pValidName, false) != NOTHING)
             {
-                notify(executor, "That name is already in use.");
+                notify(executor, (UTF8 *)"That name is already in use.");
                 return;
             }
             STARTLOG(LOG_SECURITY, "SEC", "CNAME");
             log_name(thing),
-            log_text(" renamed to ");
+            log_text((UTF8 *)" renamed to ");
             log_text(pValidName);
             ENDLOG;
             if (Suspect(executor))
@@ -1039,7 +1057,7 @@ void do_fixdb
             pValidName = MakeCanonicalObjectName(arg2, &nTmp, &bValid);
             if (!bValid)
             {
-                notify(executor, "That is not a reasonable name.");
+                notify(executor, (UTF8 *)"That is not a reasonable name.");
                 return;
             }
             s_Name(thing, pValidName);
@@ -1059,34 +1077,48 @@ void do_fixdb
 // We truncate the attribute name to a length of SBUF_SIZE-1, if
 // necessary, but we will validate the remaining characters anyway.
 //
-// NOTE: Refer to init_attrtab() where it directly manipulates
-// mux_AttrNameSet to allow the attribute name: "*Password".
-//
-char *MakeCanonicalAttributeName(const char *pName, size_t *pnName, bool *pbValid)
+UTF8 *MakeCanonicalAttributeName(const UTF8 *pName_arg, size_t *pnName, bool *pbValid)
 {
-    static char Buffer[SBUF_SIZE];
+    static UTF8 Buffer[SBUF_SIZE];
+    const UTF8 *pName = (UTF8 *)pName_arg;
 
-    if (  !pName
-       || !mux_AttrNameInitialSet(*pName))
+    if (  NULL == pName
+       || !mux_isattrnameinitial(pName))
     {
         *pnName = 0;
         *pbValid = false;
         return NULL;
     }
-    int nLeft = SBUF_SIZE-1;
-    char *p = Buffer;
-    while (*pName && nLeft)
+    size_t nLeft = SBUF_SIZE-1;
+    UTF8 *p = Buffer;
+    size_t n;
+    while (  '\0' != *pName
+          && (n = utf8_FirstByte[(unsigned char)*pName]) < UTF8_CONTINUE
+          && n <= nLeft)
     {
-        if (!mux_AttrNameSet(*pName))
+        if (!mux_isattrname(pName))
         {
             *pnName = 0;
             *pbValid = false;
             return Buffer;
         }
-        *p = mux_toupper(*pName);
-        p++;
-        pName++;
-        nLeft--;
+
+        nLeft -= n;
+        if (mux_islower(pName))
+        {
+            const UTF8 *qFlip = mux_upperflip(pName);
+            while (n--)
+            {
+                *p++ = *pName++ ^ *qFlip++;
+            }
+        }
+        else
+        {
+            while (n--)
+            {
+                *p++ = *pName++;
+            }
+        }
     }
     *p = '\0';
 
@@ -1095,15 +1127,16 @@ char *MakeCanonicalAttributeName(const char *pName, size_t *pnName, bool *pbVali
     // softcode will run in the future if we increase the
     // size of SBUF_SIZE.
     //
-    while (*pName)
+    while ('\0' != *pName)
     {
-        if (!mux_AttrNameSet(*pName))
+        if (  UTF8_CONTINUE <= utf8_FirstByte[(unsigned char)*pName]
+           || !mux_isattrname(pName))
         {
             *pnName = 0;
             *pbValid = false;
             return Buffer;
         }
-        pName++;
+        pName = utf8_NextCodePoint(pName);
     }
 
     // Length of truncated result.
@@ -1115,26 +1148,41 @@ char *MakeCanonicalAttributeName(const char *pName, size_t *pnName, bool *pbVali
 
 // MakeCanonicalAttributeCommand
 //
-char *MakeCanonicalAttributeCommand(const char *pName, size_t *pnName, bool *pbValid)
+UTF8 *MakeCanonicalAttributeCommand(const UTF8 *pName, size_t *pnName, bool *pbValid)
 {
-    if (!pName)
+    if (NULL == pName)
     {
         *pnName = 0;
         *pbValid = false;
         return NULL;
     }
 
-    static char Buffer[SBUF_SIZE];
-    int nLeft = SBUF_SIZE-2;
-    char *p = Buffer;
+    static UTF8 Buffer[SBUF_SIZE];
+    size_t nLeft = SBUF_SIZE-2;
+    UTF8 *p = Buffer;
+    size_t n;
 
     *p++ = '@';
-    while (*pName && nLeft)
+    while (  '\0' != *pName
+          && (n = utf8_FirstByte[(unsigned char)*pName]) < UTF8_CONTINUE
+          && n <= nLeft)
     {
-        *p = mux_tolower(*pName);
-        p++;
-        pName++;
-        nLeft--;
+        nLeft -= n;
+        if (mux_isupper(pName))
+        {
+            const UTF8 *qFlip = mux_lowerflip(pName);
+            while (n--)
+            {
+                *p++ = *pName++ ^ *qFlip++;
+            }
+        }
+        else
+        {
+            while (n--)
+            {
+                *p++ = *pName++;
+            }
+        }
     }
     *p = '\0';
 
@@ -1158,19 +1206,11 @@ char *MakeCanonicalAttributeCommand(const char *pName, size_t *pnName, bool *pbV
 void init_attrtab(void)
 {
     ATTR *a;
-
-    // We specifically allow the '*' character at server
-    // initialization because it's part of the A_PASS attribute
-    // name.
-    //
-    const unsigned char star = '*';
-    mux_AttrNameSet[star] = true;
-    mux_AttrNameInitialSet[star] = true;
     for (a = AttrTable; a->number; a++)
     {
         size_t nLen;
         bool bValid;
-        char *buff = MakeCanonicalAttributeName(a->name, &nLen, &bValid);
+        UTF8 *buff = MakeCanonicalAttributeName(a->name, &nLen, &bValid);
         if (!bValid)
         {
             continue;
@@ -1179,21 +1219,30 @@ void init_attrtab(void)
         anum_set(a->number, a);
         hashaddLEN(buff, nLen, a, &mudstate.attr_name_htab);
     }
-    mux_AttrNameInitialSet[star] = false;
-    mux_AttrNameSet[star] = false;
+
+    // We specifically allow the '*' character at server
+    // initialization because it's part of the A_PASS attribute
+    // name.
+    //
+    for (a = AttrTableSpecial; a->number; a++)
+    {
+        anum_extend(a->number);
+        anum_set(a->number, a);
+        hashaddLEN((char *)a->name, strlen((char *)a->name), a, &mudstate.attr_name_htab);
+    }
 }
 
 /* ---------------------------------------------------------------------------
  * atr_str: Look up an attribute by name.
  */
 
-ATTR *atr_str(char *s)
+ATTR *atr_str(const UTF8 *s)
 {
     // Make attribute name canonical.
     //
     size_t nBuffer;
     bool bValid;
-    char *buff = MakeCanonicalAttributeName(s, &nBuffer, &bValid);
+    UTF8 *buff = MakeCanonicalAttributeName(s, &nBuffer, &bValid);
     if (!bValid)
     {
         return NULL;
@@ -1293,7 +1342,7 @@ void anum_extend(int newtop)
                 anum_table2[i] = anum_table[i];
             }
 
-            MEMFREE((char *)anum_table);
+            MEMFREE(anum_table);
         }
         anum_table = anum_table2;
     }
@@ -1397,7 +1446,7 @@ bool ThrottleMail(dbref executor)
  * mkattr: Lookup attribute by name, creating if needed.
  */
 
-int mkattr(dbref executor, char *buff)
+int mkattr(dbref executor, const UTF8 *buff)
 {
     ATTR *ap = atr_str(buff);
     if (!ap)
@@ -1406,7 +1455,7 @@ int mkattr(dbref executor, char *buff)
         //
         size_t nName;
         bool bValid;
-        char *pName = MakeCanonicalAttributeName(buff, &nName, &bValid);
+        UTF8 *pName = MakeCanonicalAttributeName(buff, &nName, &bValid);
         ATTR *va;
         if (bValid)
         {
@@ -1445,9 +1494,9 @@ int mkattr(dbref executor, char *buff)
  * al_decode: Fetch an attribute number from an alist.
  */
 
-static int al_decode(char **app)
+static int al_decode(unsigned char **app)
 {
-    char *ap = *app;
+    unsigned char *ap = *app;
 
     int atrnum = 0, atrshft = 0;
     for (;;)
@@ -1477,7 +1526,7 @@ static int al_decode(char **app)
 // following routine only generates a '\0' if atrnum == 0 (which is
 // never used).
 //
-static char *al_code(char *ap, unsigned int atrnum)
+static unsigned char *al_code(unsigned char *ap, unsigned int atrnum)
 {
     int i;
     unsigned int bits;
@@ -1486,11 +1535,11 @@ static char *al_code(char *ap, unsigned int atrnum)
         bits = atrnum & 0x7F;
         if (atrnum <= 0x7F)
         {
-            ap[i] = (char)bits;
+            ap[i] = (unsigned char)bits;
             break;
         }
         atrnum >>= 7;
-        ap[i] = (char)(bits | 0x80);
+        ap[i] = (unsigned char)(bits | 0x80);
     }
     return ap + i + 1;
 }
@@ -1518,9 +1567,9 @@ bool Commer(dbref thing)
 
     bool bFoundListens = false;
 
-    char *as;
     atr_push();
-    char *buff = alloc_lbuf("Commer");
+    UTF8 *buff = alloc_lbuf("Commer");
+    unsigned char *as;
     for (int atr = atr_head(thing, &as); atr; atr = atr_next(&as))
     {
         ATTR *ap = atr_num(atr);
@@ -1548,7 +1597,7 @@ bool Commer(dbref thing)
 
         // Search for unescaped ':'
         //
-        char *s = strchr(buff+1, ':');
+        UTF8 *s = (UTF8 *)strchr((char *)buff+1, ':');
         if (!s)
         {
             continue;
@@ -1597,12 +1646,12 @@ bool Commer(dbref thing)
 
 // al_extend: Get more space for attributes, if needed
 //
-static void al_extend(char **buffer, size_t *bufsiz, size_t len, bool copy)
+static void al_extend(unsigned char **buffer, size_t *bufsiz, size_t len, bool copy)
 {
     if (len > *bufsiz)
     {
         size_t newsize = len + ATR_BUF_CHUNK;
-        char *tbuff = (char *)MEMALLOC(newsize);
+        unsigned char *tbuff = (unsigned char *)MEMALLOC(newsize);
         ISOUTOFMEMORY(tbuff);
         if (*buffer)
         {
@@ -1638,7 +1687,7 @@ void al_store(void)
 
 // al_fetch: Load attribute list
 //
-static char *al_fetch(dbref thing)
+static unsigned char *al_fetch(dbref thing)
 {
     // We only need fetch if we change things.
     //
@@ -1651,7 +1700,7 @@ static char *al_fetch(dbref thing)
     //
     al_store();
     size_t len;
-    const char *astr = atr_get_raw_LEN(thing, A_LIST, &len);
+    const unsigned char *astr = atr_get_raw_LEN(thing, A_LIST, &len);
     if (astr)
     {
         al_extend(&mudstate.mod_alist, &mudstate.mod_size, len+1, false);
@@ -1672,8 +1721,8 @@ static char *al_fetch(dbref thing)
 //
 static bool al_add(dbref thing, int attrnum)
 {
-    char *abuf = al_fetch(thing);
-    char *cp = abuf;
+    unsigned char *abuf = al_fetch(thing);
+    unsigned char *cp = abuf;
     int anum;
 
     // See if attr is in the list.  If so, exit (need not do anything).
@@ -1721,7 +1770,7 @@ static bool al_add(dbref thing, int attrnum)
 static void al_delete(dbref thing, int attrnum)
 {
     int anum;
-    char *abuf, *cp, *dp;
+    unsigned char *abuf, *cp, *dp;
 
     // If trying to modify List attrib, return.  Otherwise, get the attribute list.
     //
@@ -1767,7 +1816,7 @@ static DCL_INLINE void makekey(dbref thing, int atr, Aname *abuff)
  * atr_encode: Encode an attribute string.
  */
 
-static char *atr_encode(char *iattr, dbref thing, dbref owner, int flags, int atr)
+static UTF8 *atr_encode(UTF8 *iattr, dbref thing, dbref owner, int flags, int atr)
 {
     UNUSED_PARAMETER(atr);
 
@@ -1787,7 +1836,7 @@ static char *atr_encode(char *iattr, dbref thing, dbref owner, int flags, int at
 // atr_decode_flags_owner: Decode the owner and flags (if present) and
 // return a pointer to the attribute text.
 //
-static const char *atr_decode_flags_owner(const char *iattr, dbref *owner, int *flags)
+static const UTF8 *atr_decode_flags_owner(const UTF8 *iattr, dbref *owner, int *flags)
 {
     // See if the first char of the attribute is the special character
     //
@@ -1799,7 +1848,7 @@ static const char *atr_decode_flags_owner(const char *iattr, dbref *owner, int *
 
     // It has the special character, crack the attr apart.
     //
-    const char *cp = iattr + 1;
+    const UTF8 *cp = iattr + 1;
 
     // Get the attribute owner
     //
@@ -1860,7 +1909,7 @@ static const char *atr_decode_flags_owner(const char *iattr, dbref *owner, int *
 // ---------------------------------------------------------------------------
 // atr_decode: Decode an attribute string.
 //
-static void atr_decode_LEN(const char *iattr, size_t nLen, char *oattr,
+static void atr_decode_LEN(const UTF8 *iattr, size_t nLen, UTF8 *oattr,
                            dbref thing, dbref *owner, int *flags, size_t *pLen)
 {
     // Default the owner
@@ -1869,7 +1918,7 @@ static void atr_decode_LEN(const char *iattr, size_t nLen, char *oattr,
 
     // Parse for owner and flags
     //
-    const char *cp = atr_decode_flags_owner(iattr, owner, flags);
+    const UTF8 *cp = atr_decode_flags_owner(iattr, owner, flags);
 
     // Get the attribute text.
     //
@@ -1988,7 +2037,7 @@ void atr_clr(dbref thing, int atr)
  * atr_add_raw, atr_add: add attribute of type atr to list
  */
 
-void atr_add_raw_LEN(dbref thing, int atr, const char *szValue, size_t nValue)
+void atr_add_raw_LEN(dbref thing, int atr, const UTF8 *szValue, size_t nValue)
 {
     if (  !szValue
        || '\0' == szValue[0])
@@ -1999,7 +2048,7 @@ void atr_add_raw_LEN(dbref thing, int atr, const char *szValue, size_t nValue)
 
 #ifdef MEMORY_BASED
     ATRLIST *list = db[thing].pALHead;
-    char *text = StringCloneLen(szValue, nValue);
+    UTF8 *text = StringCloneLen(szValue, nValue);
 
     if (!list)
     {
@@ -2160,12 +2209,12 @@ FoundAttribute:
     }
 }
 
-void atr_add_raw(dbref thing, int atr, const char *szValue)
+void atr_add_raw(dbref thing, int atr, const UTF8 *szValue)
 {
-    atr_add_raw_LEN(thing, atr, szValue, szValue ? strlen(szValue) : 0);
+    atr_add_raw_LEN(thing, atr, szValue, szValue ? strlen((char *)szValue) : 0);
 }
 
-void atr_add(dbref thing, int atr, char *buff, dbref owner, int flags)
+void atr_add(dbref thing, int atr, UTF8 *buff, dbref owner, int flags)
 {
     set_modified(thing);
 
@@ -2200,7 +2249,7 @@ void atr_add(dbref thing, int atr, char *buff, dbref owner, int flags)
         mudstate.bfListens.Clear(thing);
         mudstate.bfCommands.Clear(thing);
 
-        char *tbuff = atr_encode(buff, thing, owner, flags, atr);
+        UTF8 *tbuff = atr_encode(buff, thing, owner, flags, atr);
         atr_add_raw(thing, atr, tbuff);
     }
 }
@@ -2209,7 +2258,7 @@ void atr_set_flags(dbref thing, int atr, dbref flags)
 {
     dbref aowner;
     int aflags;
-    char *buff = atr_get("atr_set_flags.2212", thing, atr, &aowner, &aflags);
+    UTF8 *buff = atr_get("atr_set_flags.2212", thing, atr, &aowner, &aflags);
     atr_add(thing, atr, buff, aowner, flags);
     free_lbuf(buff);
 }
@@ -2218,7 +2267,7 @@ void atr_set_flags(dbref thing, int atr, dbref flags)
  * get_atr,atr_get_raw, atr_get_str, atr_get: Get an attribute from the database.
  */
 
-int get_atr(char *name)
+int get_atr(UTF8 *name)
 {
     ATTR *ap = atr_str(name);
 
@@ -2230,7 +2279,7 @@ int get_atr(char *name)
 }
 
 #ifdef MEMORY_BASED
-const char *atr_get_raw_LEN(dbref thing, int atr, size_t *pLen)
+const UTF8 *atr_get_raw_LEN(dbref thing, int atr, size_t *pLen)
 {
     if (!Good_obj(thing))
     {
@@ -2271,29 +2320,29 @@ const char *atr_get_raw_LEN(dbref thing, int atr, size_t *pLen)
 
 #else // MEMORY_BASED
 
-const char *atr_get_raw_LEN(dbref thing, int atr, size_t *pLen)
+const UTF8 *atr_get_raw_LEN(dbref thing, int atr, size_t *pLen)
 {
     Aname okey;
 
     makekey(thing, atr, &okey);
     size_t nLen;
-    const char *a = cache_get(&okey, &nLen);
+    const UTF8 *a = cache_get(&okey, &nLen);
     nLen = a ? (nLen-1) : 0;
     *pLen = nLen;
     return a;
 }
 #endif // MEMORY_BASED
 
-const char *atr_get_raw(dbref thing, int atr)
+const UTF8 *atr_get_raw(dbref thing, int atr)
 {
     size_t Len;
     return atr_get_raw_LEN(thing, atr, &Len);
 }
 
-char *atr_get_str_LEN(char *s, dbref thing, int atr, dbref *owner, int *flags,
+UTF8 *atr_get_str_LEN(UTF8 *s, dbref thing, int atr, dbref *owner, int *flags,
     size_t *pLen)
 {
-    const char *buff = atr_get_raw_LEN(thing, atr, pLen);
+    const UTF8 *buff = atr_get_raw_LEN(thing, atr, pLen);
     if (!buff)
     {
         *owner = Owner(thing);
@@ -2308,30 +2357,30 @@ char *atr_get_str_LEN(char *s, dbref thing, int atr, dbref *owner, int *flags,
     return s;
 }
 
-char *atr_get_str(char *s, dbref thing, int atr, dbref *owner, int *flags)
+UTF8 *atr_get_str(UTF8 *s, dbref thing, int atr, dbref *owner, int *flags)
 {
     size_t nLen;
     return atr_get_str_LEN(s, thing, atr, owner, flags, &nLen);
 }
 
-char *atr_get_LEN(dbref thing, int atr, dbref *owner, int *flags, size_t *pLen)
+UTF8 *atr_get_LEN(dbref thing, int atr, dbref *owner, int *flags, size_t *pLen)
 {
-    char *buff = alloc_lbuf("atr_get_LEN");
+    UTF8 *buff = alloc_lbuf("atr_get_LEN");
     return atr_get_str_LEN(buff, thing, atr, owner, flags, pLen);
 }
 
-char *atr_get_real(const char *tag, dbref thing, int atr, dbref *owner, int *flags,
-    const char *file, const int line)
+UTF8 *atr_get_real(const UTF8 *tag, dbref thing, int atr, dbref *owner, int *flags,
+    const UTF8 *file, const int line)
 {
     size_t nLen;
-    char *buff = pool_alloc_lbuf(tag, file, line);
+    UTF8 *buff = pool_alloc_lbuf(tag, file, line);
     return atr_get_str_LEN(buff, thing, atr, owner, flags, &nLen);
 }
 
 bool atr_get_info(dbref thing, int atr, dbref *owner, int *flags)
 {
     size_t nLen;
-    const char *buff = atr_get_raw_LEN(thing, atr, &nLen);
+    const UTF8 *buff = atr_get_raw_LEN(thing, atr, &nLen);
     if (!buff)
     {
         *owner = Owner(thing);
@@ -2342,12 +2391,12 @@ bool atr_get_info(dbref thing, int atr, dbref *owner, int *flags)
     return true;
 }
 
-char *atr_pget_str_LEN(char *s, dbref thing, int atr, dbref *owner, int *flags, size_t *pLen)
+UTF8 *atr_pget_str_LEN(UTF8 *s, dbref thing, int atr, dbref *owner, int *flags, size_t *pLen)
 {
     dbref parent;
     int lev;
     ATTR *ap;
-    const char *buff;
+    const UTF8 *buff;
 
     ITER_PARENTS(thing, parent, lev)
     {
@@ -2378,23 +2427,23 @@ char *atr_pget_str_LEN(char *s, dbref thing, int atr, dbref *owner, int *flags, 
     return s;
 }
 
-char *atr_pget_str(char *s, dbref thing, int atr, dbref *owner, int *flags)
+UTF8 *atr_pget_str(UTF8 *s, dbref thing, int atr, dbref *owner, int *flags)
 {
     size_t nLen;
     return atr_pget_str_LEN(s, thing, atr, owner, flags, &nLen);
 }
 
-char *atr_pget_LEN(dbref thing, int atr, dbref *owner, int *flags, size_t *pLen)
+UTF8 *atr_pget_LEN(dbref thing, int atr, dbref *owner, int *flags, size_t *pLen)
 {
-    char *buff = alloc_lbuf("atr_pget");
+    UTF8 *buff = alloc_lbuf("atr_pget");
     return atr_pget_str_LEN(buff, thing, atr, owner, flags, pLen);
 }
 
-char *atr_pget_real(dbref thing, int atr, dbref *owner, int *flags,
-    const char *file, const int line)
+UTF8 *atr_pget_real(dbref thing, int atr, dbref *owner, int *flags,
+    const UTF8 *file, const int line)
 {
     size_t nLen;
-    char *buff = pool_alloc_lbuf("atr_pget", file, line);
+    UTF8 *buff = pool_alloc_lbuf((UTF8 *)"atr_pget", file, line);
     return atr_pget_str_LEN(buff, thing, atr, owner, flags, &nLen);
 }
 
@@ -2407,7 +2456,7 @@ bool atr_pget_info(dbref thing, int atr, dbref *owner, int *flags)
     ITER_PARENTS(thing, parent, lev)
     {
         size_t nLen;
-        const char *buff = atr_get_raw_LEN(parent, atr, &nLen);
+        const UTF8 *buff = atr_get_raw_LEN(parent, atr, &nLen);
         if (buff && *buff)
         {
             atr_decode_LEN(buff, nLen, NULL, thing, owner, flags, &nLen);
@@ -2443,8 +2492,8 @@ void atr_free(dbref thing)
     db[thing].nALAlloc = 0;
     db[thing].nALUsed  = 0;
 #else // MEMORY_BASED
-    char *as;
     atr_push();
+    unsigned char *as;
     for (int atr = atr_head(thing, &as); atr; atr = atr_next(&as))
     {
         atr_clr(thing, atr);
@@ -2471,13 +2520,13 @@ void atr_cpy(dbref dest, dbref source, bool bInternal)
 {
     dbref owner = Owner(dest);
 
-    char *as;
     atr_push();
+    unsigned char *as;
     for (int atr = atr_head(source, &as); atr; atr = atr_next(&as))
     {
         int   aflags;
         dbref aowner;
-        char *buf = atr_get("atr_cpy.2480", source, atr, &aowner, &aflags);
+        UTF8 *buf = atr_get("atr_cpy.2480", source, atr, &aowner, &aflags);
 
         if (!(aflags & AF_LOCK))
         {
@@ -2520,13 +2569,13 @@ void atr_chown(dbref obj)
 {
     dbref owner = Owner(obj);
 
-    char *as;
     atr_push();
+    unsigned char *as;
     for (int atr = atr_head(obj, &as); atr; atr = atr_next(&as))
     {
         int   aflags;
         dbref aowner;
-        char *buf = atr_get("atr_chown.2529", obj, atr, &aowner, &aflags);
+        UTF8 *buf = atr_get("atr_chown.2529", obj, atr, &aowner, &aflags);
         if (  aowner != owner
            && !(aflags & AF_LOCK))
         {
@@ -2541,7 +2590,7 @@ void atr_chown(dbref obj)
  * atr_next: Return next attribute in attribute list.
  */
 
-int atr_next(char **attrp)
+int atr_next(UTF8 **attrp)
 {
 #ifdef MEMORY_BASED
     ATRCOUNT *atr;
@@ -2608,7 +2657,7 @@ void atr_pop(void)
         mudstate.iter_alist.data = old_alist->data;
         mudstate.iter_alist.len = old_alist->len;
         mudstate.iter_alist.next = old_alist->next;
-        char *cp = (char *)old_alist;
+        unsigned char *cp = (unsigned char *)old_alist;
         free_sbuf(cp);
     }
     else
@@ -2624,7 +2673,7 @@ void atr_pop(void)
  * atr_head: Returns the head of the attr list for object 'thing'
  */
 
-int atr_head(dbref thing, char **attrp)
+int atr_head(dbref thing, unsigned char **attrp)
 {
 #ifdef MEMORY_BASED
     if (db[thing].nALUsed)
@@ -2633,12 +2682,12 @@ int atr_head(dbref thing, char **attrp)
         ISOUTOFMEMORY(atr);
         atr->thing = thing;
         atr->count = 1;
-        *attrp = (char *)atr;
+        *attrp = (unsigned char *)atr;
         return db[thing].pALHead[0].number;
     }
     return 0;
 #else // MEMORY_BASED
-    const char *astr;
+    const unsigned char *astr;
     size_t alen;
 
     // Get attribute list.  Save a read if it is in the modify atr list
@@ -2836,7 +2885,7 @@ void db_make_minimal(void)
 {
     db_free();
     db_grow(1);
-    s_Name(0, "Limbo");
+    s_Name(0, (UTF8 *)"Limbo");
     s_Flags(0, FLAG_WORD1, TYPE_ROOM);
     s_Flags(0, FLAG_WORD2, 0);
     s_Flags(0, FLAG_WORD3, 0);
@@ -2853,8 +2902,8 @@ void db_make_minimal(void)
     // should be #1
     //
     load_player_names();
-    const char *pmsg;
-    dbref obj = create_player("Wizard", "potrzebie", NOTHING, false, &pmsg);
+    const UTF8 *pmsg;
+    dbref obj = create_player((UTF8 *)"Wizard", (UTF8 *)"potrzebie", NOTHING, false, &pmsg);
     s_Flags(obj, FLAG_WORD1, Flags(obj) | WIZARD);
     s_Powers(obj, 0);
     s_Powers2(obj, 0);
@@ -2868,11 +2917,11 @@ void db_make_minimal(void)
     s_Link(obj, 0);
 }
 
-dbref parse_dbref(const char *s)
+dbref parse_dbref(const UTF8 *s)
 {
     // Enforce completely numeric dbrefs
     //
-    const char *p = s;
+    const UTF8 *p = s;
     if (p[0])
     {
         do
@@ -2895,7 +2944,7 @@ dbref parse_dbref(const char *s)
 
 void putref(FILE *f, dbref ref)
 {
-    char buf[I32BUF_SIZE+1];
+    UTF8 buf[I32BUF_SIZE+1];
     size_t n = mux_ltoa(ref, buf);
     buf[n] = '\n';
     fwrite(buf, sizeof(char), n+1, f);
@@ -2953,22 +3002,22 @@ static const int action_table[2][8] =
     { 2,   1,   2,   2,   5,   6,   7,   8}  // STATE_HAVE_ESC
 };
 
-char *getstring_noalloc(FILE *f, bool new_strings, size_t *pnBuffer)
+void *getstring_noalloc(FILE *f, bool new_strings, size_t *pnBuffer)
 {
-    static char buf[2*LBUF_SIZE + 20];
+    static UTF8 buf[2*LBUF_SIZE + 20];
     int c = fgetc(f);
     if (  new_strings
        && c == '"')
     {
         size_t nBufferLeft = sizeof(buf)-10;
         int iState = STATE_START;
-        char *pOutput = buf;
+        UTF8 *pOutput = buf;
         for (;;)
         {
             // Fetch up to and including the next LF.
             //
-            char *pInput = pOutput + 6;
-            if (fgets(pInput, static_cast<int>(nBufferLeft), f) == NULL)
+            UTF8 *pInput = pOutput + 6;
+            if (fgets((char *)pInput, static_cast<int>(nBufferLeft), f) == NULL)
             {
                 // EOF or ERROR.
                 //
@@ -2987,14 +3036,14 @@ char *getstring_noalloc(FILE *f, bool new_strings, size_t *pnBuffer)
             //
             for (;;)
             {
-                char ch = *pInput++;
+                UTF8 ch = *pInput++;
                 if (iState == STATE_START)
                 {
                     if (decode_table[(unsigned char)ch] == 0)
                     {
                         // As long as decode_table[*p] is 0, just keep copying the characters.
                         //
-                        char *p = pOutput;
+                        UTF8 *p = pOutput;
                         do
                         {
                             *pOutput++ = ch;
@@ -3085,12 +3134,12 @@ char *getstring_noalloc(FILE *f, bool new_strings, size_t *pnBuffer)
     {
         ungetc(c, f);
 
-        char *p = buf;
+        UTF8 *p = buf;
         for (;;)
         {
             // Fetch up to and including the next LF.
             //
-            if (fgets(p, LBUF_SIZE, f) == NULL)
+            if (fgets((char *)p, LBUF_SIZE, f) == NULL)
             {
                 // EOF or ERROR.
                 //
@@ -3100,7 +3149,7 @@ char *getstring_noalloc(FILE *f, bool new_strings, size_t *pnBuffer)
             {
                 // How much data did we fetch?
                 //
-                size_t nLine = strlen(p);
+                size_t nLine = strlen((char *)p);
                 if (nLine >= 2)
                 {
                     if (p[nLine-2] == '\r')
@@ -3156,10 +3205,10 @@ static const unsigned char encode_table[256] =
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  // F
 };
 
-void putstring(FILE *f, const char *pRaw)
+void putstring(FILE *f, const UTF8 *pRaw)
 {
-    static char aBuffer[2*LBUF_SIZE+4];
-    char *pBuffer = aBuffer;
+    static UTF8 aBuffer[2*LBUF_SIZE+4];
+    UTF8 *pBuffer = aBuffer;
 
     // Always leave room for four characters. One at the beginning and
     // three on the end. '\\"\n' or '\""\n'
@@ -3170,7 +3219,7 @@ void putstring(FILE *f, const char *pRaw)
     {
         for (;;)
         {
-            char ch;
+            UTF8 ch;
             while ((ch = encode_table[(unsigned char)*pRaw]) == 0)
             {
                 *pBuffer++ = *pRaw++;
@@ -3201,13 +3250,13 @@ void putstring(FILE *f, const char *pRaw)
     *pBuffer++ = '"';
     *pBuffer++ = '\n';
 
-    fwrite(aBuffer, sizeof(char), pBuffer - aBuffer, f);
+    fwrite(aBuffer, sizeof(UTF8), pBuffer - aBuffer, f);
 }
 
 int getref(FILE *f)
 {
-    static char buf[SBUF_SIZE];
-    if (NULL != fgets(buf, sizeof(buf), f))
+    static UTF8 buf[SBUF_SIZE];
+    if (NULL != fgets((char *)buf, sizeof(buf), f))
     {
         return mux_atol(buf);
     }
@@ -3273,17 +3322,17 @@ static BOOLEXP *dup_bool(BOOLEXP *b)
     case BOOLEXP_EVAL:
     case BOOLEXP_ATR:
         r->thing = b->thing;
-        r->sub1 = (BOOLEXP *)StringClone((char *)b->sub1);
+        r->sub1 = (BOOLEXP *)StringClone((UTF8 *)b->sub1);
         break;
     default:
-        Log.WriteString("Bad bool type!" ENDLINE);
+        Log.WriteString((UTF8 *)"Bad bool type!" ENDLINE);
         return TRUE_BOOLEXP;
     }
     return (r);
 }
 
 #ifndef MEMORY_BASED
-int init_dbfile(char *game_dir_file, char *game_pag_file, int nCachePages)
+int init_dbfile(UTF8 *game_dir_file, UTF8 *game_pag_file, int nCachePages)
 {
     if (mudstate.bStandAlone)
     {
@@ -3370,9 +3419,9 @@ void dump_restart_db(void)
 {
     FILE *f;
     DESC *d;
-    int version = 2;
+    int version = 3;
 
-    mux_assert(mux_fopen(&f, "restart.db", "wb"));
+    mux_assert(mux_fopen(&f, (UTF8 *)"restart.db", (UTF8 *)"wb"));
     fprintf(f, "+V%d\n", version);
     putref(f, nMainGamePorts);
     for (int i = 0; i < nMainGamePorts; i++)
@@ -3394,14 +3443,17 @@ void dump_restart_db(void)
         putref(f, d->player);
         putref(f, d->last_time.ReturnSeconds());
         putref(f, d->raw_input_state);
-        putref(f, d->nvt_sga_him_state);
-        putref(f, d->nvt_sga_us_state);
-        putref(f, d->nvt_eor_him_state);
-        putref(f, d->nvt_eor_us_state);
-        putref(f, d->nvt_naws_him_state);
-        putref(f, d->nvt_naws_us_state);
+        putref(f, d->raw_codepoint_state);
+
+        for (int stateloop = 0; stateloop < 256; stateloop++) {
+            putref(f, d->nvt_him_state[stateloop]);
+            putref(f, d->nvt_us_state[stateloop]);
+        }
+
         putref(f, d->height);
         putref(f, d->width);
+        putstring(f, d->ttype);
+        putref(f, d->encoding);
         putstring(f, d->output_prefix);
         putstring(f, d->output_suffix);
         putstring(f, d->addr);
@@ -3416,7 +3468,7 @@ void dump_restart_db(void)
 void load_restart_db(void)
 {
     FILE *f;
-    if (!mux_fopen(&f, "restart.db", "rb"))
+    if (!mux_fopen(&f, (UTF8 *)"restart.db", (UTF8 *)"rb"))
     {
         mudstate.restarting = false;
         return;
@@ -3429,10 +3481,12 @@ void load_restart_db(void)
     mux_assert(strncmp(buf, "+V", 2) == 0);
     int version = getref(f);
     if (  1 == version
-       || 2 == version)
+       || 2 == version
+       || 3 == version)
     {
         // Version 1 started on 2001-DEC-03
         // Version 2 started on 2005-NOV-08
+        // Version 3 started on 2007-MAR-09
         //
         nMainGamePorts = getref(f);
         for (int i = 0; i < nMainGamePorts; i++)
@@ -3459,8 +3513,14 @@ void load_restart_db(void)
     mudstate.start_time.SetSeconds(getref(f));
 
     size_t nBuffer;
-    char *pBuffer = getstring_noalloc(f, true, &nBuffer);
-    memcpy(mudstate.doing_hdr, pBuffer, nBuffer=1);
+    UTF8 *pBuffer = (UTF8 *)getstring_noalloc(f, true, &nBuffer);
+    if (version < 3)
+    {
+        // Convert Latin1 and ANSI to UTF-8 code points.
+        //
+        pBuffer = ConvertToUTF8((char *)pBuffer, &nBuffer);
+    }
+    memcpy(mudstate.doing_hdr, pBuffer, nBuffer+1);
 
     mudstate.record_players = getref(f);
     if (mudconf.reset_players)
@@ -3483,60 +3543,149 @@ void load_restart_db(void)
         d->host_info = getref(f);
         d->player = getref(f);
         d->last_time.SetSeconds(getref(f));
-        if (2 == version)
+        memset(d->nvt_him_state, OPTION_NO, 256);
+        memset(d->nvt_us_state, OPTION_NO, 256);
+        d->raw_codepoint_length = 0;
+        d->ttype = NULL;
+        if (3 == version)
         {
-            d->raw_input_state    = getref(f);
-            d->nvt_sga_him_state  = getref(f);
-            d->nvt_sga_us_state   = getref(f);
-            d->nvt_eor_him_state  = getref(f);
-            d->nvt_eor_us_state   = getref(f);
-            d->nvt_naws_him_state = getref(f);
-            d->nvt_naws_us_state  = getref(f);
+            d->raw_input_state              = getref(f);
+            d->raw_codepoint_state          = getref(f);
+            for (int stateloop = 0; stateloop < 256; stateloop++)
+            {
+                d->nvt_him_state[stateloop] = getref(f);
+                d->nvt_us_state[stateloop] = getref(f);
+            }
+
+            d->height = getref(f);
+            d->width = getref(f);
+
+            size_t nBuffer;
+            char *temp = (char *)getstring_noalloc(f, true, &nBuffer);
+            if ('\0' != temp[0])
+            {
+                d->ttype = alloc_lbuf("set_userstring");
+                memcpy(d->ttype, temp, nBuffer + 1);
+            }
+
+            d->encoding = getref(f);
+        }
+        else if (2 == version)
+        {
+            d->raw_input_state              = getref(f);
+            d->raw_codepoint_state          = CL_PRINT_START_STATE;
+            d->nvt_him_state[TELNET_SGA]    = getref(f);
+            d->nvt_us_state[TELNET_SGA]     = getref(f);
+            d->nvt_him_state[TELNET_EOR]    = getref(f);
+            d->nvt_us_state[TELNET_EOR]     = getref(f);
+            d->nvt_him_state[TELNET_NAWS]   = getref(f);
+            d->nvt_us_state[TELNET_NAWS]    = getref(f);
             d->height = getref(f);
             d->width = getref(f);
         }
         else
         {
             d->raw_input_state    = NVT_IS_NORMAL;
-            d->nvt_sga_him_state  = OPTION_NO;
-            d->nvt_sga_us_state   = OPTION_NO;
-            d->nvt_eor_him_state  = OPTION_NO;
-            d->nvt_eor_us_state   = OPTION_NO;
-            d->nvt_naws_him_state = OPTION_NO;
-            d->nvt_naws_us_state  = OPTION_NO;
+            d->raw_codepoint_state= CL_PRINT_START_STATE;
             d->height = 24;
             d->width = 78;
         }
 
-        size_t nBuffer;
-        char *temp = getstring_noalloc(f, true, &nBuffer);
-        if ('\0' != temp[0])
+        if (3 == version)
         {
-            d->output_prefix = alloc_lbuf("set_userstring");
-            memcpy(d->output_prefix, temp, nBuffer+1);
+            // Output Prefix.
+            //
+            size_t nBufferUnicode;
+            UTF8 *pBufferUnicode = (UTF8 *)getstring_noalloc(f, true, &nBufferUnicode);
+            if ('\0' != pBufferUnicode[0])
+            {
+                d->output_prefix = alloc_lbuf("set_userstring");
+                memcpy(d->output_prefix, pBufferUnicode, nBufferUnicode+1);
+            }
+            else
+            {
+                d->output_prefix = NULL;
+            }
+
+            // Output Suffix
+            //
+            pBufferUnicode = (UTF8 *)getstring_noalloc(f, true, &nBufferUnicode);
+            if ('\0' != pBufferUnicode[0])
+            {
+                d->output_suffix = alloc_lbuf("set_userstring");
+                memcpy(d->output_suffix, pBufferUnicode, nBufferUnicode+1);
+            }
+            else
+            {
+                d->output_suffix = NULL;
+            }
+
+            // Host address.
+            //
+            pBufferUnicode = (UTF8 *)getstring_noalloc(f, true, &nBufferUnicode);
+            memcpy(d->addr, pBufferUnicode, nBufferUnicode+1);
+
+            // Doing.
+            //
+            pBufferUnicode = (UTF8 *)getstring_noalloc(f, true, &nBufferUnicode);
+            memcpy(d->doing, pBufferUnicode, nBufferUnicode+1);
+
+            // User name.
+            //
+            pBufferUnicode = (UTF8 *)getstring_noalloc(f, true, &nBufferUnicode);
+            memcpy(d->username, pBufferUnicode, nBufferUnicode+1);
         }
         else
         {
-            d->output_prefix = NULL;
-        }
+            // Output Prefix.
+            //
+            size_t nBufferUnicode;
+            UTF8  *pBufferUnicode;
+            size_t nBufferLatin1;
+            char  *pBufferLatin1 = (char *)getstring_noalloc(f, true, &nBufferLatin1);
+            if ('\0' != pBufferUnicode[0])
+            {
+                pBufferUnicode = ConvertToUTF8(pBufferLatin1, &nBufferUnicode);
+                d->output_prefix = alloc_lbuf("set_userstring");
+                memcpy(d->output_prefix, pBufferUnicode, nBufferUnicode+1);
+            }
+            else
+            {
+                d->output_prefix = NULL;
+            }
 
-        temp = getstring_noalloc(f, true, &nBuffer);
-        if ('\0' != temp[0])
-        {
-            d->output_suffix = alloc_lbuf("set_userstring");
-            memcpy(d->output_suffix, temp, nBuffer+1);
-        }
-        else
-        {
-            d->output_suffix = NULL;
-        }
+            // Output Suffix
+            //
+            pBufferLatin1 = (char *)getstring_noalloc(f, true, &nBufferLatin1);
+            if ('\0' != pBufferUnicode[0])
+            {
+                pBufferUnicode = ConvertToUTF8(pBufferLatin1, &nBufferUnicode);
+                d->output_suffix = alloc_lbuf("set_userstring");
+                memcpy(d->output_suffix, pBufferUnicode, nBufferUnicode+1);
+            }
+            else
+            {
+                d->output_suffix = NULL;
+            }
 
-        temp = getstring_noalloc(f, true, &nBuffer);
-        memcpy(d->addr, temp, nBuffer+1);
-        temp = getstring_noalloc(f, true, &nBuffer);
-        memcpy(d->doing, temp, nBuffer+1);
-        temp = getstring_noalloc(f, true, &nBuffer);
-        memcpy(d->username, temp, nBuffer+1);
+            // Host address.
+            //
+            pBufferLatin1 = (char *)getstring_noalloc(f, true, &nBufferLatin1);
+            pBufferUnicode = ConvertToUTF8(pBufferLatin1, &nBufferUnicode);
+            memcpy(d->addr, pBufferUnicode, nBufferUnicode+1);
+
+            // Doing.
+            //
+            pBufferLatin1 = (char *)getstring_noalloc(f, true, &nBufferLatin1);
+            pBufferUnicode = ConvertToUTF8(pBufferLatin1, &nBufferUnicode);
+            memcpy(d->doing, pBufferUnicode, nBufferUnicode+1);
+
+            // User name.
+            //
+            pBufferLatin1 = (char *)getstring_noalloc(f, true, &nBufferLatin1);
+            pBufferUnicode = ConvertToUTF8(pBufferLatin1, &nBufferUnicode);
+            memcpy(d->username, pBufferUnicode, nBufferUnicode+1);
+        }
 
         d->output_size = 0;
         d->output_tot = 0;
@@ -3603,10 +3752,10 @@ void load_restart_db(void)
 
 #ifdef WIN32
 
-int ReplaceFile(char *old_name, char *new_name)
+int ReplaceFile(UTF8 *old_name, UTF8 *new_name)
 {
-    DeleteFile(new_name);
-    if (MoveFile(old_name, new_name))
+    DeleteFile((char *)new_name);
+    if (MoveFile((char *)old_name, (char *)new_name))
     {
         return 0;
     }
@@ -3618,16 +3767,16 @@ int ReplaceFile(char *old_name, char *new_name)
     return -1;
 }
 
-void RemoveFile(char *name)
+void RemoveFile(UTF8 *name)
 {
-    DeleteFile(name);
+    DeleteFile((char *)name);
 }
 
 #else // WIN32
 
-int ReplaceFile(char *old_name, char *new_name)
+int ReplaceFile(UTF8 *old_name, UTF8 *new_name)
 {
-    if (rename(old_name, new_name) == 0)
+    if (rename((char *)old_name, (char *)new_name) == 0)
     {
         return 0;
     }
@@ -3638,9 +3787,9 @@ int ReplaceFile(char *old_name, char *new_name)
     return -1;
 }
 
-void RemoveFile(char *name)
+void RemoveFile(UTF8 *name)
 {
-    unlink(name);
+    unlink((char *)name);
 }
 #endif // WIN32
 

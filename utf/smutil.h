@@ -3,7 +3,6 @@
 
 #define UNI_EOF ((UTF32)-1)
 
-bool  isPrivateUse(int ch);
 UTF32 ReadCodePoint(FILE *fp, int *pValue, UTF32 *pOthercase);
 
 typedef struct State
@@ -36,6 +35,7 @@ public:
 
 private:
     State *AllocateState(void);
+    void ValidateStatePointer(State *pState, int iLine);
     void FreeState(State *p);
     bool RowsEqual(State *p, State *q);
     bool ColumnsEqual(int iColumn, int jColumn);

@@ -75,7 +75,7 @@ void VerifyTables(FILE *fp)
             fprintf(stderr, "Codes in file are not in order.\n");
             exit(0);
         }
-        nextcode = nextcode2;            
+        nextcode = nextcode2;
     }
 }
 #endif
@@ -177,7 +177,7 @@ void TestTable(FILE *fp)
                 fprintf(stderr, "Codes in file are not in order.\n");
                 exit(0);
             }
-            nextcode = nextcode2;            
+            nextcode = nextcode2;
         }
     }
     else
@@ -208,7 +208,7 @@ void TestTable(FILE *fp)
                 fprintf(stderr, "Codes in file are not in order.\n");
                 exit(0);
             }
-            nextcode = nextcode2;            
+            nextcode = nextcode2;
         }
     }
 }
@@ -309,7 +309,7 @@ void LoadStrings(FILE *fp)
                 fprintf(stderr, "Codes in file are not in order.\n");
                 exit(0);
             }
-            nextcode = nextcode2;            
+            nextcode = nextcode2;
         }
     }
     else
@@ -341,13 +341,22 @@ void LoadStrings(FILE *fp)
                 fprintf(stderr, "Codes in file are not in order.\n");
                 exit(0);
             }
-            nextcode = nextcode2;            
+            else if (  UNI_EOF != nextcode2
+                    && Value < 0)
+            {
+                fprintf(stderr, "Value missing from code U-%06X\n", nextcode2);
+                exit(0);
+            }
+            nextcode = nextcode2;
         }
     }
     printf("// %d code points.\n", cIncluded);
     fprintf(stderr, "%d code points.\n", cIncluded);
     sm.ReportStatus();
 }
+
+bool g_bReplacement = false;
+int  g_iReplacementState = '?';
 
 void BuildAndOutputTable(FILE *fp, char *UpperPrefix, char *LowerPrefix)
 {
@@ -360,10 +369,11 @@ void BuildAndOutputTable(FILE *fp, char *UpperPrefix, char *LowerPrefix)
     // Leaving states undefined leads to a smaller table.  On the other hand,
     // do not make queries for code points outside the expected set.
     //
-#if 0
-    sm.SetUndefinedStates(0);
-    TestTable(fp);
-#endif
+    if (g_bReplacement)
+    {
+        sm.SetUndefinedStates(g_iReplacementState);
+        TestTable(fp);
+    }
 
     // Optimize State Transition Table.
     //
@@ -372,6 +382,10 @@ void BuildAndOutputTable(FILE *fp, char *UpperPrefix, char *LowerPrefix)
     sm.MergeAcceptingStates();
     TestTable(fp);
     sm.MergeAcceptingStates();
+    TestTable(fp);
+    sm.RemoveDuplicateRows();
+    TestTable(fp);
+    sm.RemoveDuplicateRows();
     TestTable(fp);
     sm.RemoveDuplicateRows();
     TestTable(fp);
@@ -387,7 +401,7 @@ void BuildAndOutputTable(FILE *fp, char *UpperPrefix, char *LowerPrefix)
         return;
     }
 
-    printf("unsigned char ott[%d] =\n", nOutputTable);
+    printf("const char *%s_ott[%d] =\n", LowerPrefix, nOutputTable);
     printf("{\n");
     int i;
     for (i = 0; i < nOutputTable; i++)
@@ -425,22 +439,51 @@ void BuildAndOutputTable(FILE *fp, char *UpperPrefix, char *LowerPrefix)
 
 int main(int argc, char *argv[])
 {
-    char *pPrefix;
-    char *pFilename;
+    char *pPrefix = NULL;
+    char *pFilename = NULL;
+
     if (argc < 3)
     {
 #if 0
-        fprintf(stderr, "Usage: %s prefix unicodedata.txt\n", argv[0]);
+        fprintf(stderr, "Usage: %s [-c ch] prefix unicodedata.txt\n", argv[0]);
         exit(0);
 #else
         pFilename = "NumericDecimal.txt";
         pPrefix   = "digit";
+        g_bReplacement = false;
+        g_iReplacementState = '?';
 #endif
     }
     else
     {
-        pPrefix   = argv[1];
-        pFilename = argv[2];
+        int j;
+        for (j = 1; j < argc; j++)
+        {
+            if (0 == strcmp(argv[j], "-c"))
+            {
+                g_bReplacement = true;
+                if (j+1 < argc)
+                {
+                    j++;
+                    g_iReplacementState = atoi(argv[j]);
+                }
+                else
+                {
+                    g_iReplacementState = '?';
+                }
+            }
+            else
+            {
+                if (NULL == pPrefix)
+                {
+                    pPrefix = argv[j];
+                }
+                else if (NULL == pFilename)
+                {
+                    pFilename = argv[j];
+                }
+            }
+        }
     }
 
     FILE *fp = fopen(pFilename, "rb");

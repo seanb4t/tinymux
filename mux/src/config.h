@@ -25,21 +25,24 @@
  * Database R/W flags.
  */
 
-#define MANDFLAGS  (V_LINK|V_PARENT|V_XFLAGS|V_ZONE|V_POWERS|V_3FLAGS|V_QUOTED)
-#define OFLAGS     (V_DATABASE|V_ATRKEY|V_ATRNAME|V_ATRMONEY)
+#define MANDFLAGS_V2  (V_LINK|V_PARENT|V_XFLAGS|V_ZONE|V_POWERS|V_3FLAGS|V_QUOTED)
+#define OFLAGS_V2     (V_DATABASE|V_ATRKEY|V_ATRNAME|V_ATRMONEY)
 
-#define OUTPUT_VERSION  2
+#define MANDFLAGS_V3  (V_LINK|V_PARENT|V_XFLAGS|V_ZONE|V_POWERS|V_3FLAGS|V_QUOTED|V_ATRKEY)
+#define OFLAGS_V3     (V_DATABASE|V_ATRNAME|V_ATRMONEY)
+
+#define OUTPUT_VERSION  3
 #ifdef MEMORY_BASED
-#define OUTPUT_FLAGS    (MANDFLAGS)
+#define OUTPUT_FLAGS    (MANDFLAGS_V3)
 #else // MEMORY_BASED
-#define OUTPUT_FLAGS    (MANDFLAGS|OFLAGS)
+#define OUTPUT_FLAGS    (MANDFLAGS_V3|OFLAGS_V3)
 #endif // MEMORY_BASED
 
-#define UNLOAD_VERSION  2
-#define UNLOAD_FLAGS    (MANDFLAGS)
+#define UNLOAD_VERSION  3
+#define UNLOAD_FLAGS    (MANDFLAGS_V3)
 
 #define MIN_SUPPORTED_VERSION 1
-#define MAX_SUPPORTED_VERSION 2
+#define MAX_SUPPORTED_VERSION 3
 
 /* magic lock cookies */
 #define NOT_TOKEN   '!'
@@ -275,11 +278,11 @@ typedef UINT32 UTF32;
 #define LARGEST_INT_LTE_NEG_QUOTIENT
 #endif // !SMALLEST_INT_GTE_NEG_QUOTIENT
 
-extern bool AssertionFailed(const char *SourceFile, unsigned int LineNo);
-#define mux_assert(exp) (void)( (exp) || (AssertionFailed(__FILE__, __LINE__), 0) )
+extern bool AssertionFailed(const UTF8 *SourceFile, unsigned int LineNo);
+#define mux_assert(exp) (void)( (exp) || (AssertionFailed((UTF8 *)__FILE__, __LINE__), 0) )
 
-extern void OutOfMemory(const char *SourceFile, unsigned int LineNo);
-#define ISOUTOFMEMORY(exp) {if (!(exp)) { OutOfMemory(__FILE__, __LINE__); }}
+extern void OutOfMemory(const UTF8 *SourceFile, unsigned int LineNo);
+#define ISOUTOFMEMORY(exp) {if (!(exp)) { OutOfMemory((UTF8 *)__FILE__, __LINE__); }}
 
 //#define MEMORY_ACCOUNTING
 

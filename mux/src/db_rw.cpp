@@ -18,13 +18,15 @@ static int g_flags;
 
 /* ---------------------------------------------------------------------------
  * getboolexp1: Get boolean subexpression from file.
+ *
+ * This is only used to import v2 flatfile.
  */
 
 static BOOLEXP *getboolexp1(FILE *f)
 {
     BOOLEXP *b;
-    char *buff, *s;
-    int d, anum;
+    UTF8 *buff, *s;
+    int d;
 
     int c = getc(f);
     switch (c)
@@ -47,72 +49,32 @@ static BOOLEXP *getboolexp1(FILE *f)
         case NOT_TOKEN:
             b->type = BOOLEXP_NOT;
             b->sub1 = getboolexp1(f);
-            if ((d = getc(f)) == '\n')
-            {
-                d = getc(f);
-            }
-            if (d != ')')
-            {
-                goto error;
-            }
-            return b;
+            break;
 
         case INDIR_TOKEN:
             b->type = BOOLEXP_INDIR;
             b->sub1 = getboolexp1(f);
-            if ((d = getc(f)) == '\n')
-            {
-                d = getc(f);
-            }
-            if (d != ')')
-            {
-                goto error;
-            }
-            return b;
+            break;
 
         case IS_TOKEN:
             b->type = BOOLEXP_IS;
             b->sub1 = getboolexp1(f);
-            if ((d = getc(f)) == '\n')
-            {
-                d = getc(f);
-            }
-            if (d != ')')
-            {
-                goto error;
-            }
-            return b;
+            break;
 
         case CARRY_TOKEN:
             b->type = BOOLEXP_CARRY;
             b->sub1 = getboolexp1(f);
-            if ((d = getc(f)) == '\n')
-            {
-                d = getc(f);
-            }
-            if (d != ')')
-            {
-                goto error;
-            }
-            return b;
+            break;
 
         case OWNER_TOKEN:
             b->type = BOOLEXP_OWNER;
             b->sub1 = getboolexp1(f);
-            if ((d = getc(f)) == '\n')
-            {
-                d = getc(f);
-            }
-            if (d != ')')
-            {
-                goto error;
-            }
-            return b;
+            break;
 
         default:
             ungetc(c, f);
             b->sub1 = getboolexp1(f);
-            if ((c = getc(f)) == '\n')
+            if ('\n' == (c = getc(f)))
             {
                 c = getc(f);
             }
@@ -130,89 +92,18 @@ static BOOLEXP *getboolexp1(FILE *f)
                 goto error;
             }
             b->sub2 = getboolexp1(f);
-            if ((d = getc(f)) == '\n')
-            {
-                d = getc(f);
-            }
-            if (d != ')')
-            {
-                goto error;
-            }
-            return b;
         }
 
-    case '-':
-
-        // obsolete NOTHING key, eat it.
-        //
-        while ((c = getc(f)) != '\n')
+        if ('\n' == (d = getc(f)))
         {
-            mux_assert(c != EOF);
+            d = getc(f);
         }
-        ungetc(c, f);
-        return TRUE_BOOLEXP;
-
-    case '"':
-        ungetc(c, f);
-        buff = alloc_lbuf("getboolexp_quoted");
+        if (')' != d)
         {
-            size_t nBuffer;
-            char *pBuffer = getstring_noalloc(f, true, &nBuffer);
-            if (LBUF_SIZE - 1 < nBuffer)
-            {
-                nBuffer = LBUF_SIZE - 1;
-                pBuffer[nBuffer] = '\0';
-            }
-            memcpy(buff, pBuffer, nBuffer+1);
-        }
-
-        c = fgetc(f);
-        if (c == EOF)
-        {
-            free_lbuf(buff);
-            return TRUE_BOOLEXP;
-        }
-
-        b = alloc_bool("getboolexp1_quoted");
-        anum = mkattr(GOD, buff);
-        if (anum <= 0)
-        {
-            free_bool(b);
-            free_lbuf(buff);
             goto error;
         }
-        free_lbuf(buff);
-        b->thing = anum;
-
-        // If last character is : then this is an attribute lock. A
-        // last character of / means an eval lock.
-        //
-        if (  c == ':'
-           || c == '/')
-        {
-            if (c == '/')
-            {
-                b->type = BOOLEXP_EVAL;
-            }
-            else
-            {
-                b->type = BOOLEXP_ATR;
-            }
-
-            buff = alloc_lbuf("getboolexp1.attr_lock");
-            size_t nBuffer;
-            char *pBuffer = getstring_noalloc(f, true, &nBuffer);
-            if (LBUF_SIZE - 1 < nBuffer)
-            {
-                nBuffer = LBUF_SIZE - 1;
-                pBuffer[nBuffer] = '\0';
-            }
-            memcpy(buff, pBuffer, nBuffer+1);
-
-            b->sub1 = (BOOLEXP *)StringClone(buff);
-            free_lbuf(buff);
-        }
         return b;
+
 
     default: // dbref or attribute.
 
@@ -233,24 +124,28 @@ static BOOLEXP *getboolexp1(FILE *f)
                 b->thing = b->thing * 10 + c - '0';
             }
         }
-        else if (mux_AttrNameInitialSet(c))
+        else if (mux_AttrNameInitialSet_latin1(c))
         {
-            buff = alloc_lbuf("getboolexp1.atr_name");
+            buff = (UTF8 *)alloc_lbuf("getboolexp1.atr_name");
 
-            for (  s = buff;
-
-                   (c = getc(f)) != EOF
-                && c != '\n'
-                && c != ':'
-                && c != '/'
-                && s < buff + LBUF_SIZE;
-
-                   *s++ = (char)c)
+            s = buff;
+            size_t n;
+            while (   EOF != (c = getc(f))
+                  && '\n' != c
+                  && ':'  != c
+                  && '/'  != c
+                  && (n = utf8_FirstByte[(unsigned char)c]) < UTF8_CONTINUE
+                  && s + n < buff + LBUF_SIZE)
             {
-                ; // Nothing.
+                *s++ = (UTF8)c;
+                while (--n)
+                {
+                    c = getc(f);
+                    *s++ = (UTF8)c;
+                }
             }
 
-            if (c == EOF)
+            if (EOF == c)
             {
                 free_lbuf(buff);
                 free_bool(b);
@@ -261,7 +156,7 @@ static BOOLEXP *getboolexp1(FILE *f)
             // Look the name up as an attribute. If not found, create a new
             // attribute.
             //
-            anum = mkattr(GOD, buff);
+            int anum = mkattr(GOD, buff);
             if (anum <= 0)
             {
                 free_bool(b);
@@ -280,10 +175,10 @@ static BOOLEXP *getboolexp1(FILE *f)
         // If last character is : then this is an attribute lock. A last
         // character of / means an eval lock.
         //
-        if (  c == ':'
-           || c == '/')
+        if (  ':' == c
+           || '/' == c)
         {
-            if (c == '/')
+            if ('/' == c)
             {
                 b->type = BOOLEXP_EVAL;
             }
@@ -291,25 +186,31 @@ static BOOLEXP *getboolexp1(FILE *f)
             {
                 b->type = BOOLEXP_ATR;
             }
-            buff = alloc_lbuf("getboolexp1.attr_lock");
-            for (  s = buff;
 
-                   (c = getc(f)) != EOF
-                && c != '\n'
-                && c != ')'
-                && c != OR_TOKEN
-                && c != AND_TOKEN
-                && s < buff + LBUF_SIZE;
-
-                   *s++ = (char)c)
+            buff = (UTF8 *)alloc_lbuf("getboolexp1.attr_lock");
+            s = buff;
+            size_t n;
+            while (   EOF != (c = getc(f))
+                  && '\n' != c
+                  && ':'  != c
+                  && '/'  != c
+                  && (n = utf8_FirstByte[(unsigned char)c]) < UTF8_CONTINUE
+                  && s + n < buff + LBUF_SIZE)
             {
-                ; // Nothing
+                *s++ = (UTF8)c;
+                while (--n)
+                {
+                    c = getc(f);
+                    *s++ = (UTF8)c;
+                }
             }
-            if (c == EOF)
+
+            if (EOF == c)
             {
                 goto error;
             }
-            *s++ = 0;
+            *s = '\0';
+
             b->sub1 = (BOOLEXP *)StringClone(buff);
             free_lbuf(buff);
         }
@@ -327,6 +228,8 @@ error:
 
 /* ---------------------------------------------------------------------------
  * getboolexp: Read a boolean expression from the flat file.
+ *
+ * This is only used to import v2 flatfile.
  */
 
 static BOOLEXP *getboolexp(FILE *f)
@@ -351,7 +254,7 @@ int g_max_obj_atr = INT_MIN;
 
 static bool get_list(FILE *f, dbref i)
 {
-    char *buff = alloc_lbuf("get_list");
+    UTF8 *buff = alloc_lbuf("get_list");
     for (;;)
     {
         dbref atr;
@@ -388,9 +291,19 @@ static bool get_list(FILE *f, dbref i)
 
                 // Store the attr
                 //
-                size_t nBuffer;
-                char *pBuffer = getstring_noalloc(f, true, &nBuffer);
-                atr_add_raw_LEN(i, atr, pBuffer, nBuffer);
+                size_t nBufferUnicode;
+                UTF8 *pBufferUnicode;
+                if (3 == g_version)
+                {
+                    pBufferUnicode = (UTF8 *)getstring_noalloc(f, true, &nBufferUnicode);
+                }
+                else
+                {
+                    size_t nBufferLatin1;
+                    char *pBufferLatin1 = (char *)getstring_noalloc(f, true, &nBufferLatin1);
+                    pBufferUnicode = ConvertToUTF8(pBufferLatin1, &nBufferUnicode);
+                }
+                atr_add_raw_LEN(i, atr, pBufferUnicode, nBufferUnicode);
             }
             else
             {
@@ -430,132 +343,14 @@ static bool get_list(FILE *f, dbref i)
     }
 }
 
-/* ---------------------------------------------------------------------------
- * putbool_subexp: Write a boolean sub-expression to the flat file.
- */
-static void putbool_subexp(FILE *f, BOOLEXP *b)
-{
-    ATTR *va;
-
-    switch (b->type)
-    {
-    case BOOLEXP_IS:
-
-        putc('(', f);
-        putc(IS_TOKEN, f);
-        putbool_subexp(f, b->sub1);
-        putc(')', f);
-        break;
-
-    case BOOLEXP_CARRY:
-
-        putc('(', f);
-        putc(CARRY_TOKEN, f);
-        putbool_subexp(f, b->sub1);
-        putc(')', f);
-        break;
-
-    case BOOLEXP_INDIR:
-
-        putc('(', f);
-        putc(INDIR_TOKEN, f);
-        putbool_subexp(f, b->sub1);
-        putc(')', f);
-        break;
-
-    case BOOLEXP_OWNER:
-
-        putc('(', f);
-        putc(OWNER_TOKEN, f);
-        putbool_subexp(f, b->sub1);
-        putc(')', f);
-        break;
-
-    case BOOLEXP_AND:
-
-        putc('(', f);
-        putbool_subexp(f, b->sub1);
-        putc(AND_TOKEN, f);
-        putbool_subexp(f, b->sub2);
-        putc(')', f);
-        break;
-
-    case BOOLEXP_OR:
-
-        putc('(', f);
-        putbool_subexp(f, b->sub1);
-        putc(OR_TOKEN, f);
-        putbool_subexp(f, b->sub2);
-        putc(')', f);
-        break;
-
-    case BOOLEXP_NOT:
-
-        putc('(', f);
-        putc(NOT_TOKEN, f);
-        putbool_subexp(f, b->sub1);
-        putc(')', f);
-        break;
-
-    case BOOLEXP_CONST:
-
-        putref(f, b->thing);
-        break;
-
-    case BOOLEXP_ATR:
-
-        va = atr_num(b->thing);
-        if (va)
-        {
-            fprintf(f, "%s:%s", va->name, (char *)b->sub1);
-        }
-        else
-        {
-            fprintf(f, "%d:%s\n", b->thing, (char *)b->sub1);
-        }
-        break;
-
-    case BOOLEXP_EVAL:
-
-        va = atr_num(b->thing);
-        if (va)
-        {
-            fprintf(f, "%s/%s\n", va->name, (char *)b->sub1);
-        }
-        else
-        {
-            fprintf(f, "%d/%s\n", b->thing, (char *)b->sub1);
-        }
-        break;
-
-    default:
-
-        Log.tinyprintf("Unknown boolean type in putbool_subexp: %d" ENDLINE, b->type);
-        break;
-    }
-}
-
-/* ---------------------------------------------------------------------------
- * putboolexp: Write boolean expression to the flat file.
- */
-
-static void putboolexp(FILE *f, BOOLEXP *b)
-{
-    if (b != TRUE_BOOLEXP)
-    {
-        putbool_subexp(f, b);
-    }
-    putc('\n', f);
-}
-
 dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
 {
     dbref i, anum;
     int ch;
-    const char *tstr;
+    const UTF8 *tstr;
     int aflags;
     BOOLEXP *tempbool;
-    char *buff;
+    UTF8 *buff;
     size_t nVisualWidth;
     size_t nBuffer;
 
@@ -577,12 +372,12 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
 
     size_t nName;
     bool bValid;
-    char *pName;
+    UTF8 *pName;
 
     int iDotCounter = 0;
     if (mudstate.bStandAlone)
     {
-        Log.WriteString("Reading ");
+        Log.WriteString((UTF8 *)"Reading ");
         Log.Flush();
     }
     db_free();
@@ -626,7 +421,7 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
                 // USER-NAMED ATTRIBUTE
                 //
                 anum = getref(f);
-                tstr = getstring_noalloc(f, true, &nBuffer);
+                tstr = (UTF8 *)getstring_noalloc(f, true, &nBuffer);
                 if (mux_isdigit(*tstr))
                 {
                     aflags = 0;
@@ -640,6 +435,15 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
                 {
                     aflags = mudconf.vattr_flags;
                 }
+
+                // If v2 flatfile or earlier, convert tstr to UTF-8.
+                //
+                if (g_version <= 2)
+                {
+                    size_t nBuffer;
+                    tstr = ConvertToUTF8((char *)tstr, &nBuffer);
+                }
+
                 pName = MakeCanonicalAttributeName(tstr, &nName, &bValid);
                 if (bValid)
                 {
@@ -651,8 +455,8 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
                         if (a)
                         {
                             Log.tinyprintf("Renaming conflicting user attribute, %s, to FIRAN_%s." ENDLINE, pName, pName);
-                            char *p = alloc_lbuf("db_read");
-                            char *q = p;
+                            UTF8 *p = alloc_lbuf("db_read");
+                            UTF8 *q = p;
                             safe_str("FIRAN_", p, &q);
                             safe_str(pName, p, &q);
                             *q = '\0';
@@ -689,27 +493,37 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
                 if (header_gotten)
                 {
                     Log.tinyprintf(ENDLINE "Duplicate MUX version header entry at object %d, ignored." ENDLINE, i);
-                    tstr = getstring_noalloc(f, false, &nBuffer);
+                    tstr = (UTF8 *)getstring_noalloc(f, false, &nBuffer);
                 }
                 else
                 {
                     header_gotten = true;
                     g_format = F_MUX;
                     g_version = getref(f);
-                    mux_assert((g_version & MANDFLAGS) == MANDFLAGS);
+                    g_flags = g_version & ~V_MASK;
+                    g_version &= V_MASK;
+
+                    // Due to potential UTF-8 characters in attribute names,
+                    // we do not support parsing A_LOCK from the header. After
+                    // converting from v2 to v3, this should never be needed
+                    // anyway.
+                    //
+                    mux_assert(  (  (  1 == g_version
+                                    || 2 == g_version)
+                                 && (g_flags & MANDFLAGS_V2) == MANDFLAGS_V2)
+                              || (  3 == g_version
+                                 && (g_flags & MANDFLAGS_V3) == MANDFLAGS_V3));
 
                     // Otherwise extract feature flags
                     //
-                    if (g_version & V_DATABASE)
+                    if (g_flags & V_DATABASE)
                     {
                         read_attribs = false;
-                        read_name = !(g_version & V_ATRNAME);
+                        read_name = !(g_flags & V_ATRNAME);
                     }
-                    read_key = !(g_version & V_ATRKEY);
-                    read_money = !(g_version & V_ATRMONEY);
-                    g_flags = g_version & ~V_MASK;
+                    read_key = !(g_flags & V_ATRKEY);
+                    read_money = !(g_flags & V_ATRMONEY);
 
-                    g_version &= V_MASK;
                     if (  g_version < MIN_SUPPORTED_VERSION
                        || MAX_SUPPORTED_VERSION < g_version)
                     {
@@ -725,7 +539,7 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
                 if (size_gotten)
                 {
                     Log.tinyprintf(ENDLINE "Duplicate size entry at object %d, ignored." ENDLINE, i);
-                    tstr = getstring_noalloc(f, false, &nBuffer);
+                    tstr = (UTF8 *)getstring_noalloc(f, false, &nBuffer);
                 }
                 else
                 {
@@ -740,7 +554,7 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
                 if (nextattr_gotten)
                 {
                     Log.tinyprintf(ENDLINE "Duplicate next free vattr entry at object %d, ignored." ENDLINE, i);
-                    tstr = getstring_noalloc(f, false, &nBuffer);
+                    tstr = (UTF8 *)getstring_noalloc(f, false, &nBuffer);
                 }
                 else
                 {
@@ -751,7 +565,7 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
             else
             {
                 Log.tinyprintf(ENDLINE "Unexpected character '%c' in MUX header near object #%d, ignored." ENDLINE, ch, i);
-                tstr = getstring_noalloc(f, false, &nBuffer);
+                tstr = (UTF8 *)getstring_noalloc(f, false, &nBuffer);
             }
             break;
 
@@ -761,7 +575,12 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
 
             if (read_name)
             {
-                tstr = getstring_noalloc(f, true, &nBuffer);
+                tstr = (UTF8 *)getstring_noalloc(f, true, &nBuffer);
+                if (g_version <= 2)
+                {
+                    size_t nBuffer;
+                    tstr = ConvertToUTF8((char *)tstr, &nBuffer);
+                }
                 buff = alloc_lbuf("dbread.s_Name");
                 (void)ANSI_TruncateToField(tstr, MBUF_SIZE, buff, MBUF_SIZE,
                     &nVisualWidth);
@@ -802,6 +621,9 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
             //
             if (read_key)
             {
+                // Parse lock directly from flatfile.
+                // Only used when reading v2 format.
+                //
                 tempbool = getboolexp(f);
                 atr_add_raw(i, A_LOCK,
                 unparse_boolexp_quiet(1, tempbool));
@@ -854,8 +676,8 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
             break;
 
         case '*':   // EOF marker
-            tstr = getstring_noalloc(f, false, &nBuffer);
-            if (strncmp(tstr, "**END OF DUMP***", 16))
+            tstr = (UTF8 *)getstring_noalloc(f, false, &nBuffer);
+            if (strncmp((char *)tstr, "**END OF DUMP***", 16))
             {
                 Log.tinyprintf(ENDLINE "Bad EOF marker at object #%d" ENDLINE, i);
                 return -1;
@@ -917,7 +739,7 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
                 *db_flags = g_flags;
                 if (mudstate.bStandAlone)
                 {
-                    Log.WriteString(ENDLINE);
+                    Log.WriteString((UTF8 *)ENDLINE);
                     Log.Flush();
                 }
                 else
@@ -932,7 +754,7 @@ dbref db_read(FILE *f, int *db_format, int *db_version, int *db_flags)
             return -1;
 
         default:
-            if (mux_isprint_old(ch))
+            if (mux_isprint_latin1(ch))
             {
                 Log.tinyprintf(ENDLINE "Illegal character '%c' near object #%d" ENDLINE, ch, i);
             }
@@ -950,10 +772,7 @@ static bool db_write_object(FILE *f, dbref i, int db_format, int flags)
     UNUSED_PARAMETER(db_format);
 
     ATTR *a;
-    char *got, *as;
-    dbref aowner;
-    int ca, aflags, j;
-    BOOLEXP *tempbool;
+    int ca, j;
 
     if (!(flags & V_ATRNAME))
     {
@@ -965,17 +784,6 @@ static bool db_write_object(FILE *f, dbref i, int db_format, int flags)
     putref(f, Exits(i));
     putref(f, Link(i));
     putref(f, Next(i));
-    if (!(flags & V_ATRKEY))
-    {
-        got = atr_get("db_write_object.970", i, A_LOCK, &aowner, &aflags);
-        tempbool = parse_boolexp(GOD, got, true);
-        free_lbuf(got);
-        putboolexp(f, tempbool);
-        if (tempbool)
-        {
-            free_boolexp(tempbool);
-        }
-    }
     putref(f, Owner(i));
     putref(f, Parent(i));
     if (!(flags & V_ATRMONEY))
@@ -992,8 +800,9 @@ static bool db_write_object(FILE *f, dbref i, int db_format, int flags)
     //
     if (!(flags & V_DATABASE))
     {
-        char buf[SBUF_SIZE];
+        UTF8 buf[SBUF_SIZE];
         buf[0] = '>';
+        unsigned char *as;
         for (ca = atr_head(i, &as); ca; ca = atr_next(&as))
         {
             if (mudstate.bStandAlone)
@@ -1021,13 +830,6 @@ static bool db_write_object(FILE *f, dbref i, int db_format, int flags)
                     }
                     break;
 
-                case A_LOCK:
-                    if (!(flags & V_ATRKEY))
-                    {
-                        continue;
-                    }
-                    break;
-
                 case A_LIST:
                 case A_MONEY:
                     continue;
@@ -1036,13 +838,13 @@ static bool db_write_object(FILE *f, dbref i, int db_format, int flags)
 
             // Format is: ">%d\n", j
             //
-            const char *p = atr_get_raw(i, j);
+            const UTF8 *p = atr_get_raw(i, j);
             size_t n = mux_ltoa(j, buf+1) + 1;
             buf[n++] = '\n';
-            fwrite(buf, sizeof(char), n, f);
+            fwrite(buf, sizeof(UTF8), n, f);
             putstring(f, p);
         }
-        fwrite("<\n", sizeof(char), 2, f);
+        fwrite("<\n", sizeof(UTF8), 2, f);
     }
     return false;
 }
@@ -1060,12 +862,12 @@ dbref db_write(FILE *f, int format, int version)
         break;
 
     default:
-        Log.WriteString("Can only write MUX format." ENDLINE);
+        Log.WriteString((UTF8 *)"Can only write MUX format." ENDLINE);
         return -1;
     }
     if (mudstate.bStandAlone)
     {
-        Log.WriteString("Writing ");
+        Log.WriteString((UTF8 *)"Writing ");
         Log.Flush();
     }
     i = mudstate.attr_next;
@@ -1074,7 +876,7 @@ dbref db_write(FILE *f, int format, int version)
 
     // Dump user-named attribute info.
     //
-    char Buffer[LBUF_SIZE];
+    UTF8 Buffer[LBUF_SIZE];
     Buffer[0] = '+';
     Buffer[1] = 'A';
     int iAttr;
@@ -1086,23 +888,23 @@ dbref db_write(FILE *f, int format, int version)
         {
             // Format is: "+A%d\n\"%d:%s\"\n", vp->number, vp->flags, vp->name
             //
-            char *pBuffer = Buffer+2;
+            UTF8 *pBuffer = Buffer+2;
             pBuffer += mux_ltoa(vp->number, pBuffer);
             *pBuffer++ = '\n';
             *pBuffer++ = '"';
             pBuffer += mux_ltoa(vp->flags, pBuffer);
             *pBuffer++ = ':';
-            size_t nNameLength = strlen(vp->name);
+            size_t nNameLength = strlen((char *)vp->name);
             memcpy(pBuffer, vp->name, nNameLength);
             pBuffer += nNameLength;
             *pBuffer++ = '"';
             *pBuffer++ = '\n';
-            fwrite(Buffer, sizeof(char), pBuffer-Buffer, f);
+            fwrite(Buffer, sizeof(UTF8), pBuffer-Buffer, f);
         }
     }
 
     int iDotCounter = 0;
-    char buf[SBUF_SIZE];
+    UTF8 buf[SBUF_SIZE];
     buf[0] = '!';
     DO_WHOLE_DB(i)
     {
@@ -1123,14 +925,14 @@ dbref db_write(FILE *f, int format, int version)
             //
             size_t n = mux_ltoa(i, buf+1) + 1;
             buf[n++] = '\n';
-            fwrite(buf, sizeof(char), n, f);
+            fwrite(buf, sizeof(UTF8), n, f);
             db_write_object(f, i, format, flags);
         }
     }
     fputs("***END OF DUMP***\n", f);
     if (mudstate.bStandAlone)
     {
-        Log.WriteString(ENDLINE);
+        Log.WriteString((UTF8 *)ENDLINE);
         Log.Flush();
     }
     return mudstate.db_top;
