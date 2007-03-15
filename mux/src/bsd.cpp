@@ -445,7 +445,8 @@ static int get_slave_result(void)
         }
     }
 
-    if (sscanf((char *)ident, "%d , %d : %s : %s : %s", &remote_port, &local_port, token, os, userid) != 5)
+    if (sscanf_s((char *)ident, "%d , %d : %s : %s : %s", &remote_port, &local_port, 
+                    token, MAX_STRING, os, MAX_STRING, userid, MAX_STRING) != 5)
     {
         return 1;
     }
@@ -2858,7 +2859,7 @@ int UsState(DESC *d, unsigned char chOption)
 
 void SendCharsetRequest(DESC *d)
 {
-    if (d->nvt_him_state[TELNET_CHARSET] == OPTION_YES)
+    if (OPTION_YES == d->nvt_him_state[(int)TELNET_CHARSET])
     {
         char aCharsets[26] =
         {
