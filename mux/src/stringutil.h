@@ -85,12 +85,12 @@ extern const UTF8 *latin1_utf8[256];
 // utf/cl_Printable.txt
 //
 // 95007 included, 1019105 excluded, 0 errors.
-// 164 states, 103 columns, 17148 bytes
+// 149 states, 98 columns, 14858 bytes
 //
 #define CL_PRINT_START_STATE (0)
-#define CL_PRINT_ACCEPTING_STATES_START (164)
+#define CL_PRINT_ACCEPTING_STATES_START (149)
 extern const unsigned char cl_print_itt[256];
-extern const unsigned char cl_print_stt[164][103];
+extern const unsigned char cl_print_stt[149][98];
 
 inline bool mux_isprint(const unsigned char *p)
 {
@@ -458,9 +458,193 @@ typedef struct
 
 extern bool ParseFloat(PARSE_FLOAT_RESULT *pfr, const UTF8 *str, bool bStrict = true);
 
+// mux_string cursors and segments are used for iterators and substr lengths
+// internally.  They should not be used externally, as the external view is
+// always that an index refers to a code point.
+//
+typedef struct
+{
+    size_t iutf;
+    size_t icp;
+} mux_string_cursor;
+
+typedef struct
+{
+    size_t cutf;
+    size_t ccp;
+} mux_string_segment;
+
+inline void segment_assign(mux_string_segment &s, const mux_string_cursor &from, const mux_string_cursor &to)
+{
+    if (  from.iutf < to.iutf
+       && from.icp  < to.icp)
+    {
+        s.cutf = to.iutf - from.iutf;
+        s.ccp  = to.icp  - from.icp;
+    }
+    else
+    {
+        s.cutf = 0;
+        s.ccp  = 0;
+    }
+}
+
 class mux_string
 {
+#ifdef NEW_MUX_STRING
+    // PROPOSED INVARIANT (2007-MAR-16)
+    //
+    // m_nutf, m_ncs, m_autf, m_ncs, and m_pcs work together as follows:
+    //
+    // m_nutf is always between 0 and LBUF_SIZE-1 inclusively.  The first
+    // m_nutf bytes of m_atuf[] contain the non-color UTF-8-encoded code
+    // points.  A terminating '\0' at m_autf[m_nutf] is not included in this
+    // size even though '\0' is a UTF-8 code point.  In this way, m_nutf
+    // corresponds to strlen() in units of bytes.  The use of both a length
+    // and a terminating '\0' is intentionally redundant.
+    //
+    // m_ncp is between 0 and LBUF_SIZE-1 inclusively and represents the
+    // number of non-color UTF-8-encoded code points stored in m_autf[].
+    // The terminating '\0' is not included in this size.  In this way, m_ncp
+    // corresponds to strlen() in units of code points.
+    //
+    // If color is associated with the above code points, m_pcs will point
+    // to an array of ColorStates, otherwise, it is NULL.  When m_pcs is NULL,
+    // it is equivalent to every code point having CS_NORMAL color.  Each
+    // color state corresponds with a UTF-8 code point in m_autf[].  There is
+    // no guaranteed association between a position in m_autf[] and a position
+    // in m_pcs because UTF-8 code points are variable length.
+    //
+    // Not all ColorStates in m_pcs may be used. m_ncs is between 0 and
+    // LBUF_SIZE-1 inclusively and represents how many ColorStates are
+    // allocated and available for use.  m_ncp is always less than or equal to
+    // m_ncs.
+    //
+    // To recap, m_nutf has units of bytes while m_ncp and m_ncs are in units
+    // of code points.
+    //
 private:
+    size_t      m_nutf;
+    UTF8        m_autf[LBUF_SIZE];
+    size_t      m_ncp;
+    size_t      m_ncs;
+    ColorState *m_pcs;
+
+    // mux_string_cursor c;
+    // cursor_start(c);
+    // while (cursor_next(c))
+    // {
+    // }
+    //
+    inline void cursor_start(mux_string_cursor &c)
+    {
+        c.iutf = 0;
+        c.icp  = 0;
+    }
+
+    inline bool cursor_next(mux_string_cursor &c)
+    {
+        if ('\0' != m_autf[c.iutf])
+        {
+#ifdef NEW_MUX_STRING_PARANOID
+            size_t n = utf8_FirstByte[m_autf[c.iutf]];
+            mux_assert(n < UTF8_CONTINUE);
+            while (n--)
+            {
+                c.ituf++;
+                mux_assert(UTF8_CONTINUE == utf8_FirstByte[m_autf[c.iutf]]);
+            }
+            mux_assert(0 <= c.icp && c.icp < m_ncp);
+#else
+            c.iutf += utf8_FirstByte[m_autf[c.iutf]];
+#endif // NEW_MUX_STRING_PARANOID
+            c.icp++;
+            return true;
+        }
+        return false;
+    };
+
+    // mux_string_cursor c;
+    // cursor_end(c);
+    // while (cursor_prev(c))
+    // {
+    // }
+    //
+    inline void cursor_end(mux_string_cursor &c)
+    {
+        c.iutf = m_nutf;
+        c.icp  = m_ncp;
+    }
+
+    inline bool cursor_prev(mux_string_cursor &c)
+    {
+        if (0 < c.iutf)
+        {
+#ifdef NEW_MUX_STRING_PARANOID
+            size_t n = 1;
+            while (UTF8_CONTINUE == utf8_FirstByte[m_autf[c.iutf-n]])
+            {
+                n++;
+                mux_assert(0 < c.iutf - n);
+            }
+            mux_assert(utf8_FirstByte[m_autf[c.iutf - n]] < UTF8_CONTINUE);
+            c.iutf -= n;
+            mux_assert(0 < c.icp && c.icp <= m_ncp);
+#else
+            c.iutf--;
+            while (UTF8_CONTINUE == utf8_FirstByte[m_autf[c.iutf]])
+            {
+                c.iutf--;
+            }
+#endif // NEW_MUX_STRING_PARANOID
+            c.icp--;
+            return true;
+        }
+        return false;
+    };
+
+    inline bool cursor_from_point(mux_string_cursor &c, size_t iPoint)
+    {
+        if (iPoint <= m_ncp)
+        {
+            if (m_ncp == m_nutf)
+            {
+                // Special case of ASCII.
+                //
+                c.iutf = iPoint;
+                c.icp = iPoint;
+            }
+            else if (iPoint < m_ncp/2)
+            {
+                // Start from the beginning.
+                //
+                cursor_start(c);
+                while (  c.icp < iPoint
+                      && cursor_next(c))
+                {
+                    ; // Nothing.
+                }
+            }
+            else
+            {
+                // Start from the end.
+                //
+                cursor_end(c);
+                while (  iPoint < c.icp
+                      && cursor_prev(c))
+                {
+                    ; // Nothing.
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+#else
+private:
+    // DEPRECATED INVARIANT
+    //
     // m_n, m_ach, m_ncs, and m_pcs work together as follows:
     //
     // m_n is always between 0 and LBUF_SIZE-1 inclusively.  The first m_n
@@ -480,6 +664,7 @@ private:
     size_t          m_ncs;
     ColorState     *m_pcs;
 
+#endif // NEW_MUX_STRING
     void realloc_m_pcs(size_t ncs);
 
 public:
@@ -600,6 +785,8 @@ public:
         }
     }
 
+#ifdef NEW_MUX_STRING
+#else
     UTF8 operator [](size_t i) const
     {
         if (m_n <= i)
@@ -608,6 +795,7 @@ public:
         }
         return m_ach[i];
     }
+#endif // NEW_MUX_STRING
 
     friend class mux_words;
 };
