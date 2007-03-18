@@ -20,7 +20,6 @@ extern const bool mux_isalnum[256];
 extern const bool mux_islower_latin1[256];
 extern const bool mux_isupper_latin1[256];
 extern const bool mux_isspace[256];
-extern bool mux_PlayerNameSet[256];
 extern const bool mux_issecure[256];
 extern const bool mux_isescape[256];
 extern const unsigned char mux_hex2dec[256];
@@ -53,7 +52,6 @@ extern const UTF8 *latin1_utf8[256];
 #define mux_toupper(x) (mux_toupper_latin1[(unsigned char)(x)])
 #define mux_tolower(x) (mux_tolower_latin1[(unsigned char)(x)])
 
-#define mux_PlayerNameSet(x)      (mux_PlayerNameSet[(unsigned char)(x)])
 #define mux_issecure(x)           (mux_issecure[(unsigned char)(x)])
 #define mux_isescape(x)           (mux_isescape[(unsigned char)(x)])
 
@@ -161,6 +159,26 @@ inline bool mux_isobjectname(const unsigned char *p)
     return ((iState - CL_OBJECTNAME_ACCEPTING_STATES_START) == 1) ? true : false;
 }
 
+// utf/cl_PlayerName.txt
+//
+// 142 included, 1113970 excluded, 0 errors.
+// 5 states, 10 columns, 306 bytes
+//
+#define CL_PLAYERNAME_START_STATE (0)
+#define CL_PLAYERNAME_ACCEPTING_STATES_START (5)
+extern const unsigned char cl_playername_itt[256];
+extern const unsigned char cl_playername_stt[5][10];
+
+inline bool mux_isplayername(const unsigned char *p)
+{
+    int iState = CL_PLAYERNAME_START_STATE;
+    do
+    {
+        unsigned char ch = *p++;
+        iState = cl_playername_stt[iState][cl_playername_itt[(unsigned char)ch]];
+    } while (iState < CL_PLAYERNAME_ACCEPTING_STATES_START);
+    return ((iState - CL_PLAYERNAME_ACCEPTING_STATES_START) == 1) ? true : false;
+}
 
 // utf/cl_Upper.txt
 //
