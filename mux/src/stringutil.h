@@ -20,8 +20,6 @@ extern const bool mux_isalnum[256];
 extern const bool mux_islower_latin1[256];
 extern const bool mux_isupper_latin1[256];
 extern const bool mux_isspace[256];
-extern bool mux_AttrNameInitialSet_latin1[256];
-extern bool mux_AttrNameSet[256];
 extern const bool mux_ObjectNameSet[256];
 extern bool mux_PlayerNameSet[256];
 extern const bool mux_issecure[256];
@@ -56,7 +54,6 @@ extern const UTF8 *latin1_utf8[256];
 #define mux_toupper(x) (mux_toupper_latin1[(unsigned char)(x)])
 #define mux_tolower(x) (mux_tolower_latin1[(unsigned char)(x)])
 
-#define mux_AttrNameInitialSet_latin1(x) (mux_AttrNameInitialSet_latin1[(unsigned char)(x)])
 #define mux_ObjectNameSet(x)      (mux_ObjectNameSet[(unsigned char)(x)])
 #define mux_PlayerNameSet(x)      (mux_PlayerNameSet[(unsigned char)(x)])
 #define mux_issecure(x)           (mux_issecure[(unsigned char)(x)])
@@ -540,7 +537,24 @@ public:
         m_byte  = m_byte + a.m_byte;
         m_point = m_point + a.m_point;
     };
+
+    inline void operator -=(const mux_cursor &a)
+    {
+        if (  a.m_byte  < m_byte
+           && a.m_point < m_point)
+        {
+            m_byte  = m_byte - a.m_byte;
+            m_point = m_point - a.m_point;
+        }
+        else
+        {
+            m_byte  = 0;
+            m_point = 0;
+        }
+    };
 };
+
+bool utf8_strlen(const UTF8 *pString, mux_cursor &nString);
 
 static const mux_cursor CursorMin = {0,0};
 static const mux_cursor CursorMax = {LBUF_SIZE - 1, LBUF_SIZE - 1};
@@ -637,9 +651,15 @@ public:
     void append(const UTF8 *pStr, size_t nLen);
     void append_TextPlain(const UTF8 *pStr);
     void append_TextPlain(const UTF8 *pStr, size_t nLen);
+#ifdef NEW_MUX_STRING
+    void compress(const UTF8 *ch);
+    void compress_Spaces(void);
+    void delete_Chars(mux_cursor iStart, mux_cursor iEnd);
+#else
     void compress(const UTF8 ch);
     void compress_Spaces(void);
     void delete_Chars(size_t nStart, size_t nLen);
+#endif
     void edit(mux_string &sFrom, const mux_string &sTo);
     UTF8 export_Char(size_t n) const;
     LBUF_OFFSET export_Char_UTF8(size_t iFirst, UTF8 *pBuffer) const;
@@ -735,6 +755,20 @@ public:
 #endif // NEW_MUX_STRING
     void set_Char(size_t n, const UTF8 cChar);
     void set_Color(size_t n, ColorState csColor);
+#ifdef NEW_MUX_STRING
+    void strip
+    (
+        const UTF8 *pStripSet,
+        mux_cursor iStart = CursorMin,
+        mux_cursor iEnd = CursorMax
+    );
+    void stripWithTable
+    (
+        const bool strip_table[UCHAR_MAX+1],
+        mux_cursor iStart = CursorMin,
+        mux_cursor iEnd = CursorMax
+    );
+#else
     void strip
     (
         const UTF8 *pStripSet,
@@ -747,6 +781,7 @@ public:
         size_t nStart = 0,
         size_t nLen = (LBUF_SIZE-1)
     );
+#endif // NEW_MUX_STRING
     void transform
     (
         mux_string &sFromSet,
@@ -947,8 +982,13 @@ class mux_words
 private:
     bool        m_aControl[UCHAR_MAX+1];
     LBUF_OFFSET m_nWords;
+#ifdef NEW_MUX_STRING
+    mux_cursor m_aiWordBegins[MAX_WORDS];
+    mux_cursor m_aiWordEnds[MAX_WORDS];
+#else
     LBUF_OFFSET m_aiWordBegins[MAX_WORDS];
     LBUF_OFFSET m_aiWordEnds[MAX_WORDS];
+#endif
     const mux_string *m_s;
 
 public:
@@ -960,8 +1000,13 @@ public:
     void ignore_Word(LBUF_OFFSET n);
     void set_Control(const UTF8 *pControlSet);
     void set_Control(const bool table[UCHAR_MAX+1]);
+#ifdef NEW_MUX_STRING
+    mux_cursor wordBegin(LBUF_OFFSET n) const;
+    mux_cursor wordEnd(LBUF_OFFSET n) const;
+#else
     LBUF_OFFSET wordBegin(LBUF_OFFSET n) const;
     LBUF_OFFSET wordEnd(LBUF_OFFSET n) const;
+#endif
 };
 
 #endif // STRINGUTIL_H

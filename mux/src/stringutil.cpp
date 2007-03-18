@@ -243,36 +243,6 @@ const bool mux_isspace[256] =
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   // F
 };
 
-// The first character of an attribute name must be either alphabetic,
-// '_', '#', '.', or '~'. It's handled by the following table.
-//
-// Characters thereafter may be letters, numbers, and characters from
-// the set {'?!`/-_.@#$^&~=+<>()}. Lower-case letters are turned into
-// uppercase before being used, but lower-case letters are valid input.
-//
-bool mux_AttrNameInitialSet_latin1[256] =
-{
-//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-//
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 1
-    0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,  // 2
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 3
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 4
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,  // 5
-    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // 6
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0,  // 7
-
-    0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0,  // 8
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1,  // 9
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,  // A
-    0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,  // B
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // C
-    1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,  // D
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  // E
-    1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0   // F
-};
-
 // Valid characters for an object name are all printable
 // characters except those from the set {=&|}.
 //
@@ -494,29 +464,6 @@ const unsigned char mux_tolower_latin1[UCHAR_MAX+1] =
     0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xD7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xDF, // D
     0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF, // E
     0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF  // F
-};
-
-const unsigned char mux_StripAccents[256] =
-{
-//   0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
-//
-    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, // 0
-    0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, // 1
-    0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, // 2
-    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, // 3
-    0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F, // 4
-    0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A, 0x5B, 0x5C, 0x5D, 0x5E, 0x5F, // 5
-    0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F, // 6
-    0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x7B, 0x7C, 0x7D, 0x7E, 0x7F, // 7
-
-    0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F, // 8
-    0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x97, 0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F, // 9
-    0xA0, 0x21, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0x22, 0xAC, 0xAD, 0xAE, 0xAF, // A
-    0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8, 0xB9, 0xBA, 0x22, 0xBC, 0xBD, 0xBE, 0x3F, // B
-    0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0xC6, 0x43, 0x45, 0x45, 0x45, 0x45, 0x49, 0x49, 0x49, 0x49, // C
-    0x44, 0x4E, 0x4F, 0x4F, 0x4F, 0x4F, 0x4F, 0xD7, 0x4F, 0x55, 0x55, 0x55, 0x55, 0x59, 0x50, 0x42, // D
-    0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0xE6, 0x63, 0x65, 0x65, 0x65, 0x65, 0x69, 0x69, 0x69, 0x69, // E
-    0x6F, 0x6E, 0x6F, 0x6F, 0x6F, 0x6F, 0x6F, 0xF7, 0x6F, 0x75, 0x75, 0x75, 0x75, 0x79, 0x70, 0x79, // F
 };
 
 // This will help decode UTF-8 sequences.
@@ -5020,7 +4967,10 @@ void mux_string::append(const mux_string &sStr, mux_cursor iStart, mux_cursor iE
 
     if (CursorMax - m_iLast < iEnd - iStart)
     {
-        iEnd = iStart + CursorMax - m_iLast;
+        while (LBUF_SIZE-1 < m_iLast.m_byte + iEnd.m_byte - iStart.m_byte)
+        {
+            sStr.cursor_prev(iEnd);
+        }
     }
 
     LBUF_OFFSET nBytes = iEnd.m_byte - iStart.m_byte;
@@ -5126,27 +5076,27 @@ void mux_string::append_TextPlain(const UTF8 *pStr)
 
     size_t nLen = strlen((char *)pStr);
 
-    if ((LBUF_SIZE-1)-m_iLast.m_byte < nLen)
+    if (static_cast<size_t>((LBUF_SIZE-1) - m_iLast.m_byte) < nLen)
     {
-        nLen = (LBUF_SIZE-1)-m_iLast.m_byte;
+        nLen = (LBUF_SIZE-1) - m_iLast.m_byte;
     }
 
     memcpy(m_autf + m_iLast.m_byte, pStr, nLen * sizeof(m_autf[0]));
-
-    if (0 != m_ncs)
-    {
-        realloc_m_pcs(m_iLast.m_point + nLen);
-        for (size_t i = 0; i < nLen; i++)
-        {
-            m_pcs[m_iLast.m_point + i] = CS_NORMAL;
-        }
-    }
 
     mux_cursor i = m_iLast, j = i;
     while (  cursor_next(i)
           && i.m_byte <= m_iLast.m_byte + nLen)
     {
         j = i;
+    }
+
+    if (0 != m_ncs)
+    {
+        realloc_m_pcs(j.m_point);
+        for (size_t i = m_iLast.m_point; i < j.m_point; i++)
+        {
+            m_pcs[i] = CS_NORMAL;
+        }
     }
 
     m_iLast = j;
@@ -5164,7 +5114,7 @@ void mux_string::append_TextPlain(const UTF8 *pStr, size_t nLen)
         return;
     }
 
-    if ((LBUF_SIZE-1) - m_iLast.m_byte < nLen)
+    if (static_cast<size_t>((LBUF_SIZE-1) - m_iLast.m_byte) < nLen)
     {
         nLen = (LBUF_SIZE-1) - m_iLast.m_byte;
     }
@@ -5201,24 +5151,40 @@ void mux_string::append_TextPlain(const UTF8 *pStr, size_t nLen)
  * \return         None.
  */
 
-void mux_string::compress(const UTF8 ch)
+void mux_string::compress(const UTF8 *ch)
 {
-    for (size_t i = 0, j = 0; i < m_iLast.m_byte; i++)
+    mux_cursor i, j;
+    cursor_start(i);
+    LBUF_OFFSET nChar = utf8_FirstByte[ch[0]];
+    LBUF_OFFSET k;
+
+    do
     {
-        if (m_autf[i] == ch)
+        if (m_autf[i.m_byte] == ch[0])
         {
-            // look ahead for multiple occurrences of ch
-            //
-            for (j = i + 1; j < m_iLast.m_byte && m_autf[j] == ch; j++)
+            k = 1;
+            while (  i.m_byte + k < m_iLast.m_byte
+                  && m_autf[i.m_byte + k] == ch[k % nChar])
             {
-                ; // Nothing.
+                k++;
             }
-            if (i + 1 < j)
+            if (1 < k)
             {
-                delete_Chars(i, j - (i + 1));
+                j = i;
+                while (  j.m_byte < i.m_byte + k
+                      && cursor_next(j))
+                {
+                    ; // Nothing.
+                };
+                if (i.m_byte + k < j.m_byte)
+                {
+                    cursor_prev(j);
+                }
+                cursor_next(i);
+                delete_Chars(i, j);
             }
         }
-    }
+    } while (cursor_next(i));
 }
 
 /*! \brief Compress each run of consecutive whitespace characters to a
@@ -5232,58 +5198,62 @@ void mux_string::compress(const UTF8 ch)
 
 void mux_string::compress_Spaces(void)
 {
-    for (size_t i = 0, j = 0; i < m_iLast.m_byte; i++)
+    mux_cursor i = CursorMin, j = CursorMin;
+    do
     {
-        if (mux_isspace(m_autf[i]))
+        if (mux_isspace(m_autf[i.m_byte]))
         {
             // look ahead for consecutive whitespace characters
             //
-            for (j = i + 1; j < m_iLast.m_byte && mux_isspace(m_autf[j]); j++)
+            j = i;
+            while (  cursor_next(j)
+                  && mux_isspace(m_autf[j.m_byte]))
             {
                 ; // Nothing.
             }
-            if (i + 1 < j)
+            if (  cursor_next(i)
+               && i < j)
             {
-                delete_Chars(i, j - (i + 1));
+                delete_Chars(i, j);
             }
         }
-    }
+    } while (cursor_next(i));
 }
 
 /*! \brief Delete a range of characters.
  *
  * \param nStart   Beginning of range to delete.
- * \param nLen     Length of range.
+ * \param iEnd     End of range.
  * \return         None.
  */
 
-void mux_string::delete_Chars(size_t nStart, size_t nLen)
+void mux_string::delete_Chars(mux_cursor iStart, mux_cursor iEnd)
 {
-    if (  m_iLast.m_byte <= nStart
-       || 0 == nLen)
+    if (  m_iLast <= iStart
+       || iEnd <= iStart)
     {
         // The range does not select any characters.
         //
         return;
     }
 
-    size_t nEnd = nStart + nLen;
-    if (m_iLast.m_byte <= nEnd)
+    if (m_iLast <= iEnd)
     {
         // The range extends beyond the end, so we can simply truncate.
         //
-        m_iLast.m_byte = nStart;
+        m_iLast = iStart;
         m_autf[m_iLast.m_byte] = '\0';
         return;
     }
 
-    size_t nMove = m_iLast.m_byte - nEnd;
-    memmove(m_autf + nStart, m_autf + nEnd, nMove * sizeof(m_autf[0]));
+    size_t nBytesMove = m_iLast.m_byte - iEnd.m_byte;
+    size_t nPointsMove = m_iLast.m_point - iEnd.m_point;
+    memmove(m_autf + iStart.m_byte, m_autf + iEnd.m_byte, nBytesMove);
     if (0 != m_ncs)
     {
-        memmove(m_pcs + nStart, m_pcs + nEnd, nMove * sizeof(m_pcs[0]));
+        memmove(m_pcs + iStart.m_point, m_pcs + iEnd.m_point, nPointsMove * sizeof(m_pcs[0]));
     }
-    m_iLast.m_byte -= nLen;
+    m_iLast(m_iLast.m_byte - (iEnd.m_byte - iStart.m_byte), m_iLast.m_point - (iEnd.m_point - iStart.m_point));
     m_autf[m_iLast.m_byte] = '\0';
 }
 
@@ -5333,7 +5303,8 @@ void mux_string::edit(mux_string &sFrom, const mux_string &sTo)
               || '^' == chFrom1)
            && 2 == nFrom.m_byte)
         {
-            sFrom.delete_Chars(0,1);
+            mux_cursor n = {1, 1};
+            sFrom.delete_Chars(CursorMin, n);
             nFrom(nFrom.m_byte-1, nFrom.m_point-1);
         }
 
@@ -5482,8 +5453,8 @@ LBUF_OFFSET mux_string::export_TextAnsi
     {
         return export_TextPlain(pBuffer, iStart, iEnd, nBytesMax);
     }
-    bool bPlentyOfRoom = 
-        (nBytesMax > nBytesWanted + (ANSI_MAXIMUM_BINARY_TRANSITION_LENGTH * nPointsWanted) + COLOR_MAXIMUM_BINARY_NORMAL + 1);
+    bool bPlentyOfRoom = (nBytesMax > 
+        static_cast<size_t>(nBytesWanted + (ANSI_MAXIMUM_BINARY_TRANSITION_LENGTH * nPointsWanted) + COLOR_MAXIMUM_BINARY_NORMAL + 1));
     mux_cursor iPos = iStart, iCopy = iStart;
     size_t nTransition = 0;
     const UTF8 *pTransition = NULL;
@@ -5626,7 +5597,7 @@ LBUF_OFFSET mux_string::export_TextPlain
     LBUF_OFFSET nBytes  = iEnd.m_byte - iStart.m_byte;
     if (nBytesMax < nBytes)
     {
-        nBytes = nBytesMax;
+        nBytes = static_cast<LBUF_OFFSET>(nBytesMax);
     }
 
     memcpy(pBuffer, m_autf + iStart.m_byte, nBytes);
@@ -5767,7 +5738,7 @@ void mux_string::import(const UTF8 *pStr, size_t nLen)
     static ColorState acsTemp[LBUF_SIZE];
     ColorState cs = CS_NORMAL;
 
-    size_t iPoint = 0;
+    LBUF_OFFSET iPoint = 0;
     size_t iStr = 0;
     UTF8 *pch = m_autf;
     while (iStr < nLen)
@@ -5789,7 +5760,7 @@ void mux_string::import(const UTF8 *pStr, size_t nLen)
         iStr += utf8_FirstByte[(unsigned char)pStr[iStr]];
     }
 
-    m_iLast(pch - m_autf, iPoint);
+    m_iLast(static_cast<LBUF_OFFSET>(pch - m_autf), iPoint);
     if (bColor)
     {
         realloc_m_pcs(m_iLast.m_point);
@@ -6057,7 +6028,7 @@ bool mux_string::search
 
     if (iPos)
     {
-        cursor_from_byte(*iPos, i);
+        cursor_from_byte(*iPos, static_cast<LBUF_OFFSET>(i));
     }
     return bSucceeded;
 }
@@ -6105,7 +6076,7 @@ bool mux_string::search
 
     if (iPos)
     {
-        cursor_from_byte(*iPos, i);
+        cursor_from_byte(*iPos, static_cast<LBUF_OFFSET>(i));
     }
     return bSucceeded;
 }
@@ -6149,23 +6120,23 @@ void mux_string::set_Color(size_t n, ColorState csColor)
  * \return          None.
  */
 
-void mux_string::strip(const UTF8 *pStripSet, size_t nStart, size_t nLen)
+void mux_string::strip(const UTF8 *pStripSet, mux_cursor iStart, mux_cursor iEnd)
 {
     static bool strip_table[UCHAR_MAX+1];
 
     if (  NULL == pStripSet
        || '\0' == pStripSet[0]
-       || m_iLast.m_byte <= nStart
-       || 0 == nLen)
+       || m_iLast <= iStart
+       || iEnd <= iStart)
     {
         // Nothing to do.
         //
         return;
     }
 
-    if (m_iLast.m_byte-nStart < nLen)
+    if (m_iLast < iEnd)
     {
-        nLen = m_iLast.m_byte-nStart;
+        iEnd = m_iLast;
     }
 
     // Load set of characters to strip.
@@ -6173,68 +6144,70 @@ void mux_string::strip(const UTF8 *pStripSet, size_t nStart, size_t nLen)
     memset(strip_table, false, sizeof(strip_table));
     while (*pStripSet)
     {
-        strip_table[(unsigned char)*pStripSet] = true;
+        if (mux_isprint_ascii(*pStripSet))
+        {
+            strip_table[*pStripSet] = true;
+        }
         pStripSet++;
     }
-    stripWithTable(strip_table, nStart, nLen);
+    stripWithTable(strip_table, iStart, iEnd);
 }
 
 void mux_string::stripWithTable
 (
     const bool strip_table[UCHAR_MAX+1],
-    size_t nStart,
-    size_t nLen
+    mux_cursor iStart,
+    mux_cursor iEnd
 )
 {
-    if (  m_iLast.m_byte <= nStart
-       || 0 == nLen)
+    if (  m_iLast <= iStart
+       || iEnd <= iStart)
     {
         // Nothing to do.
         //
         return;
     }
 
-    if (m_iLast.m_byte-nStart < nLen)
+    if (m_iLast < iEnd)
     {
-        nLen = m_iLast.m_byte-nStart;
+        iEnd = m_iLast;
     }
 
     bool bInStrip = false;
-    size_t nStripStart = nStart;
-    for (size_t i = nStart; i < nStart + nLen; i++)
+    mux_cursor iStripStart = iStart;
+    for (mux_cursor i = iStart; i < iEnd; cursor_next(i))
     {
         if (  !bInStrip
-           && strip_table[m_autf[i]])
+           && strip_table[m_autf[i.m_byte]])
         {
             bInStrip = true;
-            nStripStart = i;
+            iStripStart = i;
         }
         else if (  bInStrip
-                && !strip_table[m_autf[i]])
+                && !strip_table[m_autf[i.m_byte]])
         {
             // We've hit the end of a string to be stripped.
             //
-            size_t nStrip = i - nStripStart;
-            delete_Chars(nStripStart, nStrip);
-            i -= nStrip;
+            delete_Chars(iStripStart, i);
+            iEnd -= (i - iStripStart);
+            i = iStripStart;
             bInStrip = false;
         }
     }
 
     if (bInStrip)
     {
-        if (m_iLast.m_byte == nStart+nLen)
+        if (m_iLast == iEnd)
         {
             // We found chars to strip at the end of the string.
             // We can just truncate.
             //
-            m_autf[nStripStart] = '\0';
-            m_iLast.m_byte = nStripStart;
+            m_iLast = iStripStart;
+            m_autf[m_iLast.m_byte] = '\0';
         }
         else
         {
-            size_t nStrip = nStart + nLen - nStripStart;
-            delete_Chars(nStripStart, nStrip);
+            delete_Chars(iStripStart, iEnd);
         }
     }
 }
@@ -6334,7 +6307,7 @@ void mux_string::trim(const UTF8 ch, bool bLeft, bool bRight)
 
     if (bRight)
     {
-        size_t iPos = m_iLast.m_byte - 1;
+        LBUF_OFFSET iPos = m_iLast.m_byte - 1;
         while (  ch == m_autf[iPos]
               && 0 < iPos)
         {
@@ -6343,14 +6316,22 @@ void mux_string::trim(const UTF8 ch, bool bLeft, bool bRight)
 
         if (iPos < m_iLast.m_byte - 1)
         {
-            m_iLast.m_byte = iPos + 1;
+            mux_cursor iEnd;
+            cursor_end(iEnd);
+            while (  iPos < iEnd.m_byte
+                  && cursor_prev(iEnd))
+            {
+                ; // Nothing.
+            }
+            cursor_next(iEnd);
+            m_iLast = iEnd;
             m_autf[m_iLast.m_byte] = '\0';
         }
     }
 
     if (bLeft)
     {
-        size_t iPos = 0;
+        LBUF_OFFSET iPos = 0;
         while (  ch == m_autf[iPos]
               && iPos < m_iLast.m_byte)
         {
@@ -6359,7 +6340,9 @@ void mux_string::trim(const UTF8 ch, bool bLeft, bool bRight)
 
         if (0 < iPos)
         {
-            delete_Chars(0, iPos);
+            mux_cursor iEnd;
+            cursor_from_byte(iEnd, iPos);
+            delete_Chars(CursorMin, iEnd);
         }
     }
 }
@@ -6402,7 +6385,7 @@ void mux_string::trim(const UTF8 *p, size_t n, bool bLeft, bool bRight)
 
     if (bRight)
     {
-        size_t iPos = m_iLast.m_byte - 1;
+        LBUF_OFFSET iPos = m_iLast.m_byte - 1;
         size_t iDist = n - 1;
         while (  p[iDist] == m_autf[iPos]
               && 0 < iPos)
@@ -6413,7 +6396,15 @@ void mux_string::trim(const UTF8 *p, size_t n, bool bLeft, bool bRight)
 
         if (iPos < m_iLast.m_byte - 1)
         {
-            m_iLast.m_byte = iPos + 1;
+            mux_cursor iEnd;
+            cursor_end(iEnd);
+            while (  iPos < iEnd.m_byte
+                  && cursor_prev(iEnd))
+            {
+                ; // Nothing.
+            }
+            cursor_next(iEnd);
+            m_iLast = iEnd;
             m_autf[m_iLast.m_byte] = '\0';
         }
     }
@@ -6429,7 +6420,14 @@ void mux_string::trim(const UTF8 *p, size_t n, bool bLeft, bool bRight)
 
         if (0 < iPos)
         {
-            delete_Chars(0, iPos);
+            mux_cursor iEnd;
+            cursor_start(iEnd);
+            while (  iEnd.m_byte < iPos
+                  && cursor_next(iEnd))
+            {
+                ; // Nothing.
+            }
+            delete_Chars(CursorMin, iEnd);
         }
     }
 }
@@ -6446,8 +6444,8 @@ void mux_string::truncate(mux_cursor iEnd)
 
 mux_words::mux_words(const mux_string &sStr) : m_s(&sStr)
 {
-    m_aiWordBegins[0] = 0;
-    m_aiWordEnds[0] = 0;
+    m_aiWordBegins[0] = CursorMin;
+    m_aiWordEnds[0] = CursorMin;
     m_nWords = 0;
 }
 
@@ -6458,11 +6456,9 @@ void mux_words::export_WordAnsi(LBUF_OFFSET n, UTF8 *buff, UTF8 **bufc)
         return;
     }
 
-    mux_cursor iStart, iEnd;
-
-    m_s->cursor_from_point(iStart, m_aiWordBegins[n]);
-    m_s->cursor_from_point(iEnd, m_aiWordEnds[n]);
-    m_s->export_TextAnsi(*bufc, iStart, iEnd, buff + LBUF_SIZE - *bufc);
+    mux_cursor iStart = m_aiWordBegins[n];
+    mux_cursor iEnd = m_aiWordEnds[n];
+    *bufc += m_s->export_TextAnsi(*bufc, iStart, iEnd, buff + LBUF_SIZE - *bufc);
 }
 
 LBUF_OFFSET mux_words::find_Words(void)
@@ -6477,18 +6473,18 @@ LBUF_OFFSET mux_words::find_Words(void)
            && m_aControl[m_s->m_autf[i.m_byte]])
         {
             bPrev = true;
-            m_aiWordEnds[nWords] = i.m_point;
+            m_aiWordEnds[nWords] = i;
             nWords++;
         }
         else if (bPrev)
         {
             bPrev = false;
-            m_aiWordBegins[nWords] = i.m_point;
+            m_aiWordBegins[nWords] = i;
         }
     }
     if (!bPrev)
     {
-        m_aiWordEnds[nWords] = n.m_point;
+        m_aiWordEnds[nWords] = n;
         nWords++;
     }
     m_nWords = nWords;
@@ -6509,18 +6505,81 @@ LBUF_OFFSET mux_words::find_Words(const UTF8 *pDelim)
     while (  bSucceeded
           && nWords + 1 < MAX_WORDS)
     {
-        m_aiWordBegins[nWords] = iStart.m_point;
-        iStart = iStart + iPos;
-        m_aiWordEnds[nWords] = iStart.m_point;
+        m_aiWordBegins[nWords] = iStart;
+        iStart += iPos;
+        m_aiWordEnds[nWords] = iStart;
         nWords++;
         iStart = iStart + nDelim;
         bSucceeded = m_s->search(pDelim, &iPos, iStart);
     }
-    m_aiWordBegins[nWords] = iStart.m_point;
-    m_aiWordEnds[nWords] = m_s->m_iLast.m_point;
+    m_aiWordBegins[nWords] = iStart;
+    m_aiWordEnds[nWords] = m_s->m_iLast;
     nWords++;
     m_nWords = nWords;
     return nWords;
+}
+
+void mux_words::ignore_Word(LBUF_OFFSET n)
+{
+    if (m_nWords <= n)
+    {
+        return;
+    }
+
+    for (LBUF_OFFSET i = n; i < m_nWords - 1; i++)
+    {
+        m_aiWordBegins[i] = m_aiWordBegins[i + 1];
+        m_aiWordEnds[i] = m_aiWordEnds[i + 1];
+    }
+    m_nWords--;
+}
+
+void mux_words::set_Control(const UTF8 *pControlSet)
+{
+    if (  NULL == pControlSet
+       || '\0' == pControlSet[0])
+    {
+        // Nothing to do.
+        //
+        return;
+    }
+
+    // Load set of characters.
+    //
+    memset(m_aControl, false, sizeof(m_aControl));
+    while (*pControlSet)
+    {
+        if (mux_isprint_ascii(*pControlSet))
+        {
+            m_aControl[*pControlSet] = true;
+        }
+        pControlSet++;
+    }
+}
+
+void mux_words::set_Control(const bool table[UCHAR_MAX+1])
+{
+    memcpy(m_aControl, table, sizeof(table));
+}
+
+mux_cursor mux_words::wordBegin(LBUF_OFFSET n) const
+{
+    if (m_nWords <= n)
+    {
+        return CursorMin;
+    }
+
+    return m_aiWordBegins[n];
+}
+
+mux_cursor mux_words::wordEnd(LBUF_OFFSET n) const
+{
+    if (m_nWords <= n)
+    {
+        return CursorMin;
+    }
+
+    return m_aiWordEnds[n];
 }
 
 #else
@@ -8128,8 +8187,6 @@ LBUF_OFFSET mux_words::find_Words(const UTF8 *pDelim)
     m_nWords = nWords;
     return nWords;
 }
-#endif
-
 void mux_words::ignore_Word(LBUF_OFFSET n)
 {
     if (m_nWords <= n)
@@ -8189,3 +8246,4 @@ LBUF_OFFSET mux_words::wordEnd(LBUF_OFFSET n) const
 
     return m_aiWordEnds[n];
 }
+#endif
