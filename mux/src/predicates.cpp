@@ -354,7 +354,7 @@ UTF8 *MakeCanonicalObjectName(const UTF8 *pName, size_t *pnName, bool *pbValid)
     // and OR_TOKEN are allowed.
     //
     const UTF8 *p = pStripped;
-    while ('\0' != *pStripped)
+    while ('\0' != *p)
     {
         if (!mux_isobjectname(p))
         {
@@ -509,31 +509,40 @@ bool ValidatePlayerName(const UTF8 *pName)
     // Do not allow LOOKUP_TOKEN, NUMBER_TOKEN, NOT_TOKEN, or SPACE
     // as the first character, or SPACE as the last character
     //
-    if (  (UTF8 *)strchr((char *)"*!#", *pName)
+    if (  (UTF8 *)strchr((char *)"*!#", pName[0])
        || mux_isspace(pName[0])
        || mux_isspace(pName[nName-1]))
     {
         return false;
     }
 
-    if (  mudstate.bStandAlone
-       || mudconf.name_spaces)
-    {
-        mux_PlayerNameSet[(unsigned char)' '] = 1;
-    }
-    else
-    {
-        mux_PlayerNameSet[(unsigned char)' '] = 0;
-    }
-
     // Only printable characters besides ARG_DELIMITER, AND_TOKEN,
     // and OR_TOKEN are allowed.
     //
-    for (unsigned int i = 0; i < nName; i++)
+    if (  mudstate.bStandAlone
+       || mudconf.name_spaces)
     {
-        if (!mux_PlayerNameSet(pName[i]))
+        const UTF8 *p = pName;
+        while ('\0' != *p)
         {
-            return false;
+            if (  !mux_isplayername(p)
+               && ' ' != *p)
+            {
+                return false;
+            }
+            p = utf8_NextCodePoint(p);
+        }
+    }
+    else
+    {
+        const UTF8 *p = pName;
+        while ('\0' != p)
+        {
+            if (!mux_isplayername(p))
+            {
+                return false;
+            }
+            p = utf8_NextCodePoint(p);
         }
     }
 
