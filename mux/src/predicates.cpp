@@ -246,12 +246,12 @@ bool canpayfees(dbref player, dbref who, int pennies, int quota)
         {
             if (player == who)
             {
-                notify(player, (UTF8 *)"Sorry, your building contract has run out.");
+                notify(player, T("Sorry, your building contract has run out."));
             }
             else
             {
                 notify(player,
-                    (UTF8 *)"Sorry, that player's building contract has run out.");
+                    T("Sorry, that player's building contract has run out."));
             }
             return false;
         }
@@ -338,12 +338,12 @@ UTF8 *MakeCanonicalObjectName(const UTF8 *pName, size_t *pnName, bool *pbValid)
     // Get the stripped version (Visible parts without color info).
     //
     size_t nStripped;
-    UTF8 *pStripped = strip_color(Buf, &nStripped);
+    const UTF8 *pStripped = strip_color(Buf, &nStripped);
 
     // Do not allow LOOKUP_TOKEN, NUMBER_TOKEN, NOT_TOKEN, or SPACE
     // as the first character, or SPACE as the last character
     //
-    if (  (UTF8 *)strchr((char *)"*!#", *pStripped)
+    if (  (UTF8 *)strchr((char *)"*!#", pStripped[0])
        || mux_isspace(pStripped[0])
        || mux_isspace(pStripped[nStripped-1]))
     {
@@ -353,12 +353,14 @@ UTF8 *MakeCanonicalObjectName(const UTF8 *pName, size_t *pnName, bool *pbValid)
     // Only printable characters besides ARG_DELIMITER, AND_TOKEN,
     // and OR_TOKEN are allowed.
     //
-    for (unsigned int i = 0; i < nStripped; i++)
+    const UTF8 *p = pStripped;
+    while ('\0' != *p)
     {
-        if (!mux_ObjectNameSet(pStripped[i]))
+        if (!mux_isobjectname(p))
         {
             return NULL;
         }
+        p = utf8_NextCodePoint(p);
     }
 
     // Special names are specifically dis-allowed.
@@ -507,31 +509,40 @@ bool ValidatePlayerName(const UTF8 *pName)
     // Do not allow LOOKUP_TOKEN, NUMBER_TOKEN, NOT_TOKEN, or SPACE
     // as the first character, or SPACE as the last character
     //
-    if (  (UTF8 *)strchr((char *)"*!#", *pName)
+    if (  (UTF8 *)strchr((char *)"*!#", pName[0])
        || mux_isspace(pName[0])
        || mux_isspace(pName[nName-1]))
     {
         return false;
     }
 
-    if (  mudstate.bStandAlone
-       || mudconf.name_spaces)
-    {
-        mux_PlayerNameSet[(unsigned char)' '] = 1;
-    }
-    else
-    {
-        mux_PlayerNameSet[(unsigned char)' '] = 0;
-    }
-
     // Only printable characters besides ARG_DELIMITER, AND_TOKEN,
     // and OR_TOKEN are allowed.
     //
-    for (unsigned int i = 0; i < nName; i++)
+    if (  mudstate.bStandAlone
+       || mudconf.name_spaces)
     {
-        if (!mux_PlayerNameSet(pName[i]))
+        const UTF8 *p = pName;
+        while ('\0' != *p)
         {
-            return false;
+            if (  !mux_isplayername(p)
+               && ' ' != *p)
+            {
+                return false;
+            }
+            p = utf8_NextCodePoint(p);
+        }
+    }
+    else
+    {
+        const UTF8 *p = pName;
+        while ('\0' != p)
+        {
+            if (!mux_isplayername(p))
+            {
+                return false;
+            }
+            p = utf8_NextCodePoint(p);
         }
     }
 
@@ -552,7 +563,7 @@ bool ok_password(const UTF8 *password, const UTF8 **pmsg)
 
     if (*password == '\0')
     {
-        *pmsg = (UTF8 *)"Null passwords are not allowed.";
+        *pmsg = T("Null passwords are not allowed.");
         return false;
     }
 
@@ -566,7 +577,7 @@ bool ok_password(const UTF8 *password, const UTF8 **pmsg)
         if (  !mux_isprint(scan)
            || mux_isspace(*scan))
         {
-            *pmsg = (UTF8 *)"Illegal character in password.";
+            *pmsg = T("Illegal character in password.");
             return false;
         }
         if (mux_isupper_latin1(*scan))
@@ -589,17 +600,17 @@ bool ok_password(const UTF8 *password, const UTF8 **pmsg)
     {
         if (num_upper < 1)
         {
-            *pmsg = (UTF8 *)"The password must contain at least one capital letter.";
+            *pmsg = T("The password must contain at least one capital letter.");
             return false;
         }
         if (num_lower < 1)
         {
-            *pmsg = (UTF8 *)"The password must contain at least one lowercase letter.";
+            *pmsg = T("The password must contain at least one lowercase letter.");
             return false;
         }
         if (num_special < 1)
         {
-            *pmsg = (UTF8 *)"The password must contain at least one number or a symbol other than the apostrophe or dash.";
+            *pmsg = T("The password must contain at least one number or a symbol other than the apostrophe or dash.");
             return false;
         }
     }
@@ -614,11 +625,11 @@ void handle_ears(dbref thing, bool could_hear, bool can_hear)
 {
     static const UTF8 *poss[5] =
     {
-        (UTF8 *)"",
-        (UTF8 *)"its",
-        (UTF8 *)"her",
-        (UTF8 *)"his",
-        (UTF8 *)"their"
+        T(""),
+        T("its"),
+        T("her"),
+        T("his"),
+        T("their")
     };
 
     if (could_hear != can_hear)
@@ -626,8 +637,12 @@ void handle_ears(dbref thing, bool could_hear, bool can_hear)
         mux_string *sStr = new mux_string(Moniker(thing));
         if (isExit(thing))
         {
+#ifdef NEW_MUX_STRING
+            mux_cursor iPos;
+#else
             size_t iPos;
-            if (sStr->search((UTF8 *)";", &iPos))
+#endif // NEW_MUX_STRING
+            if (sStr->search(T(";"), &iPos))
             {
                 sStr->truncate(iPos);
             }
@@ -743,7 +758,7 @@ void do_switch
     if (key & SWITCH_NOTIFY)
     {
         UTF8 *tbuf = alloc_lbuf("switch.notify_cmd");
-        mux_strncpy(tbuf, (UTF8 *)"@notify/quiet me", LBUF_SIZE-1);
+        mux_strncpy(tbuf, T("@notify/quiet me"), LBUF_SIZE-1);
         wait_que(executor, caller, enactor, eval, false, lta, NOTHING, A_SEMAPHORE,
             tbuf,
             ncargs, cargs,
@@ -816,7 +831,7 @@ void do_addcommand
     if (1 <= nargs)
     {
         mux_string *sName = new mux_string(name);
-        sName->strip((UTF8 *)"\r\n\t ");
+        sName->strip(T("\r\n\t "));
         sName->transform_Ascii(mux_tolower_ascii);
         sName->export_TextPlain(pName);
         delete sName;
@@ -826,7 +841,7 @@ void do_addcommand
        || (  pName[0] == '_'
           && pName[1] == '_'))
     {
-        notify(player, (UTF8 *)"That is not a valid command name.");
+        notify(player, T("That is not a valid command name."));
         return;
     }
 
@@ -837,7 +852,7 @@ void do_addcommand
     if (  !parse_attrib(player, command, &thing, &pattr)
        || !pattr)
     {
-        notify(player, (UTF8 *)"No such attribute.");
+        notify(player, T("No such attribute."));
         return;
     }
     if (!See_attr(player, thing, pattr))
@@ -962,7 +977,7 @@ void do_listcommands(dbref player, dbref caller, dbref enactor, int eval,
             for (nextp = old->addent; nextp != NULL; nextp = nextp->next)
             {
                 ATTR *ap = (ATTR *)atr_num(nextp->atr);
-                const UTF8 *pName = (UTF8 *)"(WARNING: Bad Attribute Number)";
+                const UTF8 *pName = T("(WARNING: Bad Attribute Number)");
                 if (ap)
                 {
                     pName = ap->name;
@@ -994,7 +1009,7 @@ void do_listcommands(dbref player, dbref caller, dbref enactor, int eval,
                         continue;
                     }
                     ATTR *ap = (ATTR *)atr_num(nextp->atr);
-                    const UTF8 *pName = (UTF8 *)"(WARNING: Bad Attribute Number)";
+                    const UTF8 *pName = T("(WARNING: Bad Attribute Number)");
                     if (ap)
                     {
                         pName = ap->name;
@@ -1009,7 +1024,7 @@ void do_listcommands(dbref player, dbref caller, dbref enactor, int eval,
 
     if (!didit)
     {
-        notify(player, (UTF8 *)"No added commands found in command table.");
+        notify(player, T("No added commands found in command table."));
     }
 }
 
@@ -1031,7 +1046,7 @@ void do_delcommand
 
     if (!*name)
     {
-        notify(player, (UTF8 *)"Sorry.");
+        notify(player, T("Sorry."));
         return;
     }
 
@@ -1043,7 +1058,7 @@ void do_delcommand
         if (  !parse_attrib(player, command, &thing, &pattr)
            || !pattr)
         {
-            notify(player, (UTF8 *)"No such attribute.");
+            notify(player, T("No such attribute."));
             return;
         }
         if (!See_attr(player, thing, pattr))
@@ -1106,7 +1121,7 @@ void do_delcommand
             MEMFREE(old);
             old = NULL;
             set_prefix_cmds();
-            notify(player, (UTF8 *)"Done.");
+            notify(player, T("Done."));
         }
         else
         {
@@ -1162,17 +1177,17 @@ void do_delcommand
                         nextp = NULL;
                     }
                     set_prefix_cmds();
-                    notify(player, (UTF8 *)"Done.");
+                    notify(player, T("Done."));
                     return;
                 }
                 prev = nextp;
             }
-            notify(player, (UTF8 *)"Command not found in command table.");
+            notify(player, T("Command not found in command table."));
         }
     }
     else
     {
-        notify(player, (UTF8 *)"Command not found in command table.");
+        notify(player, T("Command not found in command table."));
     }
 }
 
@@ -1281,12 +1296,12 @@ void do_quitprog(dbref player, dbref caller, dbref enactor, int eval, int key, U
     if (  !Good_obj(doer)
        || !isPlayer(doer))
     {
-        notify(player, (UTF8 *)"That is not a player.");
+        notify(player, T("That is not a player."));
         return;
     }
     if (!Connected(doer))
     {
-        notify(player, (UTF8 *)"That player is not connected.");
+        notify(player, T("That player is not connected."));
         return;
     }
     DESC *d;
@@ -1301,7 +1316,7 @@ void do_quitprog(dbref player, dbref caller, dbref enactor, int eval, int key, U
 
     if (!isprog)
     {
-        notify(player, (UTF8 *)"Player is not in an @program.");
+        notify(player, T("Player is not in an @program."));
         return;
     }
 
@@ -1333,8 +1348,8 @@ void do_quitprog(dbref player, dbref caller, dbref enactor, int eval, int key, U
     }
 
     atr_clr(doer, A_PROGCMD);
-    notify(player, (UTF8 *)"@program cleared.");
-    notify(doer, (UTF8 *)"Your @program has been terminated.");
+    notify(player, T("@program cleared."));
+    notify(doer, T("Your @program has been terminated."));
 }
 
 void do_prog
@@ -1356,7 +1371,7 @@ void do_prog
     if (  !name
        || !*name)
     {
-        notify(player, (UTF8 *)"No players specified.");
+        notify(player, T("No players specified."));
         return;
     }
 
@@ -1371,12 +1386,12 @@ void do_prog
     if (  !Good_obj(doer)
        || !isPlayer(doer))
     {
-        notify(player, (UTF8 *)"That is not a player.");
+        notify(player, T("That is not a player."));
         return;
     }
     if (!Connected(doer))
     {
-        notify(player, (UTF8 *)"That player is not connected.");
+        notify(player, T("That player is not connected."));
         return;
     }
     UTF8 *msg = command;
@@ -1430,13 +1445,13 @@ void do_prog
         }
         else
         {
-            notify(player, (UTF8 *)"Attribute not present on object.");
+            notify(player, T("Attribute not present on object."));
             return;
         }
     }
     else
     {
-        notify(player, (UTF8 *)"No such attribute.");
+        notify(player, T("No such attribute."));
         return;
     }
 
@@ -1447,7 +1462,7 @@ void do_prog
     {
         if (d->program_data != NULL)
         {
-            notify(player, (UTF8 *)"Input already pending.");
+            notify(player, T("Input already pending."));
             return;
         }
     }
@@ -1508,7 +1523,7 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int key)
 #ifndef WIN32
     if (mudstate.dumping)
     {
-        notify(executor, (UTF8 *)"Dumping. Please try again later.");
+        notify(executor, T("Dumping. Please try again later."));
         bDenied = true;
     }
 #endif // !WIN32
@@ -1516,13 +1531,13 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int key)
 
     if (!mudstate.bCanRestart)
     {
-        notify(executor, (UTF8 *)"Server just started. Please try again in a few seconds.");
+        notify(executor, T("Server just started. Please try again in a few seconds."));
         bDenied = true;
     }
     if (bDenied)
     {
         STARTLOG(LOG_ALWAYS, "WIZ", "RSTRT");
-        log_text((UTF8 *)"Restart requested but not executed by ");
+        log_text(T("Restart requested but not executed by "));
         log_name(executor);
         ENDLOG;
         return;
@@ -1530,7 +1545,7 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int key)
 
     raw_broadcast(0, "GAME: Restart by %s, please wait.", Moniker(Owner(executor)));
     STARTLOG(LOG_ALWAYS, "WIZ", "RSTRT");
-    log_text((UTF8 *)"Restart by ");
+    log_text(T("Restart by "));
     log_name(executor);
     ENDLOG;
 
@@ -1580,7 +1595,7 @@ void do_backup(dbref player, dbref caller, dbref enactor, int key)
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(key);
 
-    notify(player, (UTF8 *)"This feature is not yet available on Win32-hosted MUX.");
+    notify(player, T("This feature is not yet available on Win32-hosted MUX."));
 }
 
 #else // WIN32
@@ -1590,13 +1605,13 @@ void do_backup(dbref player, dbref caller, dbref enactor, int key)
 #ifndef WIN32
     if (mudstate.dumping)
     {
-        notify(player, (UTF8 *)"Dumping. Please try again later.");
+        notify(player, T("Dumping. Please try again later."));
     }
 #endif // !WIN32
 
     raw_broadcast(0, "GAME: Backing up database. Please wait.");
     STARTLOG(LOG_ALWAYS, "WIZ", "BACK");
-    log_text((UTF8 *)"Backup by ");
+    log_text(T("Backup by "));
     log_name(player);
     ENDLOG;
 
@@ -1882,7 +1897,7 @@ bool get_obj_and_lock(dbref player, UTF8 *what, dbref *it, ATTR **attr, UTF8 *er
         if (!search_nametab(player, lock_sw, str, &anum))
         {
             free_lbuf(tbuf);
-            safe_str((UTF8 *)"#-1 LOCK NOT FOUND", errmsg, bufc);
+            safe_str(T("#-1 LOCK NOT FOUND"), errmsg, bufc);
             return false;
         }
     }
@@ -1906,7 +1921,7 @@ bool get_obj_and_lock(dbref player, UTF8 *what, dbref *it, ATTR **attr, UTF8 *er
     *attr = atr_num(anum);
     if (!(*attr))
     {
-        safe_str((UTF8 *)"#-1 LOCK NOT FOUND", errmsg, bufc);
+        safe_str(T("#-1 LOCK NOT FOUND"), errmsg, bufc);
         return false;
     }
     return true;
@@ -2355,7 +2370,7 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
             if (  (aflags & AF_HTML)
                && Html(player))
             {
-                safe_str((UTF8 *)"\r\n", buff, &bp);
+                safe_str(T("\r\n"), buff, &bp);
                 *bp = '\0';
                 notify_html(player, buff);
             }
@@ -2556,7 +2571,7 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int eval, int key,
     if (  !victim_str
        || !*victim_str)
     {
-        notify(executor, (UTF8 *)"Nothing to do.");
+        notify(executor, T("Nothing to do."));
         return;
     }
 
@@ -2600,7 +2615,7 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int eval, int key,
     //
     if (!Controls(executor, actor))
     {
-        notify_quiet(executor, (UTF8 *)"Permission denied,");
+        notify_quiet(executor, T("Permission denied,"));
         return;
     }
 

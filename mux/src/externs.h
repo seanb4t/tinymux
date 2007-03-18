@@ -16,7 +16,7 @@
 // From bsd.cpp.
 //
 void boot_slave(dbref executor, dbref caller, dbref enactor, int key);
-void close_sockets(bool emergency, UTF8 *message);
+void close_sockets(bool emergency, const UTF8 *message);
 void CleanUpSlaveSocket(void);
 void CleanUpSlaveProcess(void);
 #ifdef QUERY_SLAVE
@@ -24,7 +24,6 @@ void CleanUpSQLSlaveSocket(void);
 void CleanUpSQLSlaveProcess(void);
 #endif // QUERY_SLAVE
 #ifdef WIN32
-extern HANDLE CompletionPort;    // IOs are queued up on this port
 extern CRITICAL_SECTION csDescriptorList;
 #endif // WIN32
 
@@ -36,7 +35,7 @@ extern NAMETAB sigactions_nametab[];
 
 // From conf.cpp
 //
-void cf_log_notfound(dbref, UTF8 *, const UTF8 *, UTF8 *);
+void cf_log_notfound(dbref, const UTF8 *, const UTF8 *, const UTF8 *);
 int  cf_modify_bits(int *, UTF8 *, void *, UINT32, dbref, UTF8 *);
 void DCL_CDECL cf_log_syntax(dbref player, UTF8 *cmd, const char *fmt, ...);
 void ValidateConfigurationDbrefs(void);
@@ -45,8 +44,6 @@ void cf_init(void);
 void cf_list(dbref, UTF8 *, UTF8 **);
 void cf_display(dbref, UTF8 *, UTF8 *, UTF8 **);
 void list_cf_access(dbref);
-int cf_set(UTF8 *, UTF8 *, dbref);
-CF_HAND(cf_cf_access);
 CF_HAND(cf_access);
 CF_HAND(cf_cmd_alias);
 CF_HAND(cf_acmd_access);
@@ -179,8 +176,6 @@ void save_global_regs(reg_ref *preserve[]);
 void save_and_clear_global_regs(reg_ref *preserve[]);
 void restore_global_regs(reg_ref *preserve[]);
 
-UTF8 **PushPointers(int nNeeded);
-void PopPointers(UTF8 **p, int nNeeded);
 reg_ref **PushRegisters(int nNeeded);
 void PopRegisters(reg_ref **p, int nNeeded);
 
@@ -189,7 +184,7 @@ extern const UTF8 *ColorTable[256];
 
 #if defined(FIRANMUX)
 UTF8 *linewrap_desc(UTF8 *);
-UTF8 *linewrap_general(UTF8 *, int, UTF8 *, UTF8 *);
+UTF8 *linewrap_general(UTF8 *, int, const UTF8 *, const UTF8 *);
 #endif // FIRANMUX
 
 /* From game.cpp */
@@ -308,7 +303,7 @@ void  destroy_obj(dbref);
 void  empty_obj(dbref);
 
 /* From player.cpp */
-dbref create_player(UTF8 *name, UTF8 *pass, dbref executor, bool isrobot, const UTF8 **pmsg);
+dbref create_player(const UTF8 *name, const UTF8 *pass, dbref executor, bool isrobot, const UTF8 **pmsg);
 void AddToPublicChannel(dbref player);
 bool add_player_name(dbref, const UTF8 *);
 bool delete_player_name(dbref, const UTF8 *);
@@ -363,7 +358,6 @@ bool bCanLockAttr(dbref executor, dbref target, ATTR *tattr);
 /* From set.cpp */
 bool parse_attrib(dbref, UTF8 *, dbref *, ATTR **);
 bool parse_attrib_wild(dbref, UTF8 *, dbref *, bool, bool, bool);
-void edit_string(UTF8 *, UTF8 **, UTF8 *, UTF8 *);
 dbref match_controlled_handler(dbref player, const UTF8 *name, bool bQuiet);
 #define match_controlled(player,name)       match_controlled_handler(player, name, false)
 #define match_controlled_quiet(player,name) match_controlled_handler(player, name, true)
@@ -814,7 +808,7 @@ extern int anum_alc_top;
 #define SA_DFLT         2   /* Try to restart on a fatal error */
 
 #define STARTLOG(key,p,s) \
-    if ((((key) & mudconf.log_options) != 0) && start_log((UTF8 *)p, (UTF8 *)s)) {
+    if ((((key) & mudconf.log_options) != 0) && start_log(T(p), T(s))) {
 #define ENDLOG \
     end_log(); }
 #define LOG_SIMPLE(key,p,s,m) \

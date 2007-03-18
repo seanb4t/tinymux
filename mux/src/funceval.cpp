@@ -104,7 +104,7 @@ FUNCTION(fun_cwho)
     struct channel *ch = select_channel(fargs[0]);
     if (!ch)
     {
-        safe_str((UTF8 *)"#-1 CHANNEL NOT FOUND", buff, bufc);
+        safe_str(T("#-1 CHANNEL NOT FOUND"), buff, bufc);
         return;
     }
     if (  !mudconf.have_comsys
@@ -118,15 +118,15 @@ FUNCTION(fun_cwho)
     int match_type = CWHO_ON;
     if (nfargs == 2)
     {
-        if (mux_stricmp(fargs[1], (UTF8 *)"all") == 0)
+        if (mux_stricmp(fargs[1], T("all")) == 0)
         {
             match_type = CWHO_ALL;
         }
-        else if (mux_stricmp(fargs[1], (UTF8 *)"off") == 0)
+        else if (mux_stricmp(fargs[1], T("off")) == 0)
         {
             match_type = CWHO_OFF;
         }
-        else if (mux_stricmp(fargs[1], (UTF8 *)"on") == 0)
+        else if (mux_stricmp(fargs[1], T("on")) == 0)
         {
             match_type = CWHO_ON;
         }
@@ -278,7 +278,7 @@ FUNCTION(fun_zone)
 
     if (!mudconf.have_zones)
     {
-        safe_str((UTF8 *)"#-1 ZONES DISABLED", buff, bufc);
+        safe_str(T("#-1 ZONES DISABLED"), buff, bufc);
         return;
     }
     dbref it = match_thing_quiet(executor, fargs[0]);
@@ -298,9 +298,9 @@ FUNCTION(fun_zone)
 
 #ifdef SIDE_EFFECT_FUNCTIONS
 
-static bool check_command(dbref player, UTF8 *name, UTF8 *buff, UTF8 **bufc)
+static bool check_command(dbref player, const UTF8 *name, UTF8 *buff, UTF8 **bufc)
 {
-    CMDENT *cmdp = (CMDENT *)hashfindLEN(name, strlen((char *)name), &mudstate.command_htab);
+    CMDENT *cmdp = (CMDENT *)hashfindLEN(name, strlen((const char *)name), &mudstate.command_htab);
     if (cmdp)
     {
         // Perform checks similiar to (but not exactly like) the
@@ -327,7 +327,7 @@ FUNCTION(fun_link)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@link", buff, bufc))
+    if (check_command(executor, T("@link"), buff, bufc))
     {
         return;
     }
@@ -342,7 +342,7 @@ FUNCTION(fun_setparent)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@parent", buff, bufc))
+    if (check_command(executor, T("@parent"), buff, bufc))
     {
         return;
     }
@@ -358,7 +358,7 @@ FUNCTION(fun_setname)
 
     if (  !fargs[0]
        || !fargs[1]
-       || check_command(executor, (UTF8 *)"@name", buff, bufc))
+       || check_command(executor, T("@name"), buff, bufc))
     {
         return;
     }
@@ -372,7 +372,7 @@ FUNCTION(fun_trigger)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@trigger", buff, bufc))
+    if (check_command(executor, T("@trigger"), buff, bufc))
     {
         return;
     }
@@ -387,7 +387,7 @@ FUNCTION(fun_tel)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@teleport", buff, bufc))
+    if (check_command(executor, T("@teleport"), buff, bufc))
     {
         return;
     }
@@ -403,7 +403,7 @@ FUNCTION(fun_pemit)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@pemit", buff, bufc))
+    if (check_command(executor, T("@pemit"), buff, bufc))
     {
         return;
     }
@@ -419,7 +419,7 @@ FUNCTION(fun_oemit)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@oemit", buff, bufc))
+    if (check_command(executor, T("@oemit"), buff, bufc))
     {
         return;
     }
@@ -433,7 +433,7 @@ FUNCTION(fun_emit)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@emit", buff, bufc))
+    if (check_command(executor, T("@emit"), buff, bufc))
     {
         return;
     }
@@ -449,7 +449,7 @@ FUNCTION(fun_remit)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@pemit", buff, bufc))
+    if (check_command(executor, T("@pemit"), buff, bufc))
     {
         return;
     }
@@ -462,7 +462,7 @@ FUNCTION(fun_cemit)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@cemit", buff, bufc))
+    if (check_command(executor, T("@cemit"), buff, bufc))
     {
         return;
     }
@@ -484,7 +484,7 @@ FUNCTION(fun_create)
 
     if (!name || !*name)
     {
-        safe_str((UTF8 *)"#-1 ILLEGAL NAME", buff, bufc);
+        safe_str(T("#-1 ILLEGAL NAME"), buff, bufc);
         return;
     }
     if (nfargs >= 3 && *fargs[2])
@@ -503,7 +503,7 @@ FUNCTION(fun_create)
     {
     case 'r':
 
-        if (check_command(executor, (UTF8 *)"@dig", buff, bufc))
+        if (check_command(executor, T("@dig"), buff, bufc))
         {
             return;
         }
@@ -516,7 +516,7 @@ FUNCTION(fun_create)
 
     case 'e':
 
-        if (check_command(executor, (UTF8 *)"@open", buff, bufc))
+        if (check_command(executor, T("@open"), buff, bufc))
         {
             return;
         }
@@ -532,7 +532,7 @@ FUNCTION(fun_create)
 
     default:
 
-        if (check_command(executor, (UTF8 *)"@create", buff, bufc))
+        if (check_command(executor, T("@create"), buff, bufc))
         {
             return;
         }
@@ -578,7 +578,7 @@ FUNCTION(fun_textfile)
     if (  !cmdp
        || cmdp->handler != do_help)
     {
-        safe_str((UTF8 *)"#-1 NOT FOUND", buff, bufc);
+        safe_str(T("#-1 NOT FOUND"), buff, bufc);
         return;
     }
 
@@ -599,7 +599,7 @@ static void set_attr_internal(dbref player, dbref thing, int attrnum, UTF8 *attr
     if (!Good_obj(thing))
     {
         safe_noperm(buff, bufc);
-        notify_quiet(player, (UTF8 *)"You shouldn't be rummaging through the garbage.");
+        notify_quiet(player, T("You shouldn't be rummaging through the garbage."));
         return;
     }
 
@@ -617,7 +617,7 @@ static void set_attr_internal(dbref player, dbref thing, int attrnum, UTF8 *attr
            && !Quiet(player)
            && !Quiet(thing))
         {
-            notify_quiet(player, (UTF8 *)"Set.");
+            notify_quiet(player, T("Set."));
         }
     }
     else
@@ -635,7 +635,7 @@ FUNCTION(fun_set)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (check_command(executor, (UTF8 *)"@set", buff, bufc))
+    if (check_command(executor, T("@set"), buff, bufc))
     {
         return;
     }
@@ -658,7 +658,7 @@ FUNCTION(fun_set)
             //
             if (flagname[0] == '\0')
             {
-                safe_str((UTF8 *)"#-1 UNSPECIFIED PARAMETER", buff, bufc);
+                safe_str(T("#-1 UNSPECIFIED PARAMETER"), buff, bufc);
                 return;
             }
 
@@ -676,7 +676,7 @@ FUNCTION(fun_set)
             int flagvalue;
             if (!search_nametab(executor, indiv_attraccess_nametab, flagname, &flagvalue))
             {
-                safe_str((UTF8 *)"#-1 CANNOT SET", buff, bufc);
+                safe_str(T("#-1 CANNOT SET"), buff, bufc);
                 return;
             }
 
@@ -684,7 +684,7 @@ FUNCTION(fun_set)
             //
             if (!atr_get_info(thing, pattr->number, &aowner, &aflags))
             {
-                safe_str((UTF8 *)"#-1 ATTRIBUTE NOT PRESENT ON OBJECT", buff, bufc);
+                safe_str(T("#-1 ATTRIBUTE NOT PRESENT ON OBJECT"), buff, bufc);
                 return;
             }
 
@@ -734,7 +734,7 @@ FUNCTION(fun_set)
         int atr = mkattr(executor, fargs[1]);
         if (atr <= 0)
         {
-            safe_str((UTF8 *)"#-1 UNABLE TO CREATE ATTRIBUTE", buff, bufc);
+            safe_str(T("#-1 UNABLE TO CREATE ATTRIBUTE"), buff, bufc);
             return;
         }
         pattr = atr_num(atr);
@@ -926,7 +926,7 @@ static void scan_zone
 {
     if (!mudconf.have_zones)
     {
-        safe_str((UTF8 *)"#-1 ZONES DISABLED", buff, bufc);
+        safe_str(T("#-1 ZONES DISABLED"), buff, bufc);
         return;
     }
 
@@ -1102,6 +1102,17 @@ FUNCTION(fun_squish)
     }
 
     SEP sep;
+#ifdef NEW_MUX_STRING
+    if (!OPTIONAL_DELIM(2, sep, DELIM_DFLT|DELIM_STRING))
+    {
+        return;
+    }
+
+    mux_string *sStr = new mux_string(fargs[0]);
+
+    sStr->compress(sep.str);
+    *bufc += sStr->export_TextAnsi(*bufc, CursorMin, CursorMax, buff + LBUF_SIZE - *bufc);
+#else
     if (!OPTIONAL_DELIM(2, sep, DELIM_DFLT))
     {
         return;
@@ -1111,6 +1122,7 @@ FUNCTION(fun_squish)
 
     sStr->compress(sep.str[0]);
     sStr->export_TextAnsi(buff, bufc);
+#endif // NEW_MUX_STRING
 
     delete sStr;
 }
@@ -1139,14 +1151,14 @@ FUNCTION(fun_zfun)
 
     if (!mudconf.have_zones)
     {
-        safe_str((UTF8 *)"#-1 ZONES DISABLED", buff, bufc);
+        safe_str(T("#-1 ZONES DISABLED"), buff, bufc);
         return;
     }
 
     dbref zone = Zone(executor);
     if (!Good_obj(zone))
     {
-        safe_str((UTF8 *)"#-1 INVALID ZONE", buff, bufc);
+        safe_str(T("#-1 INVALID ZONE"), buff, bufc);
         return;
     }
 
@@ -1155,7 +1167,7 @@ FUNCTION(fun_zfun)
     int attrib = get_atr(fargs[0]);
     if (!attrib)
     {
-        safe_str((UTF8 *)"#-1 NO SUCH USER FUNCTION", buff, bufc);
+        safe_str(T("#-1 NO SUCH USER FUNCTION"), buff, bufc);
         return;
     }
     dbref aowner;
@@ -1239,7 +1251,11 @@ FUNCTION(fun_columns)
     int nColumns = (78-nIndent)/nWidth;
     int iColumn = 0;
     int nLen = 0;
+#ifdef NEW_MUX_STRING
+    mux_cursor iStart, iEnd, iWordStart, iWordEnd;
+#else
     LBUF_OFFSET iWordStart = 0, iWordEnd = 0;
+#endif // NEW_MUX_STRING
 
     size_t nBufferAvailable = LBUF_SIZE - (*bufc-buff) - 1;
     bool bNeedCRLF = false;
@@ -1253,18 +1269,28 @@ FUNCTION(fun_columns)
         iWordStart = words->wordBegin(i);
         iWordEnd = words->wordEnd(i);
 
+#ifdef NEW_MUX_STRING
+        nLen = iWordEnd.m_point - iWordStart.m_point;
+#else
         nLen = iWordEnd - iWordStart;
+#endif
         if (nWidth < nLen)
         {
             nLen = nWidth;
         }
 
+#ifdef NEW_MUX_STRING
+        iStart = iWordStart;
+        sStr->cursor_from_point(iEnd, (LBUF_OFFSET)(iWordStart.m_point + nLen));
+        *bufc += sStr->export_TextAnsi(*bufc, iStart, iEnd, buff + LBUF_SIZE - *bufc);
+#else
         sStr->export_TextAnsi(buff, bufc, iWordStart, nLen);
+#endif // NEW_MUX_STRING
 
         if (nColumns-1 <= iColumn)
         {
             iColumn = 0;
-            safe_copy_buf((UTF8 *)"\r\n", 2, buff, bufc);
+            safe_copy_buf(T("\r\n"), 2, buff, bufc);
             bNeedCRLF = false;
         }
         else
@@ -1277,7 +1303,7 @@ FUNCTION(fun_columns)
     }
     if (bNeedCRLF)
     {
-        safe_copy_buf((UTF8 *)"\r\n", 2, buff, bufc);
+        safe_copy_buf(T("\r\n"), 2, buff, bufc);
     }
     delete sStr;
     delete words;
@@ -1319,7 +1345,7 @@ FUNCTION(fun_table)
         }
         else
         {
-            safe_str((UTF8 *)"#-1 SEPARATOR MUST BE ONE CHARACTER", buff, bufc);
+            safe_str(T("#-1 SEPARATOR MUST BE ONE CHARACTER"), buff, bufc);
             return;
         }
     }
@@ -1335,7 +1361,7 @@ FUNCTION(fun_table)
         }
         else
         {
-            safe_str((UTF8 *)"#-1 DELIMITER MUST BE ONE CHARACTER", buff, bufc);
+            safe_str(T("#-1 DELIMITER MUST BE ONE CHARACTER"), buff, bufc);
             return;
         }
     }
@@ -1718,6 +1744,17 @@ FUNCTION(fun_strtrunc)
     }
 
     mux_string *sStr = new mux_string(fargs[0]);
+#ifdef NEW_MUX_STRING
+    mux_cursor nLen = sStr->length_cursor();
+
+    if (nLeft < nLen.m_point)
+    {
+        mux_cursor iEnd;
+        sStr->cursor_from_point(iEnd, (LBUF_OFFSET)nLeft);
+        *bufc += sStr->export_TextAnsi(*bufc, CursorMin, iEnd, buff + LBUF_SIZE - *bufc);
+    }
+    else if (0 < nLen.m_point)
+#else
     size_t nLen = sStr->length();
 
     if (static_cast<size_t>(nLeft) < nLen)
@@ -1725,6 +1762,7 @@ FUNCTION(fun_strtrunc)
         sStr->export_TextAnsi(buff, bufc, 0, nLeft);
     }
     else if (0 < nLen)
+#endif // NEW_MUX_STRING
     {
         safe_str(fargs[0], buff, bufc);
     }
@@ -1777,7 +1815,7 @@ FUNCTION(fun_mail)
 
     if (!mudconf.have_mailer)
     {
-        safe_str((UTF8 *)"#-1 MAILER DISABLED.", buff, bufc);
+        safe_str(T("#-1 MAILER DISABLED."), buff, bufc);
         return;
     }
 
@@ -1805,7 +1843,7 @@ FUNCTION(fun_mail)
                 playerask = match_thing_quiet(executor, fargs[0]);
                 if (!isPlayer(playerask))
                 {
-                    safe_str((UTF8 *)"#-1 NO SUCH PLAYER", buff, bufc);
+                    safe_str(T("#-1 NO SUCH PLAYER"), buff, bufc);
                     return;
                 }
             }
@@ -1833,7 +1871,7 @@ FUNCTION(fun_mail)
         playerask = lookup_player(executor, fargs[0], true);
         if (playerask == NOTHING)
         {
-            safe_str((UTF8 *)"#-1 NO SUCH PLAYER", buff, bufc);
+            safe_str(T("#-1 NO SUCH PLAYER"), buff, bufc);
             return;
         }
         else if (  (playerask == executor && !mudstate.nObjEvalNest)
@@ -1851,7 +1889,7 @@ FUNCTION(fun_mail)
     if (  num < 1
        || !isPlayer(playerask))
     {
-        safe_str((UTF8 *)"#-1 NO SUCH MESSAGE", buff, bufc);
+        safe_str(T("#-1 NO SUCH MESSAGE"), buff, bufc);
         return;
     }
 
@@ -1862,7 +1900,7 @@ FUNCTION(fun_mail)
     }
     else
     {
-        safe_str((UTF8 *)"#-1 NO SUCH MESSAGE", buff, bufc);
+        safe_str(T("#-1 NO SUCH MESSAGE"), buff, bufc);
     }
 }
 
@@ -1871,14 +1909,14 @@ FUNCTION(fun_mailsize)
 {
     if (!mudconf.have_mailer)
     {
-        safe_str((UTF8 *)"#-1 MAILER DISABLED.", buff, bufc);
+        safe_str(T("#-1 MAILER DISABLED."), buff, bufc);
         return;
     }
 
     dbref playerask = lookup_player(executor, fargs[0], 1);
     if (!Good_obj(playerask))
     {
-        safe_str((UTF8 *)"#-1 NO SUCH PLAYER", buff, bufc);
+        safe_str(T("#-1 NO SUCH PLAYER"), buff, bufc);
     }
     else if (  executor == playerask
             || Wizard(executor))
@@ -1902,7 +1940,7 @@ FUNCTION(fun_mailsubj)
 {
     if (!mudconf.have_mailer)
     {
-        safe_str((UTF8 *)"#-1 MAILER DISABLED.", buff, bufc);
+        safe_str(T("#-1 MAILER DISABLED."), buff, bufc);
         return;
     }
 
@@ -1919,7 +1957,7 @@ FUNCTION(fun_mailsubj)
         playerask = lookup_player(executor, fargs[0], 1);
         if (NOTHING == playerask)
         {
-            safe_str((UTF8 *)"#-1 NO SUCH PLAYER", buff, bufc);
+            safe_str(T("#-1 NO SUCH PLAYER"), buff, bufc);
             return;
         }
         else if (  executor == playerask
@@ -1937,7 +1975,7 @@ FUNCTION(fun_mailsubj)
     if (  num < 1
        || !isPlayer(playerask))
     {
-        safe_str((UTF8 *)"#-1 NO SUCH MESSAGE", buff, bufc);
+        safe_str(T("#-1 NO SUCH MESSAGE"), buff, bufc);
     }
     else
     {
@@ -1948,7 +1986,7 @@ FUNCTION(fun_mailsubj)
         }
         else
         {
-            safe_str((UTF8 *)"#-1 NO SUCH MESSAGE", buff, bufc);
+            safe_str(T("#-1 NO SUCH MESSAGE"), buff, bufc);
         }
     }
 }
@@ -1967,7 +2005,7 @@ FUNCTION(fun_mailj)
 {
     if (!mudconf.have_mailer)
     {
-        safe_str((UTF8 *)"#-1 MAILER DISABLED.", buff, bufc);
+        safe_str(T("#-1 MAILER DISABLED."), buff, bufc);
         return;
     }
 
@@ -1996,7 +2034,7 @@ FUNCTION(fun_mailj)
             playerask = lookup_player(executor, fargs[0], 1);
             if (NOTHING == playerask)
             {
-                safe_str((UTF8 *)"#-1 NO SUCH PLAYER", buff, bufc);
+                safe_str(T("#-1 NO SUCH PLAYER"), buff, bufc);
             }
             else if (  executor == playerask
                     || Wizard(executor))
@@ -2040,7 +2078,7 @@ FUNCTION(fun_mailj)
         playerask = lookup_player(executor, fargs[0], 1);
         if (NOTHING == playerask)
         {
-            safe_str((UTF8 *)"#-1 NO SUCH PLAYER", buff, bufc);
+            safe_str(T("#-1 NO SUCH PLAYER"), buff, bufc);
             return;
         }
         else if (  executor == playerask
@@ -2058,7 +2096,7 @@ FUNCTION(fun_mailj)
     if (  num < 1
        || !isPlayer(playerask))
     {
-        safe_str((UTF8 *)"#-1 NO SUCH MESSAGE", buff, bufc);
+        safe_str(T("#-1 NO SUCH MESSAGE"), buff, bufc);
         return;
     }
 
@@ -2069,7 +2107,7 @@ FUNCTION(fun_mailj)
     }
     else
     {
-        safe_str((UTF8 *)"#-1 NO SUCH MESSAGE", buff, bufc);
+        safe_str(T("#-1 NO SUCH MESSAGE"), buff, bufc);
     }
 }
 #endif // FIRANMUX
@@ -2091,7 +2129,7 @@ FUNCTION(fun_mailfrom)
 
     if (!mudconf.have_mailer)
     {
-        safe_str((UTF8 *)"#-1 MAILER DISABLED.", buff, bufc);
+        safe_str(T("#-1 MAILER DISABLED."), buff, bufc);
         return;
     }
 
@@ -2109,7 +2147,7 @@ FUNCTION(fun_mailfrom)
         playerask = lookup_player(executor, fargs[0], true);
         if (playerask == NOTHING)
         {
-            safe_str((UTF8 *)"#-1 NO SUCH PLAYER", buff, bufc);
+            safe_str(T("#-1 NO SUCH PLAYER"), buff, bufc);
             return;
         }
         if (  playerask == executor
@@ -2127,7 +2165,7 @@ FUNCTION(fun_mailfrom)
     if (  num < 1
        || !isPlayer(playerask))
     {
-        safe_str((UTF8 *)"#-1 NO SUCH MESSAGE", buff, bufc);
+        safe_str(T("#-1 NO SUCH MESSAGE"), buff, bufc);
         return;
     }
 
@@ -2140,7 +2178,7 @@ FUNCTION(fun_mailfrom)
 
     // Ran off the end of the list without finding anything.
     //
-    safe_str((UTF8 *)"#-1 NO SUCH MESSAGE", buff, bufc);
+    safe_str(T("#-1 NO SUCH MESSAGE"), buff, bufc);
 }
 
 // ---------------------------------------------------------------------------
@@ -2348,14 +2386,14 @@ FUNCTION(fun_findable)
     if (!Good_obj(obj))
     {
         safe_match_result(obj, buff, bufc);
-        safe_str((UTF8 *)" (ARG1)", buff, bufc);
+        safe_str(T(" (ARG1)"), buff, bufc);
         return;
     }
     dbref victim = match_thing_quiet(executor, fargs[1]);
     if (!Good_obj(victim))
     {
         safe_match_result(victim, buff, bufc);
-        safe_str((UTF8 *)" (ARG2)", buff, bufc);
+        safe_str(T(" (ARG2)"), buff, bufc);
         return;
     }
 #ifndef WOD_REALMS
@@ -2437,7 +2475,7 @@ FUNCTION(fun_visible)
     if (!Good_obj(it))
     {
         safe_match_result(it, buff, bufc);
-        safe_str((UTF8 *)" (ARG1)", buff, bufc);
+        safe_str(T(" (ARG1)"), buff, bufc);
         return;
     }
     else if (!Controls(executor, it))
@@ -2455,7 +2493,7 @@ FUNCTION(fun_visible)
         if (!Good_obj(thing))
         {
             safe_match_result(thing, buff, bufc);
-            safe_str((UTF8 *)" (ARG2)", buff, bufc);
+            safe_str(T(" (ARG2)"), buff, bufc);
             return;
         }
     }
@@ -2623,8 +2661,30 @@ FUNCTION(fun_scramble)
     UNUSED_PARAMETER(ncargs);
 
     mux_string *sStr = new mux_string(fargs[0]);
+#ifdef NEW_MUX_STRING
+    LBUF_OFFSET nPoints = sStr->length_cursor().m_point;
+#else
     size_t nLen = sStr->length();
+#endif
 
+#ifdef NEW_MUX_STRING
+    if (2 <= nPoints)
+    {
+        mux_string *sOut = new mux_string;
+        LBUF_OFFSET iPoint;
+        mux_cursor iStart, iEnd;
+        while (0 < nPoints)
+        {
+            iPoint = static_cast<LBUF_OFFSET>(RandomINT32(0, static_cast<INT32>(nPoints-1)));
+            sStr->cursor_from_point(iStart, iPoint);
+            sStr->cursor_from_point(iEnd, iPoint + 1);
+            sOut->append(*sStr, iStart, iEnd);
+            sStr->delete_Chars(iStart, iEnd);
+            nPoints--;
+        }
+        *bufc += sOut->export_TextAnsi(*bufc, CursorMin, CursorMax, buff + LBUF_SIZE - *bufc);
+        delete sOut;
+#else
     if (2 <= nLen)
     {
         for (size_t i = 0; i < nLen-1; i++)
@@ -2633,7 +2693,7 @@ FUNCTION(fun_scramble)
                 static_cast<INT32>(nLen-1)));
 
             UTF8 ch = sStr->export_Char(i);
-            ANSI_ColorState cs = sStr->export_Color(i);
+            ColorState cs = sStr->export_Color(i);
 
             sStr->set_Char(i, sStr->export_Char(j));
             sStr->set_Color(i, sStr->export_Color(j));
@@ -2642,6 +2702,7 @@ FUNCTION(fun_scramble)
             sStr->set_Color(j, cs);
         }
         sStr->export_TextAnsi(buff, bufc, 0, nLen);
+#endif // NEW_MUX_STRING
     }
     else
     {
@@ -2684,6 +2745,29 @@ FUNCTION(fun_shuffle)
     LBUF_OFFSET n = words->find_Words(sep.str);
     mux_string *sOut = new mux_string;
     bool bFirst = true;
+#ifdef NEW_MUX_STRING
+    LBUF_OFFSET i = 0;
+    mux_cursor iStart = CursorMin, iEnd = CursorMin;
+
+    while (n > 0)
+    {
+        if (bFirst)
+        {
+            bFirst = false;
+        }
+        else
+        {
+            sOut->append(osep.str, osep.n);
+        }
+        i = static_cast<LBUF_OFFSET>(RandomINT32(0, static_cast<INT32>(n-1)));
+        iStart = words->wordBegin(i);
+        iEnd = words->wordEnd(i);
+        sOut->append(*sIn, iStart, iEnd);
+        words->ignore_Word(i);
+        n--;
+    }
+    *bufc += sOut->export_TextAnsi(*bufc, CursorMin, CursorMax, buff + LBUF_SIZE - *bufc);
+#else
     LBUF_OFFSET i = 0, iStart = 0, nLen = 0;
 
     while (n > 0)
@@ -2704,6 +2788,7 @@ FUNCTION(fun_shuffle)
         n--;
     }
     sOut->export_TextAnsi(buff, bufc);
+#endif // NEW_MUX_STRING
 
     delete words;
     delete sIn;
@@ -3142,7 +3227,7 @@ FUNCTION(fun_step)
     if (  step_size < 1
        || NUM_ENV_VARS < step_size)
     {
-        notify(executor, (UTF8 *)"Illegal step size.");
+        notify(executor, T("Illegal step size."));
         return;
     }
 
@@ -3201,7 +3286,7 @@ FUNCTION(fun_foreach)
     if (  nfargs != 2
        && nfargs != 4)
     {
-        safe_str((UTF8 *)"#-1 FUNCTION (FOREACH) EXPECTS 2 OR 4 ARGUMENTS", buff, bufc);
+        safe_str(T("#-1 FUNCTION (FOREACH) EXPECTS 2 OR 4 ARGUMENTS"), buff, bufc);
         return;
     }
 
@@ -3399,7 +3484,7 @@ FUNCTION(fun_munge)
     if (  NULL != pKey
        || NULL != pValue)
     {
-        safe_str((UTF8 *)"#-1 LISTS MUST BE OF EQUAL SIZE", buff, bufc);
+        safe_str(T("#-1 LISTS MUST BE OF EQUAL SIZE"), buff, bufc);
         free_lbuf(atext);
         free_lbuf(list1);
         delete [] htab;
@@ -3610,7 +3695,7 @@ FUNCTION(fun_unpack)
            || (iRadix = mux_atoi64(fargs[1])) < 2
            || 64 < iRadix)
         {
-            safe_str((UTF8 *)"#-1 RADIX MUST BE A NUMBER BETWEEN 2 and 64", buff, bufc);
+            safe_str(T("#-1 RADIX MUST BE A NUMBER BETWEEN 2 and 64"), buff, bufc);
             return;
         }
     }
@@ -3730,7 +3815,7 @@ FUNCTION(fun_pack)
     if (  !is_integer(fargs[0], NULL)
        || (nfargs == 2 && !is_integer(fargs[1], NULL)))
     {
-        safe_str((UTF8 *)"#-1 ARGUMENTS MUST BE NUMBERS", buff, bufc);
+        safe_str(T("#-1 ARGUMENTS MUST BE NUMBERS"), buff, bufc);
         return;
     }
     INT64 val = mux_atoi64(fargs[0]);
@@ -3743,7 +3828,7 @@ FUNCTION(fun_pack)
         iRadix = mux_atol(fargs[1]);
         if (iRadix < 2 || 64 < iRadix)
         {
-            safe_str((UTF8 *)"#-1 RADIX MUST BE A NUMBER BETWEEN 2 and 64", buff, bufc);
+            safe_str(T("#-1 RADIX MUST BE A NUMBER BETWEEN 2 and 64"), buff, bufc);
             return;
         }
     }
@@ -3819,7 +3904,7 @@ static UTF8 *grep_util(dbref player, dbref thing, UTF8 *pattern, UTF8 *lookfor, 
                     safe_chr(' ', tbuf1, &bp);
                 }
                 ATTR *ap = atr_num(ca);
-                const UTF8 *pName = (UTF8 *)"(WARNING: Bad Attribute Number)";
+                const UTF8 *pName = T("(WARNING: Bad Attribute Number)");
                 if (ap)
                 {
                     pName = ap->name;
@@ -3855,12 +3940,12 @@ static void grep_handler(UTF8 *buff, UTF8 **bufc, dbref executor, UTF8 *fargs[],
     //
     if (!fargs[1] || !*fargs[1])
     {
-        safe_str((UTF8 *)"#-1 NO SUCH ATTRIBUTE", buff, bufc);
+        safe_str(T("#-1 NO SUCH ATTRIBUTE"), buff, bufc);
         return;
     }
     if (!fargs[2] || !*fargs[2])
     {
-        safe_str((UTF8 *)"#-1 INVALID GREP PATTERN", buff, bufc);
+        safe_str(T("#-1 INVALID GREP PATTERN"), buff, bufc);
         return;
     }
     UTF8 *tp = grep_util(executor, it, fargs[1], fargs[2], strlen((char *)fargs[2]), bCaseInsens);
@@ -3957,41 +4042,41 @@ FUNCTION(fun_valid)
     {
         bValid = false;
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"attrname"))
+    else if (!mux_stricmp(fargs[0], T("attrname")))
     {
         MakeCanonicalAttributeName(fargs[1], &nValidName, &bValid);
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"comalias"))
+    else if (!mux_stricmp(fargs[0], T("comalias")))
     {
         MakeCanonicalComAlias(fargs[1], &nValidName, &bValid);
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"doing"))
+    else if (!mux_stricmp(fargs[0], T("doing")))
     {
         MakeCanonicalDoing(fargs[1], &nValidName, &bValid);
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"exitname"))
+    else if (!mux_stricmp(fargs[0], T("exitname")))
     {
         MakeCanonicalExitName(fargs[1], &nValidName, &bValid);
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"malias"))
+    else if (!mux_stricmp(fargs[0], T("malias")))
     {
         MakeCanonicalMailAlias(fargs[1], &nValidName, &bValid);
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"maliasdesc"))
+    else if (!mux_stricmp(fargs[0], T("maliasdesc")))
     {
         size_t vw;
         MakeCanonicalMailAliasDesc(fargs[1], &nValidName, &bValid, &vw);
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"name"))
+    else if (!mux_stricmp(fargs[0], T("name")))
     {
         MakeCanonicalObjectName(fargs[1], &nValidName, &bValid);
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"password"))
+    else if (!mux_stricmp(fargs[0], T("password")))
     {
         const UTF8 *msg;
         bValid = ok_password(fargs[1], &msg);
     }
-    else if (!mux_stricmp(fargs[0], (UTF8 *)"playername"))
+    else if (!mux_stricmp(fargs[0], T("playername")))
     {
         bValid = ValidatePlayerName(fargs[1]);
     }
@@ -4045,7 +4130,7 @@ FUNCTION(fun_hastype)
 
     default:
 
-        safe_str((UTF8 *)"#-1 NO SUCH TYPE", buff, bufc);
+        safe_str(T("#-1 NO SUCH TYPE"), buff, bufc);
         break;
     }
     safe_bool(bResult, buff, bufc);
@@ -4456,7 +4541,7 @@ static void real_regmatch(const UTF8 *search, const UTF8 *pattern, UTF8 *registe
     {
         // Matching error.
         //
-        safe_str((UTF8 *)"#-1 REGEXP ERROR ", buff, bufc);
+        safe_str(T("#-1 REGEXP ERROR "), buff, bufc);
         safe_str((UTF8 *)errptr, buff, bufc);
         return;
     }
@@ -4572,7 +4657,7 @@ static void real_regrab(UTF8 *search, const UTF8 *pattern, SEP *psep, UTF8 *buff
     {
         // Matching error.
         //
-        safe_str((UTF8 *)"#-1 REGEXP ERROR ", buff, bufc);
+        safe_str(T("#-1 REGEXP ERROR "), buff, bufc);
         safe_str((UTF8 *)errptr, buff, bufc);
         return;
     }
@@ -4912,7 +4997,7 @@ FUNCTION(fun_lrooms)
     }
     else if (!isRoom(room))
     {
-        safe_str((UTF8 *)"#-1 FIRST ARGUMENT MUST BE A ROOM", buff, bufc);
+        safe_str(T("#-1 FIRST ARGUMENT MUST BE A ROOM"), buff, bufc);
         return;
     }
 
@@ -4922,7 +5007,7 @@ FUNCTION(fun_lrooms)
         N = mux_atol(fargs[1]);
         if (N < 0)
         {
-            safe_str((UTF8 *)"#-1 SECOND ARGUMENT MUST BE A POSITIVE NUMBER",
+            safe_str(T("#-1 SECOND ARGUMENT MUST BE A POSITIVE NUMBER"),
                 buff, bufc);
             return;
         }
@@ -4931,7 +5016,7 @@ FUNCTION(fun_lrooms)
             // Maybe this can be turned into a config parameter to prevent
             // misuse by putting in really large values.
             //
-            safe_str((UTF8 *)"#-1 SECOND ARGUMENT IS TOO LARGE", buff, bufc);
+            safe_str(T("#-1 SECOND ARGUMENT IS TOO LARGE"), buff, bufc);
             return;
         }
     }
