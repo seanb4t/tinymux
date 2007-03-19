@@ -253,9 +253,9 @@ const char *ConvertToAscii(const UTF8 *pString);
 #define TR_TOLOWER_ACCEPTING_STATES_START (1)
 extern const unsigned char tr_tolower_itt[256];
 extern const unsigned char tr_tolower_stt[1][2];
-extern const char *tr_tolower_ott[2];
+extern const UTF8 *tr_tolower_ott[2];
 
-inline const unsigned char *mux_lowerflip(const unsigned char *p)
+inline const UTF8 *mux_lowerflip(const unsigned char *p)
 {
     int iState = TR_TOLOWER_START_STATE;
     do
@@ -275,9 +275,9 @@ inline const unsigned char *mux_lowerflip(const unsigned char *p)
 #define TR_TOUPPER_ACCEPTING_STATES_START (1)
 extern const unsigned char tr_toupper_itt[256];
 extern const unsigned char tr_toupper_stt[1][4];
-extern const char *tr_toupper_ott[3];
+extern const UTF8 *tr_toupper_ott[3];
 
-inline const unsigned char *mux_upperflip(const unsigned char *p)
+inline const UTF8 *mux_upperflip(const unsigned char *p)
 {
     int iState = TR_TOUPPER_START_STATE;
     do
@@ -597,8 +597,6 @@ bool utf8_strlen(const UTF8 *pString, mux_cursor &nString);
 static const mux_cursor CursorMin = {0,0};
 static const mux_cursor CursorMax = {LBUF_SIZE - 1, LBUF_SIZE - 1};
 
-#define NEW_MUX_STRING
-
 class mux_string
 {
     // m_nutf, m_ncs, m_autf, m_ncs, and m_pcs work together as follows:
@@ -754,6 +752,10 @@ public:
             free_string(p);
         }
     }
+
+    void UpperCase(void);
+    void LowerCase(void);
+    void UpperCaseFirst(void);
 
     // mux_string_cursor c;
     // cursor_start(c);
