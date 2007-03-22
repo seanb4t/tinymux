@@ -7292,6 +7292,13 @@ static FUNCTION(fun_terminfo)
     {
         safe_str(T(" unicode"), buff, bufc);
     }
+    
+#ifdef SSL_ENABLED
+    if (d->ssl_session)
+    {
+        safe_str(T(" ssl"), buff, bufc);
+    }
+#endif // SSL_ENABLED
 }
 
 

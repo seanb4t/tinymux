@@ -2022,13 +2022,6 @@ size_t ANSI_TruncateToField
     return ANSI_String_Finalize(&aoc, pnVisualWidth);
 }
 
-UTF8 *ANSI_TruncateAndPad_sbuf(const UTF8 *pString, LBUF_OFFSET nMaxVisualWidth, UTF8 fill)
-{
-    UTF8 *pStringModified = alloc_sbuf("ANSI_TruncateAndPad_sbuf");
-    StripTabsAndTruncate(pString, pStringModified, SBUF_SIZE, nMaxVisualWidth, true, fill);
-    return pStringModified;
-}
-
 #define COLOR_CODE_NORMAL       1
 #define COLOR_CODE_FG_WHITE     13
 
@@ -4128,7 +4121,10 @@ mux_field StripTabsAndTruncate
     mux_cursor curPos = CursorMin;
     mux_field  fldLimit(nLength, nWidth);
 
+#ifdef MUX_TABLE
+#else // MUX_TABLE
     const mux_field fldAscii(1, 1);
+#endif // MUX_TABLE
     const mux_cursor curAscii(1, 1);
     mux_field  fldTransition(0, 0);
     const UTF8 *pTransition = NULL;
@@ -4152,10 +4148,9 @@ mux_field StripTabsAndTruncate
 
         mux_cursor curPoint(utf8_FirstByte[pString[curPos.m_byte]], 1);
         mux_field  fldPoint(utf8_FirstByte[pString[curPos.m_byte]], COLOR_NOTCOLOR == iCode ? 1 : 0);
-        if (fldOutput + fldPoint + fldTransition < fldLimit)
+        if (fldOutput + fldPoint + fldTransition <= fldLimit)
         {
-            size_t j;
-            for (j = 0; j < fldPoint.m_byte; j++)
+            for (size_t j = 0; j < fldPoint.m_byte; j++)
             {
                 pBuffer[fldOutput.m_byte + j] = pString[curPos.m_byte + j];
             }
@@ -4169,7 +4164,7 @@ mux_field StripTabsAndTruncate
     }
 
     if (  0 < nNormalBytes
-       && fldOutput + fldTransition < fldLimit)
+       && fldOutput + fldTransition <= fldLimit)
     {
         memcpy(pBuffer + fldOutput.m_byte, pTransition, nNormalBytes);
         fldOutput += fldTransition;
