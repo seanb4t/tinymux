@@ -1547,6 +1547,10 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int key)
     log_name(executor);
     ENDLOG;
 
+#ifdef SSL_ENABLED
+    CleanUpSSLConnections();
+#endif
+
     local_presync_database();
 
 #ifndef MEMORY_BASED
@@ -1568,10 +1572,6 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int key)
 
     CleanUpSlaveSocket();
     CleanUpSlaveProcess();
-
-#ifdef SSL_ENABLED
-    CleanUpSSLConnections();
-#endif
 
     Log.StopLogging();
 
