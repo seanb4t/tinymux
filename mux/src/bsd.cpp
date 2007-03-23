@@ -1006,7 +1006,7 @@ void CleanUpSSLConnections()
 
 #endif
 
-int mux_socket_write(DESC *d, const char *buffer, int nBytes, int flags)
+int mux_socket_write(DESC *d, const char *buffer, size_t nBytes, int flags)
 {
     int result;
     
@@ -1023,7 +1023,7 @@ int mux_socket_write(DESC *d, const char *buffer, int nBytes, int flags)
     return result;
 }
 
-int mux_socket_read(DESC *d, char *buffer, int nBytes, int flags)
+int mux_socket_read(DESC *d, char *buffer, size_t nBytes, int flags)
 {
     int result;
     
@@ -2101,8 +2101,9 @@ static const UTF8 *disc_reasons[] =
     T("Login Retry Limit"),
     T("Logins Disabled"),
     T("Logout (Connection Not Dropped)"),
-    T("Too Many Connected Players")
-};
+    T("Too Many Connected Players"),
+    T("Restarted (SSL Connections Dropped)")
+ };
 
 // Disconnect reasons that get fed to A_ADISCONNECT via announce_disconnect
 //
@@ -2118,7 +2119,7 @@ static const UTF8 *disc_messages[] =
     T("NoLogins"),
     T("Logout"),
     T("GameFull"),
-    T("Restart"),
+    T("Restart")
 };
 
 void shutdownsock(DESC *d, int reason)
