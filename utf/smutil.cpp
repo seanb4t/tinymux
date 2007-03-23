@@ -7,58 +7,15 @@
 #include "ConvertUTF.h"
 #include "smutil.h"
 
-static UTF32 DecodeCodePoint(char *p)
+char *ReadLine(FILE *fp, char *buffer, size_t bufsize)
 {
-    if (!isxdigit(*p))
-    {
-        // The first field was empty or contained invalid data.
-        //
-        return UNI_EOF;
-    }
-
-    int codepoint = 0;
-    while (isxdigit(*p))
-    {
-        char ch = *p;
-        if (  ch <= '9'
-           && '0' <= ch)
-        {
-            ch = ch - '0';
-        }
-        else if (  ch <= 'F'
-                && 'A' <= ch)
-        {
-            ch = ch - 'A' + 10;
-        }
-        else if (  ch <= 'f'
-                && 'a' <= ch)
-        {
-            ch = ch - 'a' + 10;
-        }
-        else
-        {
-            return UNI_EOF;
-        }
-        codepoint = (codepoint << 4) + ch;
-        p++;
-    }
-    return codepoint;
-}
-
-UTF32 ReadCodePoint(FILE *fp, int *pValue, UTF32 *pOthercase)
-{
-    char buffer[1024];
-    char *p;
-
     for (;;)
     {
-        if (fgets(buffer, sizeof(buffer), fp) == NULL)
+        if (NULL == fgets(buffer, bufsize, fp))
         {
-            *pValue = -1;
-            *pOthercase = UNI_EOF;
-            return UNI_EOF;
+            return NULL;
         }
-        p = strchr(buffer, '#');
+        char *p = strchr(buffer, '#');
         if (NULL != p)
         {
             // Ignore comment.
@@ -76,20 +33,19 @@ UTF32 ReadCodePoint(FILE *fp, int *pValue, UTF32 *pOthercase)
 
         // Look for end of string or comment.
         //
-        if ('\0' == *p)
+        if ('\0' != *p)
         {
-            // We skip blank lines.
-            //
-            continue;
+            return p;
         }
-        break;
     }
+}
 
-#define MAX_FIELDS 15
-
-    int   nFields = 0;
-    char *aFields[MAX_FIELDS];
-    for (nFields = 0; nFields < MAX_FIELDS; )
+void ParseFields(char *buffer, int max_fields, int &nFields, char *aFields[])
+{
+    nFields = 0;
+    char *p = buffer;
+    while (  '\0' != p[0]
+          && nFields < max_fields)
     {
         // Skip leading whitespace.
         //
@@ -126,62 +82,71 @@ UTF32 ReadCodePoint(FILE *fp, int *pValue, UTF32 *pOthercase)
             }
         }
     }
+}
 
-    // Field #0 - Code Point
-    //
-    int codepoint = DecodeCodePoint(aFields[0]);
+void ParsePoints(char *buffer, int max_points, int &nPoints, char *aPoints[])
+{
+    nPoints = 0;
 
-    // Field #6 - Decimal Digit Property.
-    //
-    int Value;
-    p = aFields[6];
-    if (!isdigit(*p))
+    char *p = buffer;
+    while (  '\0' != p[0]
+          && nPoints < max_points)
     {
-        Value = -1;
-    }
-    else
-    {
-        Value = 0;
-        do
+        // Skip leading whitespace.
+        //
+        while (isspace(*p))
         {
-            Value = Value * 10 + (*p - '0');
             p++;
-        } while (isdigit(*p));
-    }
-    *pValue = Value;
-
-    // Field #12 - Simple Uppercase Mapping.
-    //
-    int Uppercase = DecodeCodePoint(aFields[12]);
-
-    // Field #13 = Simple Lowercase Mapping.
-    //
-    int Lowercase = DecodeCodePoint(aFields[13]);
-
-    if (  Uppercase < 0
-       && Lowercase < 0)
-    {
-        *pOthercase = UNI_EOF;
-    }
-    else
-    {
-        if (Uppercase < 0)
-        {
-            Uppercase = codepoint;
-        }
-        if (Lowercase < 0)
-        {
-            Lowercase = codepoint;
         }
 
-        if (Lowercase == codepoint)
+        aPoints[nPoints++] = p;
+        char *q = strchr(p, ' ');
+        if (NULL == q)
         {
-            *pOthercase = Uppercase;
+            break;
         }
         else
         {
-            *pOthercase = Lowercase;
+            *q = '\0';
+            p = q + 1;
         }
+    }
+}
+
+UTF32 DecodeCodePoint(char *p)
+{
+    if (!isxdigit(*p))
+    {
+        // The first field was empty or contained invalid data.
+        //
+        return UNI_EOF;
+    }
+
+    int codepoint = 0;
+    while (isxdigit(*p))
+    {
+        char ch = *p;
+        if (  ch <= '9'
+           && '0' <= ch)
+        {
+            ch = ch - '0';
+        }
+        else if (  ch <= 'F'
+                && 'A' <= ch)
+        {
+            ch = ch - 'A' + 10;
+        }
+        else if (  ch <= 'f'
+                && 'a' <= ch)
+        {
+            ch = ch - 'a' + 10;
+        }
+        else
+        {
+            return UNI_EOF;
+        }
+        codepoint = (codepoint << 4) + ch;
+        p++;
     }
     return codepoint;
 }

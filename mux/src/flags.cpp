@@ -508,7 +508,6 @@ FLAGNAMEENT gen_flag_names[] =
     {(UTF8 *)"MONITOR",         true, &fbeMonitor        },
     {(UTF8 *)"MYOPIC",          true, &fbeMyopic         },
     {(UTF8 *)"NO_COMMAND",      true, &fbeNoCommand      },
-    {(UTF8 *)"NOACCENTS",       true, &fbeAscii          },
     {(UTF8 *)"NOBLEED",         true, &fbeNoBleed        },
     {(UTF8 *)"NOSPOOF",         true, &fbeNoSpoof        },
     {(UTF8 *)"OPAQUE",          true, &fbeOpaque         },
@@ -642,7 +641,7 @@ UTF8 *MakeCanonicalFlagName
 
     while (*pName && nName < SBUF_SIZE)
     {
-        *p = mux_tolower(*pName);
+        *p = mux_tolower_ascii(*pName);
         p++;
         pName++;
         nName++;
@@ -978,17 +977,7 @@ UTF8 *unparse_object_numonly(dbref target)
     }
     else
     {
-        // Leave 100 bytes on the end for the dbref.
-        //
-        size_t vw;
-        size_t nLen = ANSI_TruncateToField(Name(target), LBUF_SIZE-100,
-            buf, LBUF_SIZE, &vw);
-        UTF8 *bp = buf + nLen;
-
-        safe_str(T("(#"), buf, &bp);
-        safe_ltoa(target, buf, &bp);
-        safe_chr(')', buf, &bp);
-        *bp = '\0';
+        mux_sprintf(buf, LBUF_SIZE, "%s(#%d)", PureName(target), target);
     }
     return buf;
 }
@@ -1055,14 +1044,12 @@ UTF8 *unparse_object(dbref player, dbref target, bool obey_myopic, bool bAddColo
         // Leave and extra 100 bytes for the dbref and flags at the end and
         // color at the beginning if necessary..
         //
-        size_t vw;
-        size_t nLen = ANSI_TruncateToField(Moniker(target), LBUF_SIZE-100,
-            buf, LBUF_SIZE, &vw);
-
-        UTF8 *bp = buf + nLen;
+        mux_field fldName = StripTabsAndTruncate( Moniker(target), buf,
+                                                  LBUF_SIZE-100, LBUF_SIZE-100);
+        UTF8 *bp = buf + fldName.m_byte;
 
 #if defined(FIRANMUX)
-        if (  vw == nLen
+        if (  fldName.m_column == fldName.m_byte
            && bAddColor)
         {
             // There is no color in the name, so look for @color, or highlight.

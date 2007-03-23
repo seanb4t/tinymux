@@ -3,7 +3,10 @@
 
 #define UNI_EOF ((UTF32)-1)
 
-UTF32 ReadCodePoint(FILE *fp, int *pValue, UTF32 *pOthercase);
+char *ReadLine(FILE *fp, char *buffer, size_t bufsize);
+void ParseFields(char *buffer, int max_fields, int &nFields, char *aFields[]);
+void ParsePoints(char *buffer, int max_points, int &nPoints, char *aPoints[]);
+UTF32 DecodeCodePoint(char *p);
 
 typedef struct State
 {

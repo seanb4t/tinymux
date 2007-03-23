@@ -259,11 +259,11 @@ FUNCTION(fun_ansi)
         }
         safe_str(fargs[iArg0+1], tmp, &bp);
         *bp = '\0';
-        size_t nVisualWidth;
+
         size_t nBufferAvailable = LBUF_SIZE - (*bufc - buff) - 1;
-        size_t nLen = ANSI_TruncateToField(tmp, nBufferAvailable, *bufc,
-            LBUF_SIZE, &nVisualWidth);
-        *bufc += nLen;
+        mux_field fldLen = StripTabsAndTruncate( tmp, *bufc, nBufferAvailable,
+                                                 LBUF_SIZE);
+        *bufc += fldLen.m_byte;
     }
 }
 
@@ -1395,15 +1395,15 @@ FUNCTION(fun_table)
     size_t nCurrentCol = nNumCols - 1;
     for (;;)
     {
-        size_t nVisibleLength, nPaddingLength;
-        size_t nStringLength =
-            ANSI_TruncateToField( pCurrent, nBufferAvailable, *bufc,
-                                  nFieldWidth, &nVisibleLength);
+        mux_field fldLength = StripTabsAndTruncate( pCurrent, *bufc, nBufferAvailable,
+                                                    static_cast<LBUF_OFFSET>(nFieldWidth));
+        size_t nVisibleLength = fldLength.m_column;
+        size_t nStringLength = fldLength.m_byte;
 
         *bufc += nStringLength;
         nBufferAvailable -= nStringLength;
 
-        nPaddingLength = nFieldWidth - nVisibleLength;
+        size_t nPaddingLength = nFieldWidth - nVisibleLength;
         if (nPaddingLength > nBufferAvailable)
         {
             nPaddingLength = nBufferAvailable;
@@ -4029,24 +4029,28 @@ FUNCTION(fun_hastype)
         return;
     }
     bool bResult = false;
-    switch (mux_tolower(fargs[1][0]))
+    switch (fargs[1][0])
     {
     case 'r':
+    case 'R':
 
         bResult = isRoom(it);
         break;
 
     case 'e':
+    case 'E':
 
         bResult = isExit(it);
         break;
 
     case 'p':
+    case 'P':
 
         bResult = isPlayer(it);
         break;
 
     case 't':
+    case 'T':
 
         bResult = isThing(it);
         break;
@@ -4115,7 +4119,7 @@ FUNCTION(fun_lparent)
 static int stacksize(dbref doer)
 {
     int i;
-    STACK *sp;
+    MUX_STACK *sp;
     for (i = 0, sp = Stack(doer); sp != NULL; sp = sp->next, i++)
     {
         // Nothing
@@ -4131,7 +4135,7 @@ FUNCTION(fun_lstack)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    STACK *sp;
+    MUX_STACK *sp;
     dbref doer;
 
     if (nfargs == 0 || !*fargs[0])
@@ -4169,7 +4173,7 @@ void stack_clr(dbref obj)
 {
     // Clear the stack.
     //
-    STACK *sp, *next;
+    MUX_STACK *sp, *next;
     for (sp = Stack(obj); sp != NULL; sp = next)
     {
         next = sp->next;
@@ -4249,7 +4253,7 @@ FUNCTION(fun_peek)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    STACK *sp;
+    MUX_STACK *sp;
     dbref doer;
     int count, pos;
 
@@ -4352,8 +4356,8 @@ FUNCTION(fun_pop)
         return;
     }
 
-    STACK *sp = Stack(doer);
-    STACK *prev = NULL;
+    MUX_STACK *sp = Stack(doer);
+    MUX_STACK *prev = NULL;
     int count = 0;
     while (count != pos)
     {
@@ -4416,10 +4420,10 @@ FUNCTION(fun_push)
     }
     if (stacksize(doer) >= mudconf.stack_limit)
     {
-        safe_str("#-1 STACK SIZE EXCEEDED", buff, bufc);
+        safe_str("#-1 MUX_STACK SIZE EXCEEDED", buff, bufc);
         return;
     }
-    STACK *sp = (STACK *)MEMALLOC(sizeof(STACK));
+    MUX_STACK *sp = (MUX_STACK *)MEMALLOC(sizeof(MUX_STACK));
     ISOUTOFMEMORY(sp);
     sp->next = Stack(doer);
     sp->data = alloc_lbuf("push");
