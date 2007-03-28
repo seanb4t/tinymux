@@ -133,7 +133,7 @@ void raw_notify_html(dbref player, const mux_string &sMsg)
     if (  mudstate.inpipe
        && player == mudstate.poutobj)
     {
-        mudstate.poutbufc += sMsg.export_TextAnsi( mudstate.poutbufc, CursorMin,
+        mudstate.poutbufc += sMsg.export_TextColor( mudstate.poutbufc, CursorMin,
                                 CursorMax, mudstate.poutnew + LBUF_SIZE - mudstate.poutbufc);
         return;
     }
@@ -193,7 +193,7 @@ void raw_notify(dbref player, const mux_string &sMsg)
     if (  mudstate.inpipe
        && player == mudstate.poutobj)
     {
-        mudstate.poutbufc += sMsg.export_TextAnsi( mudstate.poutbufc, CursorMin,
+        mudstate.poutbufc += sMsg.export_TextColor( mudstate.poutbufc, CursorMin,
                                 CursorMax, mudstate.poutnew + LBUF_SIZE - mudstate.poutbufc);
         safe_str(T("\r\n"), mudstate.poutnew, &mudstate.poutbufc);
         return;
@@ -513,20 +513,7 @@ void queue_string(DESC *d, const UTF8 *s)
 
 void queue_string(DESC *d, const mux_string &s)
 {
-    static UTF8 Buffer[LBUF_SIZE];
-    const UTF8 *p;
-
-    if (  (d->flags & DS_CONNECTED)
-       && Ansi(d->player))
-    {
-        s.export_TextAnsi(Buffer, CursorMin, CursorMax, LBUF_SIZE-1, NoBleed(d->player));
-        p = convert_color(Buffer);
-    }
-    else
-    {
-        s.export_TextPlain(Buffer);
-        p = Buffer;
-    }
+    const UTF8 *p = s.export_TextConverted((d->flags & DS_CONNECTED) && Ansi(d->player), NoBleed(d->player));
 
     const char *q;
     if (CHARSET_UTF8 == d->encoding)
@@ -1584,22 +1571,19 @@ void check_events(void)
 }
 
 #define MAX_TRIMMED_NAME_LENGTH 16
-static const UTF8 *trimmed_name(dbref player, size_t *pvw)
+LBUF_OFFSET trimmed_name(dbref player, UTF8 cbuff[MBUF_SIZE], LBUF_OFFSET nMin, LBUF_OFFSET nMax, LBUF_OFFSET nPad)
 {
-    static UTF8 cbuff[MBUF_SIZE];
-
     mux_field nName = StripTabsAndTruncate(
                                              Moniker(player),
                                              cbuff,
                                              MBUF_SIZE-1,
-                                             MAX_TRIMMED_NAME_LENGTH
+                                             nMax
                                            );
     nName = PadField( cbuff,
                       MBUF_SIZE-1,
-                      nName.m_column <= 13 ? 14 : nName.m_column + 1,
+                      nName.m_column <= nMin ? nMin + nPad : nName.m_column + nPad,
                       nName);
-    *pvw = nName.m_column;
-    return cbuff;
+    return nName.m_column;
 }
 
 static UTF8 *trimmed_site(UTF8 *szName)
@@ -1798,11 +1782,12 @@ static void dump_users(DESC *e, UTF8 *match, int key)
             CLinearTimeDelta ltdConnected = ltaNow - d->connected_at;
             CLinearTimeDelta ltdLastTime  = ltaNow - d->last_time;
 
-            const UTF8 *pNameField = T("<Unconnected>");
+            static UTF8 pNameField[MBUF_SIZE];
+            mux_strncpy(pNameField, T("<Unconnected>"), MBUF_SIZE-1);
             size_t vwNameField = strlen((char *)pNameField);
             if (d->flags & DS_CONNECTED)
             {
-                pNameField = trimmed_name(d->player, &vwNameField);
+                vwNameField = trimmed_name(d->player, pNameField, 13, MAX_TRIMMED_NAME_LENGTH, 1);
             }
 
             // The width size allocated to the 'On For' field.
