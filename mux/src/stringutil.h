@@ -355,8 +355,7 @@ inline int mux_color(const unsigned char *p)
 #define COLOR_BG_WHITE   "\xEF\x9C\x87"    // 21
 #define COLOR_LAST_CODE  21
 
-#define BEEP_CHAR '\07'
-#define mux_haswidth(x) (mux_isprint(x) && *(x) != BEEP_CHAR)
+#define mux_haswidth(x) mux_isprint(x)
 
 bool utf8_strlen(const UTF8 *pString, size_t &nString);
 
@@ -425,7 +424,7 @@ typedef struct
 
 extern const MUX_COLOR_SET aColors[];
 
-UTF8 *convert_color(const UTF8 *pString, bool bNoBleed = false);
+UTF8 *convert_color(const UTF8 *pString, bool bNoBleed);
 UTF8 *strip_color(const UTF8 *pString, size_t *pnLength = 0, size_t *pnPoints = 0);
 UTF8 *munge_space(const UTF8 *);
 UTF8 *trim_spaces(const UTF8 *);
@@ -799,12 +798,16 @@ public:
     double export_Float(bool bStrict = true) const;
     INT64 export_I64(void) const;
     long export_Long(void) const;
-    LBUF_OFFSET export_TextAnsi
+    LBUF_OFFSET export_TextColor
     (
         UTF8 *pBuffer,
         mux_cursor iStart = CursorMin,
         mux_cursor iEnd   = CursorMax,
-        size_t nBytesMax = (LBUF_SIZE-1),
+        size_t nBytesMax = (LBUF_SIZE-1)
+    ) const;
+    UTF8 *export_TextConverted
+    (
+        bool bColor   = true,
         bool bNoBleed = false
     ) const;
     LBUF_OFFSET export_TextPlain
@@ -1062,7 +1065,7 @@ private:
 public:
 
     mux_words(const mux_string &sStr);
-    void export_WordAnsi(LBUF_OFFSET n, UTF8 *buff, UTF8 **bufc = NULL);
+    void export_WordColor(LBUF_OFFSET n, UTF8 *buff, UTF8 **bufc = NULL);
     LBUF_OFFSET find_Words(void);
     LBUF_OFFSET find_Words(const UTF8 *pDelim);
     void ignore_Word(LBUF_OFFSET n);
