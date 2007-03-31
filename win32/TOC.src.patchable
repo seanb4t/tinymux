@@ -27,6 +27,7 @@ README
 readme.txt
 SGP
 SQL
+SSL
 src/alloc.cpp
 src/alloc.h
 src/ansi.h
@@ -108,6 +109,8 @@ src/svdrand.cpp
 src/svdrand.h
 src/svdreport.cpp
 src/svdreport.h
+src/table.cpp
+src/table.h
 src/timer.cpp
 src/timeutil.cpp
 src/timeutil.h

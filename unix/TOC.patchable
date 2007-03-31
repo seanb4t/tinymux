@@ -9,6 +9,7 @@ REALITY
 REALITY.SETUP
 SGP
 SQL
+SSL
 docs/BACKUPS
 docs/CONFIGURATION
 docs/CONVERSION
@@ -122,6 +123,8 @@ src/svdrand.cpp
 src/svdrand.h
 src/svdreport.cpp
 src/svdreport.h
+src/table.cpp
+src/table.h
 src/timer.cpp
 src/timeutil.cpp
 src/timeutil.h
