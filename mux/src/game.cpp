@@ -23,6 +23,10 @@
 #include "muxcli.h"
 #include "pcre.h"
 #include "powers.h"
+#include "modules.h"
+#if 0
+#include "modules/sample.h"
+#endif
 #ifdef REALITY_LVLS
 #include "levels.h"
 #endif // REALITY_LVLS
@@ -3023,7 +3027,7 @@ int DCL_CDECL main(int argc, char *argv[])
 
     // Get a handle to the kernel32 DLL
     //
-    HINSTANCE hInstKernel32 = LoadLibrary("kernel32");
+    HINSTANCE hInstKernel32 = LoadLibrary(L"kernel32");
     if (!hInstKernel32)
     {
         Log.WriteString(T("LoadLibrary of kernel32 failed. Cannot use completion ports." ENDLINE));
@@ -3144,6 +3148,23 @@ int DCL_CDECL main(int argc, char *argv[])
 
     fcache_init();
     helpindex_init();
+
+#if 0
+    // Use of sample module.
+    //
+    ISample * pISample = NULL;
+    MUX_RESULT mr = mux_CreateInstance(CID_Sample, IID_ISample, (void **)&pISample);
+    if (MUX_SUCCEEDED(mr))
+    {
+        Log.tinyprintf("Sample Module returned %d" ENDLINE, pISample->Add(1, 1));
+        pISample->Release();
+        pISample = NULL;
+    }
+    else
+    {
+        Log.tinyprintf("Sample Module failed to create with %d" ENDLINE, mr);
+    }
+#endif
 
 #ifdef MEMORY_BASED
     db_free();

@@ -456,7 +456,11 @@ void safe_chr_utf8(const UTF8 *src, UTF8 *buff, UTF8 **bufp);
 #define utf8_safe_chr safe_chr_utf8
 UTF8 *ConvertToUTF8(UTF32 ch);
 UTF8 *ConvertToUTF8(const char *p, size_t *pn);
+UTF16 *ConvertToUTF16(UTF32 ch);
 UTF32 ConvertFromUTF8(const UTF8 *p);
+size_t ConvertFromUTF16(UTF16 *pString, UTF32 &ch);
+UTF16 *ConvertFromUTF8ToUTF16(const UTF8 *pString, size_t *pnString);
+UTF8  *ConvertFromUTF16ToUTF8(const UTF16 *pSTring);
 void mux_strncpy(UTF8 *dest, const UTF8 *src, size_t nSizeOfBuffer);
 bool matches_exit_from_list(UTF8 *, const UTF8 *);
 UTF8 *translate_string(const UTF8 *, bool);
@@ -722,7 +726,7 @@ static const mux_field fldMin(0, 0);
 
 bool utf8_strlen(const UTF8 *pString, mux_cursor &nString);
 mux_field StripTabsAndTruncate(const UTF8 *pString, UTF8 *pBuffer,
-    size_t nLength, LBUF_OFFSET nWidth);
+    size_t nLength, size_t nWidth);
 mux_field PadField(UTF8 *pBuffer, size_t nMaxBytes, LBUF_OFFSET nMinWidth,
                    mux_field fldOutput = fldMin);
 
@@ -730,6 +734,8 @@ size_t TruncateToBuffer(const UTF8 *pString, UTF8 *pBuffer, size_t nBuffer);
 
 static const mux_cursor CursorMin(0,0);
 static const mux_cursor CursorMax(LBUF_SIZE - 1, LBUF_SIZE - 1);
+
+static const mux_cursor curAscii(1, 1);
 
 class mux_string
 {
@@ -836,14 +842,16 @@ public:
     bool search
     (
         const UTF8 *pPattern,
-        mux_cursor *nPos = NULL,
-        mux_cursor nStart = CursorMin
+        mux_cursor *iPos = NULL,
+        mux_cursor iStart = CursorMin,
+        mux_cursor iEnd = CursorMax
     ) const;
     bool search
     (
         const mux_string &sPattern,
-        mux_cursor *nPos = NULL,
-        mux_cursor nStart = CursorMin
+        mux_cursor *iPos = NULL,
+        mux_cursor iStart = CursorMin,
+        mux_cursor iEnd = CursorMax
     ) const;
     void set_Char(size_t n, const UTF8 cChar);
     void set_Color(size_t n, ColorState csColor);
