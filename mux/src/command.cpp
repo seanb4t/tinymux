@@ -22,6 +22,7 @@
 #include "powers.h"
 #include "vattr.h"
 #include "pcre.h"
+#include "modules.h"
 
 // Switch tables for the various commands.
 //
@@ -1065,7 +1066,7 @@ static bool process_hook(dbref executor, ATTR *hk_attr, bool save_flg)
             }
             UTF8 *buff, *bufc;
             bufc = buff = alloc_lbuf("process_hook");
-            mux_exec(atext, buff, &bufc, mudconf.hook_obj, executor, executor,
+            mux_exec(atext, LBUF_SIZE-1, buff, &bufc, mudconf.hook_obj, executor, executor,
                 AttrTrace(aflags, EV_FCHECK|EV_EVAL), NULL, 0);
             *bufc = '\0';
             if (save_flg)
@@ -1131,7 +1132,7 @@ static UTF8 *hook_name(const UTF8 *pCommand, int key)
 
 static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref caller,
             dbref enactor, int eval, bool interactive, UTF8 *arg, UTF8 *unp_command,
-            UTF8 *cargs[], int ncargs)
+            const UTF8 *cargs[], int ncargs)
 {
     // Perform object type checks.
     //
@@ -1168,7 +1169,6 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
     UTF8 *args[MAX_ARG];
     int nargs, i, interp, key, xkey, aflags;
     dbref aowner;
-    UTF8 *aargs[NUM_ENV_VARS];
     ADDENT *add;
     ATTR *hk_ap2;
 
@@ -1283,6 +1283,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
         interp = 0;
     }
 
+    UTF8 *aargs[NUM_ENV_VARS];
     int nargs2;
     switch (cmdp->callseq & CS_NARG_MASK)
     {
@@ -1317,7 +1318,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
             {
                 *bp++ = *str++;
             }
-            mux_exec(str, buf1, &bp, executor, caller, enactor,
+            mux_exec(str, LBUF_SIZE-1, buf1, &bp, executor, caller, enactor,
                 eval|interp|EV_FCHECK|EV_TOP, cargs, ncargs);
             *bp = '\0';
         }
@@ -1427,7 +1428,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
                     wait_que(add->thing, caller, executor,
                         AttrTrace(aflags, 0), false, lta, NOTHING, 0,
                         buff + iBuff,
-                        NUM_ENV_VARS, aargs,
+                        NUM_ENV_VARS, (const UTF8 **)aargs,
                         mudstate.global_regs);
 
                     for (i = 0; i < NUM_ENV_VARS; i++)
@@ -1483,7 +1484,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
             *arg = '\0';
         }
         buf1 = bp = alloc_lbuf("process_cmdent.2");
-        mux_exec(buf2, buf1, &bp, executor, caller, enactor,
+        mux_exec(buf2, LBUF_SIZE-1, buf1, &bp, executor, caller, enactor,
             eval|EV_STRIP_CURLY|EV_FCHECK|EV_EVAL|EV_TOP, cargs, ncargs);
         *bp = '\0';
 
@@ -1491,7 +1492,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
         {
             // Arg2 is ARGV style.  Go get the args.
             //
-            parse_arglist(executor, caller, enactor, arg, '\0',
+            parse_arglist(executor, caller, enactor, arg,
                 eval|interp|EV_STRIP_LS|EV_STRIP_TS, args, MAX_ARG, cargs,
                 ncargs, &nargs);
 
@@ -1522,7 +1523,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
             if (interp & EV_EVAL)
             {
                 buf2 = bp = alloc_lbuf("process_cmdent.3");
-                mux_exec(arg, buf2, &bp, executor, caller, enactor,
+                mux_exec(arg, LBUF_SIZE-1, buf2, &bp, executor, caller, enactor,
                     eval|interp|EV_FCHECK|EV_TOP, cargs, ncargs);
                 *bp = '\0';
             }
@@ -1671,7 +1672,7 @@ UTF8 *process_command
     int   eval,
     bool  interactive,
     UTF8 *arg_command,
-    UTF8 *args[],
+    const UTF8 *args[],
     int   nargs
 )
 {
@@ -2229,7 +2230,7 @@ UTF8 *process_command
     // to work.
     //
     bp = LowerCaseCommand;
-    mux_exec(pCommand, LowerCaseCommand, &bp, executor, caller, enactor,
+    mux_exec(pCommand, LBUF_SIZE-1, LowerCaseCommand, &bp, executor, caller, enactor,
         eval|EV_EVAL|EV_FCHECK|EV_STRIP_CURLY|EV_TOP, args, nargs);
     *bp = '\0';
     bool succ = false;
@@ -2541,9 +2542,9 @@ UTF8 *process_command
             UTF8 *errtext = atr_get("process_command.2491", mudconf.global_error_obj, A_VA, &aowner, &aflags);
             UTF8 *errbuff = alloc_lbuf("process_command.error_msg");
             UTF8 *errbufc = errbuff;
-            mux_exec(errtext, errbuff, &errbufc, mudconf.global_error_obj, caller, enactor,
+            mux_exec(errtext, LBUF_SIZE-1, errbuff, &errbufc, mudconf.global_error_obj, caller, enactor,
                 AttrTrace(aflags, EV_EVAL|EV_FCHECK|EV_STRIP_CURLY|EV_TOP),
-                &pCommand, 1);
+                (const UTF8 **)&pCommand, 1);
             notify(executor, errbuff);
             free_lbuf(errtext);
             free_lbuf(errbuff);
@@ -2575,96 +2576,99 @@ static void list_cmdtable(dbref player)
     ItemToList_Init(&itl, buf, &bp);
     ItemToList_AddString(&itl, T("Commands:"));
 
+    for ( CMDENT_NO_ARG *cmdp0a = command_table_no_arg;
+          cmdp0a->cmdname;
+          cmdp0a++)
     {
-        CMDENT_NO_ARG *cmdp;
-        for (cmdp = command_table_no_arg; cmdp->cmdname; cmdp++)
+        if (  check_access(player, cmdp0a->perms)
+            && !(cmdp0a->perms & CF_DARK))
         {
-            if (  check_access(player, cmdp->perms)
-                && !(cmdp->perms & CF_DARK))
-            {
-                ItemToList_AddString(&itl, cmdp->cmdname);
-            }
+            ItemToList_AddString(&itl, cmdp0a->cmdname);
         }
     }
+
+    for ( CMDENT_ONE_ARG *cmdp1a = command_table_one_arg; 
+          cmdp1a->cmdname;
+          cmdp1a++)
     {
-        CMDENT_ONE_ARG *cmdp;
-        for (cmdp = command_table_one_arg; cmdp->cmdname; cmdp++)
+        if (  check_access(player, cmdp1a->perms)
+            && !(cmdp1a->perms & CF_DARK))
         {
-            if (  check_access(player, cmdp->perms)
-                && !(cmdp->perms & CF_DARK))
-            {
-                ItemToList_AddString(&itl, cmdp->cmdname);
-            }
+            ItemToList_AddString(&itl, cmdp1a->cmdname);
         }
     }
+
+    for ( CMDENT_ONE_ARG_CMDARG *cmdp1ac = command_table_one_arg_cmdarg;
+          cmdp1ac->cmdname;
+          cmdp1ac++)
     {
-        CMDENT_ONE_ARG_CMDARG *cmdp;
-        for (cmdp = command_table_one_arg_cmdarg; cmdp->cmdname; cmdp++)
+        if (  check_access(player, cmdp1ac->perms)
+            && !(cmdp1ac->perms & CF_DARK))
         {
-            if (  check_access(player, cmdp->perms)
-                && !(cmdp->perms & CF_DARK))
-            {
-                ItemToList_AddString(&itl, cmdp->cmdname);
-            }
+            ItemToList_AddString(&itl, cmdp1ac->cmdname);
         }
     }
+
+    for ( CMDENT_TWO_ARG *cmdp2a = command_table_two_arg;
+          cmdp2a->cmdname;
+          cmdp2a++)
     {
-        CMDENT_TWO_ARG *cmdp;
-        for (cmdp = command_table_two_arg; cmdp->cmdname; cmdp++)
+        if (  check_access(player, cmdp2a->perms)
+            && !(cmdp2a->perms & CF_DARK))
         {
-            if (  check_access(player, cmdp->perms)
-                && !(cmdp->perms & CF_DARK))
-            {
-                ItemToList_AddString(&itl, cmdp->cmdname);
-            }
+            ItemToList_AddString(&itl, cmdp2a->cmdname);
         }
     }
+
+    for ( CMDENT_TWO_ARG_ARGV *cmdp2av = command_table_two_arg_argv;
+          cmdp2av->cmdname;
+          cmdp2av++)
     {
-        CMDENT_TWO_ARG_ARGV *cmdp;
-        for (cmdp = command_table_two_arg_argv; cmdp->cmdname; cmdp++)
+        if (  check_access(player, cmdp2av->perms)
+            && !(cmdp2av->perms & CF_DARK))
         {
-            if (  check_access(player, cmdp->perms)
-                && !(cmdp->perms & CF_DARK))
-            {
-                ItemToList_AddString(&itl, cmdp->cmdname);
-            }
+            ItemToList_AddString(&itl, cmdp2av->cmdname);
         }
     }
+
+    for ( CMDENT_TWO_ARG_CMDARG *cmdp2ac = command_table_two_arg_cmdarg;
+          cmdp2ac->cmdname;
+          cmdp2ac++)
     {
-        CMDENT_TWO_ARG_CMDARG *cmdp;
-        for (cmdp = command_table_two_arg_cmdarg; cmdp->cmdname; cmdp++)
+        if (  check_access(player, cmdp2ac->perms)
+            && !(cmdp2ac->perms & CF_DARK))
         {
-            if (  check_access(player, cmdp->perms)
-                && !(cmdp->perms & CF_DARK))
-            {
-                ItemToList_AddString(&itl, cmdp->cmdname);
-            }
+            ItemToList_AddString(&itl, cmdp2ac->cmdname);
         }
     }
+
+    for ( CMDENT_TWO_ARG_ARGV_CMDARG *cmdp2avc = command_table_two_arg_argv_cmdarg;
+          cmdp2avc->cmdname;
+          cmdp2avc++)
     {
-        CMDENT_TWO_ARG_ARGV_CMDARG *cmdp;
-        for (cmdp = command_table_two_arg_argv_cmdarg; cmdp->cmdname; cmdp++)
+        if (  check_access(player, cmdp2avc->perms)
+            && !(cmdp2avc->perms & CF_DARK))
         {
-            if (  check_access(player, cmdp->perms)
-                && !(cmdp->perms & CF_DARK))
-            {
-                ItemToList_AddString(&itl, cmdp->cmdname);
-            }
+            ItemToList_AddString(&itl, cmdp2avc->cmdname);
         }
     }
-    ItemToList_Final(&itl);
-    *bp = '\0';
 
     // Players get the list of logged-out cmds too
     //
     if (isPlayer(player))
     {
-        display_nametab(player, logout_cmdtable, buf, true);
+        for (NAMETAB *nt = logout_cmdtable; nt->name; nt++)
+        {
+            if (  God(player)
+               || check_access(player, nt->perm))
+            {
+                ItemToList_AddString(&itl, nt->name);
+            }
+        }
     }
-    else
-    {
-        notify(player, buf);
-    }
+    ItemToList_Final(&itl);
+
+    notify(player, buf);
     free_lbuf(buf);
 }
 
@@ -2673,14 +2677,12 @@ static void list_cmdtable(dbref player)
 //
 static void list_attrtable(dbref player)
 {
-    ATTR *ap;
-
     UTF8 *buf = alloc_lbuf("list_attrtable");
     UTF8 *bp = buf;
     ITL itl;
     ItemToList_Init(&itl, buf, &bp);
     ItemToList_AddString(&itl, T("Attributes:"));
-    for (ap = AttrTable; ap->name; ap++)
+    for (ATTR *ap = AttrTable; ap->name; ap++)
     {
         if (See_attr(player, player, ap))
         {
@@ -2731,96 +2733,84 @@ NAMETAB access_nametab[] =
 
 static void list_cmdaccess(dbref player)
 {
-    ATTR *ap;
+    for ( CMDENT_NO_ARG *cmdp0a = command_table_no_arg;
+          cmdp0a->cmdname;
+          cmdp0a++)
+    {
+        if (  check_access(player, cmdp0a->perms)
+           && !(cmdp0a->perms & CF_DARK))
+        {
+            listset_nametab(player, access_nametab, cmdp0a->perms, cmdp0a->cmdname, true);
+        }
+    }
 
-    UTF8 *buff = alloc_sbuf("list_cmdaccess");
+    for ( CMDENT_ONE_ARG *cmdp1a = command_table_one_arg;
+          cmdp1a->cmdname;
+          cmdp1a++)
     {
-        CMDENT_NO_ARG *cmdp;
-        for (cmdp = command_table_no_arg; cmdp->cmdname; cmdp++)
+        if (  check_access(player, cmdp1a->perms)
+           && !(cmdp1a->perms & CF_DARK))
         {
-            if (  check_access(player, cmdp->perms)
-               && !(cmdp->perms & CF_DARK))
-            {
-                mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                listset_nametab(player, access_nametab, cmdp->perms, buff, true);
-            }
+            listset_nametab(player, access_nametab, cmdp1a->perms, cmdp1a->cmdname, true);
         }
     }
-    {
-        CMDENT_ONE_ARG *cmdp;
-        for (cmdp = command_table_one_arg; cmdp->cmdname; cmdp++)
-        {
-            if (  check_access(player, cmdp->perms)
-               && !(cmdp->perms & CF_DARK))
-            {
-                mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                listset_nametab(player, access_nametab, cmdp->perms, buff, true);
-            }
-        }
-    }
-    {
-        CMDENT_ONE_ARG_CMDARG *cmdp;
-        for (cmdp = command_table_one_arg_cmdarg; cmdp->cmdname; cmdp++)
-        {
-            if (  check_access(player, cmdp->perms)
-               && !(cmdp->perms & CF_DARK))
-            {
-                mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                listset_nametab(player, access_nametab, cmdp->perms, buff, true);
-            }
-        }
-    }
-    {
-        CMDENT_TWO_ARG *cmdp;
-        for (cmdp = command_table_two_arg; cmdp->cmdname; cmdp++)
-        {
-            if (  check_access(player, cmdp->perms)
-               && !(cmdp->perms & CF_DARK))
-            {
-                mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                listset_nametab(player, access_nametab, cmdp->perms, buff, true);
-            }
-        }
-    }
-    {
-        CMDENT_TWO_ARG_ARGV *cmdp;
-        for (cmdp = command_table_two_arg_argv; cmdp->cmdname; cmdp++)
-        {
-            if (  check_access(player, cmdp->perms)
-               && !(cmdp->perms & CF_DARK))
-            {
-                mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                listset_nametab(player, access_nametab, cmdp->perms, buff, true);
-            }
-        }
-    }
-    {
-        CMDENT_TWO_ARG_CMDARG *cmdp;
-        for (cmdp = command_table_two_arg_cmdarg; cmdp->cmdname; cmdp++)
-        {
-            if (  check_access(player, cmdp->perms)
-               && !(cmdp->perms & CF_DARK))
-            {
-                mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                listset_nametab(player, access_nametab, cmdp->perms, buff, true);
-            }
-        }
-    }
-    {
-        CMDENT_TWO_ARG_ARGV_CMDARG *cmdp;
-        for (cmdp = command_table_two_arg_argv_cmdarg; cmdp->cmdname; cmdp++)
-        {
-            if (  check_access(player, cmdp->perms)
-               && !(cmdp->perms & CF_DARK))
-            {
-                mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                listset_nametab(player, access_nametab, cmdp->perms, buff, true);
-            }
-        }
-    }
-    free_sbuf(buff);
 
-    for (ap = AttrTable; ap->name; ap++)
+    for ( CMDENT_ONE_ARG_CMDARG *cmdp1ac = command_table_one_arg_cmdarg;
+          cmdp1ac->cmdname;
+          cmdp1ac++)
+    {
+        if (  check_access(player, cmdp1ac->perms)
+           && !(cmdp1ac->perms & CF_DARK))
+        {
+            listset_nametab(player, access_nametab, cmdp1ac->perms, cmdp1ac->cmdname, true);
+        }
+    }
+
+    for ( CMDENT_TWO_ARG *cmdp2a = command_table_two_arg;
+          cmdp2a->cmdname;
+          cmdp2a++)
+    {
+        if (  check_access(player, cmdp2a->perms)
+           && !(cmdp2a->perms & CF_DARK))
+        {
+            listset_nametab(player, access_nametab, cmdp2a->perms, cmdp2a->cmdname, true);
+        }
+    }
+
+    for ( CMDENT_TWO_ARG_ARGV *cmdp2av = command_table_two_arg_argv;
+          cmdp2av->cmdname;
+          cmdp2av++)
+    {
+        if (  check_access(player, cmdp2av->perms)
+           && !(cmdp2av->perms & CF_DARK))
+        {
+            listset_nametab(player, access_nametab, cmdp2av->perms, cmdp2av->cmdname, true);
+        }
+    }
+
+    for ( CMDENT_TWO_ARG_CMDARG *cmdp2ac = command_table_two_arg_cmdarg;
+          cmdp2ac->cmdname;
+          cmdp2ac++)
+    {
+        if (  check_access(player, cmdp2ac->perms)
+           && !(cmdp2ac->perms & CF_DARK))
+        {
+            listset_nametab(player, access_nametab, cmdp2ac->perms, cmdp2ac->cmdname, true);
+        }
+    }
+
+    for ( CMDENT_TWO_ARG_ARGV_CMDARG *cmdp2avc = command_table_two_arg_argv_cmdarg;
+          cmdp2avc->cmdname;
+          cmdp2avc++)
+    {
+        if (  check_access(player, cmdp2avc->perms)
+           && !(cmdp2avc->perms & CF_DARK))
+        {
+            listset_nametab(player, access_nametab, cmdp2avc->perms, cmdp2avc->cmdname, true);
+        }
+    }
+
+    for (ATTR *ap = AttrTable; ap->name; ap++)
     {
         if (ap->flags & AF_NOCMD)
         {
@@ -2836,20 +2826,11 @@ static void list_cmdaccess(dbref player)
         }
 
         CMDENT *cmdp = (CMDENT *)hashfindLEN(buff2, nBuffer, &mudstate.command_htab);
-        if (cmdp == NULL)
+        if (  NULL != cmdp
+           && check_access(player, cmdp->perms)
+           && !(cmdp->perms & CF_DARK))
         {
-            continue;
-        }
-
-        if (!check_access(player, cmdp->perms))
-        {
-            continue;
-        }
-
-        if (!(cmdp->perms & CF_DARK))
-        {
-            mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-            listset_nametab(player, access_nametab, cmdp->perms, buff2, true);
+            listset_nametab(player, access_nametab, cmdp->perms, cmdp->cmdname, true);
         }
     }
 }
@@ -2859,127 +2840,89 @@ static void list_cmdaccess(dbref player)
 //
 static void list_cmdswitches(dbref player)
 {
-    UTF8 *buff = alloc_sbuf("list_cmdswitches");
+    for ( CMDENT_NO_ARG *cmdp0a = command_table_no_arg;
+          cmdp0a->cmdname;
+          cmdp0a++)
     {
-        CMDENT_NO_ARG *cmdp;
-        for (cmdp = command_table_no_arg; cmdp->cmdname; cmdp++)
+        if (  cmdp0a->switches
+           && check_access(player, cmdp0a->perms)
+           && !(cmdp0a->perms & CF_DARK))
         {
-            if (cmdp->switches)
-            {
-                if (check_access(player, cmdp->perms))
-                {
-                    if (!(cmdp->perms & CF_DARK))
-                    {
-                        mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                        display_nametab(player, cmdp->switches, buff, false);
-                    }
-                }
-            }
+            display_nametab(player, cmdp0a->switches, cmdp0a->cmdname, false);
         }
     }
+
+    for ( CMDENT_ONE_ARG *cmdp1a = command_table_one_arg;
+          cmdp1a->cmdname;
+          cmdp1a++)
     {
-        CMDENT_ONE_ARG *cmdp;
-        for (cmdp = command_table_one_arg; cmdp->cmdname; cmdp++)
+        if (  cmdp1a->switches
+           && check_access(player, cmdp1a->perms)
+           && !(cmdp1a->perms & CF_DARK))
         {
-            if (cmdp->switches)
-            {
-                if (check_access(player, cmdp->perms))
-                {
-                    if (!(cmdp->perms & CF_DARK))
-                    {
-                        mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                        display_nametab(player, cmdp->switches, buff, false);
-                    }
-                }
-            }
+            display_nametab(player, cmdp1a->switches, cmdp1a->cmdname, false);
         }
     }
+
+    for ( CMDENT_ONE_ARG_CMDARG *cmdp1ac = command_table_one_arg_cmdarg;
+          cmdp1ac->cmdname;
+          cmdp1ac++)
     {
-        CMDENT_ONE_ARG_CMDARG *cmdp;
-        for (cmdp = command_table_one_arg_cmdarg; cmdp->cmdname; cmdp++)
+        if (  cmdp1ac->switches
+           && check_access(player, cmdp1ac->perms)
+           && !(cmdp1ac->perms & CF_DARK))
         {
-            if (cmdp->switches)
-            {
-                if (check_access(player, cmdp->perms))
-                {
-                    if (!(cmdp->perms & CF_DARK))
-                    {
-                        mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                        display_nametab(player, cmdp->switches, buff, false);
-                    }
-                }
-            }
+            display_nametab(player, cmdp1ac->switches, cmdp1ac->cmdname, false);
         }
     }
+
+    for ( CMDENT_TWO_ARG *cmdp2a = command_table_two_arg;
+          cmdp2a->cmdname;
+          cmdp2a++)
     {
-        CMDENT_TWO_ARG *cmdp;
-        for (cmdp = command_table_two_arg; cmdp->cmdname; cmdp++)
+        if (  cmdp2a->switches
+           && check_access(player, cmdp2a->perms)
+           && !(cmdp2a->perms & CF_DARK))
         {
-            if (cmdp->switches)
-            {
-                if (check_access(player, cmdp->perms))
-                {
-                    if (!(cmdp->perms & CF_DARK))
-                    {
-                        mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                        display_nametab(player, cmdp->switches, buff, false);
-                    }
-                }
-            }
+            display_nametab(player, cmdp2a->switches, cmdp2a->cmdname, false);
         }
     }
+
+    for ( CMDENT_TWO_ARG_ARGV *cmdp2av = command_table_two_arg_argv;
+          cmdp2av->cmdname;
+          cmdp2av++)
     {
-        CMDENT_TWO_ARG_ARGV *cmdp;
-        for (cmdp = command_table_two_arg_argv; cmdp->cmdname; cmdp++)
+        if (  cmdp2av->switches
+           && check_access(player, cmdp2av->perms)
+           && !(cmdp2av->perms & CF_DARK))
         {
-            if (cmdp->switches)
-            {
-                if (check_access(player, cmdp->perms))
-                {
-                    if (!(cmdp->perms & CF_DARK))
-                    {
-                        mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                        display_nametab(player, cmdp->switches, buff, false);
-                    }
-                }
-            }
+            display_nametab(player, cmdp2av->switches, cmdp2av->cmdname, false);
         }
     }
+
+    for ( CMDENT_TWO_ARG_CMDARG *cmdp2ac = command_table_two_arg_cmdarg;
+          cmdp2ac->cmdname;
+          cmdp2ac++)
     {
-        CMDENT_TWO_ARG_CMDARG *cmdp;
-        for (cmdp = command_table_two_arg_cmdarg; cmdp->cmdname; cmdp++)
+        if (  cmdp2ac->switches
+           && check_access(player, cmdp2ac->perms)
+           && !(cmdp2ac->perms & CF_DARK))
         {
-            if (cmdp->switches)
-            {
-                if (check_access(player, cmdp->perms))
-                {
-                    if (!(cmdp->perms & CF_DARK))
-                    {
-                        mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                        display_nametab(player, cmdp->switches, buff, false);
-                    }
-                }
-            }
+            display_nametab(player, cmdp2ac->switches, cmdp2ac->cmdname, false);
         }
     }
+
+    for ( CMDENT_TWO_ARG_ARGV_CMDARG *cmdp2avc = command_table_two_arg_argv_cmdarg;
+          cmdp2avc->cmdname;
+          cmdp2avc++)
     {
-        CMDENT_TWO_ARG_ARGV_CMDARG *cmdp;
-        for (cmdp = command_table_two_arg_argv_cmdarg; cmdp->cmdname; cmdp++)
+        if (  cmdp2avc->switches
+           && check_access(player, cmdp2avc->perms)
+           && !(cmdp2avc->perms & CF_DARK))
         {
-            if (cmdp->switches)
-            {
-                if (check_access(player, cmdp->perms))
-                {
-                    if (!(cmdp->perms & CF_DARK))
-                    {
-                        mux_sprintf(buff, SBUF_SIZE, "%.60s:", cmdp->cmdname);
-                        display_nametab(player, cmdp->switches, buff, false);
-                    }
-                }
-            }
+            display_nametab(player, cmdp2avc->switches, cmdp2avc->cmdname, false);
         }
     }
-    free_sbuf(buff);
 }
 
 // ---------------------------------------------------------------------------
@@ -3023,18 +2966,13 @@ NAMETAB indiv_attraccess_nametab[] =
 
 static void list_attraccess(dbref player)
 {
-    ATTR *ap;
-
-    UTF8 *buff = alloc_sbuf("list_attraccess");
-    for (ap = AttrTable; ap->name; ap++)
+    for (ATTR *ap = AttrTable; ap->name; ap++)
     {
         if (bCanReadAttr(player, player, ap, false))
         {
-            mux_sprintf(buff, SBUF_SIZE, "%s:", ap->name);
-            listset_nametab(player, attraccess_nametab, ap->flags, buff, true);
+            listset_nametab(player, attraccess_nametab, ap->flags, ap->name, true);
         }
     }
-    free_sbuf(buff);
 }
 
 // ---------------------------------------------------------------------------
@@ -3630,7 +3568,7 @@ static void list_vattrs(dbref player, UTF8 *s_mask)
                 }
                 wna++;
             }
-            mux_sprintf(buff, LBUF_SIZE, "%s(%d):", va->name, va->number);
+            mux_sprintf(buff, LBUF_SIZE, "%s(%d)", va->name, va->number);
             listset_nametab(player, attraccess_nametab, va->flags, buff, true);
         }
     }
@@ -3839,9 +3777,34 @@ static void list_process(dbref player)
 }
 
 //----------------------------------------------------------------------------
+// list_modules
+//
+//
+static void list_modules(dbref executor)
+{
+#if defined(HAVE_DLOPEN) || defined(WIN32)
+    raw_notify(executor, T("Modules:"));
+    int i;
+    for (i = 0; ; i++)
+    {
+        MUX_MODULE_INFO ModuleInfo;
+        MUX_RESULT mr = mux_ModuleInfo(i, &ModuleInfo);
+        if (  MUX_FAILED(mr)
+           || MUX_S_FALSE == mr)
+        {
+            break;
+        }
+
+        raw_notify(executor, tprintf("%s (%s)", ModuleInfo.pName, ModuleInfo.bLoaded ? T("loaded") : T("unloaded")));
+    }
+#else
+    raw_notify(executor, T("Modules not enabled."));
+#endif
+}
+
+//----------------------------------------------------------------------------
 // list_rlevels
 //
-
 
 #ifdef REALITY_LVLS
 static void list_rlevels(dbref player)
@@ -3885,8 +3848,9 @@ static void list_rlevels(dbref player)
 #define LIST_BADNAMES   22
 #define LIST_RESOURCES  23
 #define LIST_GUESTS     24
+#define LIST_MODULES    25
 #ifdef REALITY_LVLS
-#define LIST_RLEVELS    25
+#define LIST_RLEVELS    26
 #endif
 
 NAMETAB list_names[] =
@@ -3906,6 +3870,7 @@ NAMETAB list_names[] =
     {T("globals"),            2,  CA_WIZARD,  LIST_GLOBALS},
     {T("hashstats"),          1,  CA_WIZARD,  LIST_HASHSTATS},
     {T("logging"),            1,  CA_GOD,     LIST_LOGGING},
+    {T("modules"),            1,  CA_WIZARD,  LIST_MODULES},
     {T("options"),            1,  CA_PUBLIC,  LIST_OPTIONS},
     {T("permissions"),        2,  CA_WIZARD,  LIST_PERMS},
     {T("powers"),             2,  CA_WIZARD,  LIST_POWERS},
@@ -3939,7 +3904,7 @@ void do_list(dbref executor, dbref caller, dbref enactor, int eval, int extra,
     {
         if (flagvalue == -1)
         {
-            display_nametab(executor, list_names, T("Unknown option.  Use one of:"), true);
+            display_nametab(executor, list_names, T("Unknown option.  Use one of"), true);
         }
         else
         {
@@ -4027,6 +3992,9 @@ void do_list(dbref executor, dbref caller, dbref enactor, int eval, int extra,
     case LIST_GUESTS:
         Guest.ListAll(executor);
         break;
+    case LIST_MODULES:
+        list_modules(executor);
+        break;
 #ifdef REALITY_LVLS
     case LIST_RLEVELS:
         list_rlevels(executor);
@@ -4036,7 +4004,7 @@ void do_list(dbref executor, dbref caller, dbref enactor, int eval, int extra,
 }
 
 void do_assert(dbref executor, dbref caller, dbref enactor, int eval, int key,
-               UTF8 *arg1, UTF8 *command, UTF8 *cargs[], int ncargs)
+               UTF8 *arg1, UTF8 *command, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(key);
 
@@ -4056,7 +4024,7 @@ void do_assert(dbref executor, dbref caller, dbref enactor, int eval, int key,
 }
 
 void do_break(dbref executor, dbref caller, dbref enactor, int eval, int key,
-              UTF8 *arg1, UTF8 *command, UTF8 *cargs[], int ncargs)
+              UTF8 *arg1, UTF8 *command, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(key);
 

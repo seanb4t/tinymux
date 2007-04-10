@@ -662,16 +662,11 @@ void handle_ears(dbref thing, bool could_hear, bool can_hear)
 //
 void do_switch
 (
-    dbref executor,
-    dbref caller,
-    dbref enactor,
-    int   eval,
-    int   key,
+    dbref executor, dbref caller, dbref enactor,
+    int eval, int key,
     UTF8 *expr,
-    UTF8 *args[],
-    int   nargs,
-    UTF8 *cargs[],
-    int   ncargs
+    UTF8 *args[], int nargs,
+    const UTF8 *cargs[], int ncargs
 )
 {
     if (  !expr
@@ -720,7 +715,7 @@ void do_switch
            a += 2)
     {
         bp = buff;
-        mux_exec(args[a], buff, &bp, executor, caller, enactor, eval|EV_FCHECK|EV_EVAL|EV_TOP,
+        mux_exec(args[a], LBUF_SIZE-1, buff, &bp, executor, caller, enactor, eval|EV_FCHECK|EV_EVAL|EV_TOP,
             cargs, ncargs);
         *bp = '\0';
         if (wild_match(buff, expr))
@@ -765,16 +760,11 @@ void do_switch
 //
 void do_if
 (
-    dbref player,
-    dbref caller,
-    dbref enactor,
-    int   eval,
-    int   key,
+    dbref player, dbref caller, dbref enactor,
+    int eval, int key,
     UTF8 *expr,
-    UTF8 *args[],
-    int   nargs,
-    UTF8 *cargs[],
-    int   ncargs
+    UTF8 *args[], int nargs,
+    const UTF8 *cargs[], int ncargs
 )
 {
     UNUSED_PARAMETER(key);
@@ -789,7 +779,7 @@ void do_if
     CLinearTimeAbsolute lta;
     buff = bp = alloc_lbuf("do_if");
 
-    mux_exec(expr, buff, &bp, player, caller, enactor, eval|EV_FCHECK|EV_EVAL|EV_TOP,
+    mux_exec(expr, LBUF_SIZE-1, buff, &bp, player, caller, enactor, eval|EV_FCHECK|EV_EVAL|EV_TOP,
         cargs, ncargs);
     int a = !xlate(buff);
     free_lbuf(buff);
@@ -1228,7 +1218,7 @@ void handle_prog(DESC *d, UTF8 *message)
     wait_que(d->program_data->wait_enactor, d->player, d->player,
         AttrTrace(aflags, 0), false, lta, NOTHING, 0,
         cmd,
-        1, &message,
+        1, (const UTF8 **)&message,
         d->program_data->wait_regs);
 
     // First, set 'all' to a descriptor we find for this player.
@@ -1862,31 +1852,30 @@ void parse_range(UTF8 **name, dbref *low_bound, dbref *high_bound)
     }
 }
 
-bool parse_thing_slash(dbref player, UTF8 *thing, UTF8 **after, dbref *it)
+bool parse_thing_slash(dbref player, const UTF8 *thing, const UTF8 **after, dbref *it)
 {
     // Get name up to '/'.
     //
-    UTF8 *str = thing;
-    while (  *str != '\0'
-          && *str != '/')
+    size_t i = 0;
+    while (  thing[i] != '\0'
+          && thing[i] != '/')
     {
-        str++;
+        i++;
     }
 
     // If no '/' in string, return failure.
     //
-    if (*str == '\0')
+    if (thing[i] == '\0')
     {
         *after = NULL;
         *it = NOTHING;
         return false;
     }
-    *str++ = '\0';
-    *after = str;
+    *after = thing + i + 1;
 
     // Look for the object.
     //
-    init_match(player, thing, NOTYPE);
+    init_match(player, thing, i, NOTYPE);
     match_everything(MAT_EXIT_PARENTS);
     *it = match_result();
 
@@ -1895,20 +1884,31 @@ bool parse_thing_slash(dbref player, UTF8 *thing, UTF8 **after, dbref *it)
     return Good_obj(*it);
 }
 
-bool get_obj_and_lock(dbref player, UTF8 *what, dbref *it, ATTR **attr, UTF8 *errmsg, UTF8 **bufc)
+bool get_obj_and_lock(dbref player, const UTF8 *what, dbref *it, ATTR **attr, UTF8 *errmsg, UTF8 **bufc)
 {
-    UTF8 *str, *tbuf;
-    int anum;
+    // Get name up to '/'.
+    //
+    size_t i = 0;
+    while (  what[i] != '\0'
+          && what[i] != '/')
+    {
+        i++;
+    }
 
-    tbuf = alloc_lbuf("get_obj_and_lock");
-    mux_strncpy(tbuf, what, LBUF_SIZE-1);
-    if (parse_thing_slash(player, tbuf, &str, it))
+    *it = match_thing_quiet(player, what, i);
+    if (!Good_obj(*it))
+    {
+        safe_match_result(*it, errmsg, bufc);
+        return false;
+    }
+
+    int anum;
+    if (what[i] == '/')
     {
         // <obj>/<lock> syntax, use the named lock.
         //
-        if (!search_nametab(player, lock_sw, str, &anum))
+        if (!search_nametab(player, lock_sw, what + i + 1, &anum))
         {
-            free_lbuf(tbuf);
             safe_str(T("#-1 LOCK NOT FOUND"), errmsg, bufc);
             return false;
         }
@@ -1917,21 +1917,13 @@ bool get_obj_and_lock(dbref player, UTF8 *what, dbref *it, ATTR **attr, UTF8 *er
     {
         // Not <obj>/<lock>, do a normal get of the default lock.
         //
-        *it = match_thing_quiet(player, what);
-        if (!Good_obj(*it))
-        {
-            free_lbuf(tbuf);
-            safe_match_result(*it, errmsg, bufc);
-            return false;
-        }
         anum = A_LOCK;
     }
 
     // Get the attribute definition, fail if not found.
     //
-    free_lbuf(tbuf);
     *attr = atr_num(anum);
-    if (!(*attr))
+    if (NULL == *attr)
     {
         safe_str(T("#-1 LOCK NOT FOUND"), errmsg, bufc);
         return false;
@@ -2339,7 +2331,7 @@ bool exit_displayable(dbref exit, dbref player, int key)
 
 void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
             const UTF8 *odef, int awhat, int ctrl_flags,
-            UTF8 *args[], int nargs)
+            const UTF8 *args[], int nargs)
 {
     if (MuxAlarm.bAlarmed)
     {
@@ -2375,7 +2367,7 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
             save_global_regs(preserve);
 
             buff = bp = alloc_lbuf("did_it.1");
-            mux_exec(d, buff, &bp, thing, player, player,
+            mux_exec(d, LBUF_SIZE-1, buff, &bp, thing, player, player,
                 AttrTrace(aflags, EV_EVAL|EV_FIGNORE|EV_FCHECK|EV_TOP),
                 args, nargs);
             *bp = '\0';
@@ -2432,7 +2424,7 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
                 save_global_regs(preserve);
             }
             buff = bp = alloc_lbuf("did_it.2");
-            mux_exec(d, buff, &bp, thing, player, player,
+            mux_exec(d, LBUF_SIZE-1, buff, &bp, thing, player, player,
                  AttrTrace(aflags, EV_EVAL|EV_FIGNORE|EV_FCHECK|EV_TOP),
                  args, nargs);
             *bp = '\0';
@@ -2650,7 +2642,7 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int eval, int key,
     case 7:
         // Get arguments.
         //
-        parse_arglist(victim, actor, actor, args[6], '\0',
+        parse_arglist(victim, actor, actor, args[6],
             EV_STRIP_LS | EV_STRIP_TS, xargs, 10, NULL, 0, &nxargs);
 
     case 6:
@@ -2739,7 +2731,7 @@ void do_verb(dbref executor, dbref caller, dbref enactor, int eval, int key,
     // Go do it.
     //
     did_it(actor, victim, what, whatd, owhat, owhatd, awhat,
-        key & VERB_NONAME, xargs, nxargs);
+        key & VERB_NONAME, (const UTF8 **)xargs, nxargs);
 
     // Free user args.
     //
