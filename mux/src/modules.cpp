@@ -63,13 +63,13 @@ void init_modules(void)
     if (MUX_FAILED(mr))
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
-        log_printf("Failed to register netmux modules (%d)" ENDLINE, mr);
+        log_printf("Failed to register netmux modules (%d).", mr);
         ENDLOG;
     }
     else
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
-        log_printf("Registered netmux modules (%d)" ENDLINE, mr);
+        log_printf("Registered netmux modules.", mr);
         ENDLOG;
     }
 }
@@ -80,13 +80,13 @@ void final_modules(void)
     if (MUX_FAILED(mr))
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
-        log_printf("Failed to revoke netmux modules (%d)" ENDLINE, mr);
+        log_printf("Failed to revoke netmux modules (%d).", mr);
         ENDLOG;
     }
     else
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
-        log_printf("Revoked netmux modules (%d)" ENDLINE, mr);
+        log_printf("Revoked netmux modules.", mr);
         ENDLOG;
     }
 }
