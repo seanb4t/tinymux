@@ -1,1 +1,4 @@
 BETA
+src/sqlshared.cpp
+src/sqlshared.h
+src/sqlslave.cpp
