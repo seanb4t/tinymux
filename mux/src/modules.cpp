@@ -15,10 +15,6 @@
 
 #if defined(HAVE_DLOPEN) || defined(WIN32)
 
-#ifdef HAVE_DLOPEN
-#include <dlfcn.h>
-#endif // HAVE_DLOPEN
-
 #include "libmux.h"
 #include "modules.h"
 
@@ -57,7 +53,12 @@ extern "C" MUX_RESULT DCL_API netmux_GetClassObject(UINT64 cid, UINT64 iid, void
 
 void init_modules(void)
 {
-    MUX_RESULT mr = mux_RegisterClassObjects(NUM_CIDS, netmux_cids, netmux_GetClassObject);
+    MUX_RESULT mr = mux_InitModuleLibrary(IsMainProcess);
+    if (MUX_SUCCEEDED(mr))
+    {
+        mr = mux_RegisterClassObjects(NUM_CIDS, netmux_cids, netmux_GetClassObject);
+    }
+
     if (MUX_FAILED(mr))
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
@@ -87,6 +88,7 @@ void final_modules(void)
         log_printf("Revoked netmux modules.", mr);
         ENDLOG;
     }
+    mux_FinalizeModuleLibrary();
 }
 
 // Log component which is not directly accessible.
