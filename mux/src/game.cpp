@@ -3133,7 +3133,16 @@ int DCL_CDECL main(int argc, char *argv[])
     init_functab();
     init_attrtab();
     init_version();
+
 #if defined(HAVE_DLOPEN) || defined(WIN32)
+    // The module subsystem must be ready to go before the configuration files
+    // are consumed.  However, this means that the modules can't really do
+    // much until they get a notification that the part of loading they depend
+    // on is complete.
+    //
+#ifdef STUB_SLAVE
+    boot_stubslave(GOD, GOD, GOD, 0);
+#endif // STUB_SLAVE
     init_modules();
 #endif
 
@@ -3257,9 +3266,6 @@ int DCL_CDECL main(int argc, char *argv[])
     SetupPorts(&nMainGamePorts, aMainGamePorts, &mudconf.ports, NULL);
 #endif
     boot_slave(GOD, GOD, GOD, 0);
-#ifdef STUB_SLAVE
-    boot_stubslave(GOD, GOD, GOD, 0);
-#endif // STUB_SLAVE
 
     // All intialization should be complete, allow the local
     // extensions to configure themselves.
