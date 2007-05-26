@@ -6121,6 +6121,8 @@ void mux_string::import(const UTF8 *pStr, size_t nLen)
     }
 
     m_iLast(static_cast<LBUF_OFFSET>(pch - m_autf), iPoint);
+    m_autf[m_iLast.m_byte] = '\0';
+
     if (bColor)
     {
         realloc_m_pcs(m_iLast.m_point);
@@ -6130,7 +6132,6 @@ void mux_string::import(const UTF8 *pStr, size_t nLen)
     {
         realloc_m_pcs(0);
     }
-    m_autf[m_iLast.m_byte] = '\0';
 }
 
 mux_cursor mux_string::length_cursor(void) const
@@ -6238,7 +6239,18 @@ void mux_string::realloc_m_pcs(size_t ncs)
         }
         ISOUTOFMEMORY(m_pcs);
 
-        if (0 != m_ncs)
+        if (0 == m_ncs)
+        {
+            // Initialize the implicit CS_NORMAL ColorStates to maintain the
+            // mux_string invariant.
+            //
+            int i;
+            for (i = 0; i < m_iLast.m_point; i++)
+            {
+                m_pcs[i] = CS_NORMAL;
+            }
+        }
+        else
         {
             memcpy(m_pcs, pcsOld, m_ncs * sizeof(m_pcs[0]));
             delete [] pcsOld;
