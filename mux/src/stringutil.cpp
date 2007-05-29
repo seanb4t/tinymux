@@ -6319,16 +6319,6 @@ void mux_string::replace_Chars
         else if (0 != sTo.m_ncs)
         {
             realloc_m_pcs(m_iLast.m_point);
-#if 0
-            for (i = 0; i < iStart.m_point; i++)
-            {
-                m_pcs[i] = CS_NORMAL;
-            }
-            for (i = 0; i < nMove.m_point; i++)
-            {
-                m_pcs[i+iStart.m_point+nTo.m_point] = CS_NORMAL;
-            }
-#endif
         }
     }
 
@@ -6338,15 +6328,6 @@ void mux_string::replace_Chars
     {
         memcpy(m_pcs + iStart.m_point, sTo.m_pcs, nCopy.m_point * sizeof(m_pcs[0]));
     }
-#if 0
-    else if (0 != m_ncs)
-    {
-        for (i = 0; i < nCopy.m_point; i++)
-        {
-            m_pcs[iStart.m_point + i] = CS_NORMAL;
-        }
-    }
-#endif
 
     m_autf[m_iLast.m_byte] = '\0';
 }
