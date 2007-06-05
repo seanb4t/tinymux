@@ -1417,7 +1417,6 @@ void mux_exec( const UTF8 *pStr, size_t nStr, UTF8 *buff, UTF8 **bufc, dbref exe
                 //
                 if (!tstr)
                 {
-                    iStr++;
                     if (nBufferAvailable)
                     {
                         *(*bufc)++ = '(';
