@@ -1970,8 +1970,7 @@ void mux_exec( const UTF8 *pStr, size_t nStr, UTF8 *buff, UTF8 **bufc, dbref exe
                                 memcpy(mux_scratch, pStr + iStr, n);
                                 mux_scratch[n] = '\0';
 
-                                if (  mux_isattrnameinitial(mux_scratch)
-                                   && '\0' != *utf8_NextCodePoint(mux_scratch))
+                                if (mux_isattrnameinitial(mux_scratch))
                                 {
                                     ATTR *ap = atr_str(mux_scratch);
                                     if (  ap
