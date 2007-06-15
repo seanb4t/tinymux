@@ -6275,7 +6275,6 @@ void mux_string::replace_Chars
     mux_cursor nTo = sTo.m_iLast;
     mux_cursor nMove = CursorMin;
     mux_cursor nCopy = nTo;
-    size_t i;
 
     if (nLen != nTo)
     {
