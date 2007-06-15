@@ -7997,7 +7997,7 @@ ISDBREF()
      > say isdbref(This is not a dbref)
      You say, "0"
 
-  Related Topics: BOOLEAN VALUES, isint, isnum(), israt(), isword().
+  Related Topics: BOOLEAN VALUES, isint(), isnum(), israt(), isword().
 
 & ISIGN()
 ISIGN()
@@ -8036,7 +8036,7 @@ ISINT()
      > say isint(22 L)
      You say, "0"
 
-  Related Topics: BOOLEAN VALUES, isdbref, isnum(), israt(), isword().
+  Related Topics: BOOLEAN VALUES, isdbref(), isnum(), israt(), isword().
 
 & ISNUM()
 ISNUM()
