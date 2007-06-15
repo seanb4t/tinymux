@@ -5103,8 +5103,7 @@ CHILDREN()
 
   FUNCTION: children(<object>)
 
-  Returns a list of objects that are parented to <object>. Currently a
-  wizard/royalty only function.
+  Returns a list of objects that are parented to <object>.
 
   Related Topics:
 
