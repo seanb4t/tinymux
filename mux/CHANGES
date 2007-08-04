@@ -1,5 +1,5 @@
 TinyMUX 2.7:  CHANGES
-Last Update:  July 2007
+Last Update:  August 2007
 
 Major changes that may affect performance and require softcode tweaks:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -168,3 +168,4 @@ Miscellaneous:
  -- Corrected documentation of E() and PI() to reflect actual
     precision (Issue 283).  Thanks Jake.
  -- Document @restart dropping SSL connections up front.
+ -- Document report and move into walkdb.cpp (Issue 293).
