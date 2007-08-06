@@ -131,6 +131,7 @@ Bug Fixes:
  -- Allow %=<name> to support single-letter attribute names and
     document. Issue 341.
  -- Fixed escape() which used #92 instead of backslash (Issue 353).
+ -- Fix WIDTH() to default to 78 instead of 24 (Issue 354).
 
 
 Performance Enhancements:
@@ -151,6 +152,7 @@ Performance Enhancements:
  -- Make mux_exec() take a char *pdstr instead of char **dstr.
  -- Various things made const and/or consolidated.
  -- Merge fun_wrap and linewrap_general.
+ -- Update sortby algorithm to minimize comparisons (Issue 22).
 
 
 Cosmetic Changes:
@@ -169,3 +171,4 @@ Miscellaneous:
  -- Corrected documentation of E() and PI() to reflect actual
     precision (Issue 283).  Thanks Jake.
  -- Document @restart dropping SSL connections up front.
+ -- Document report and move into walkdb.cpp (Issue 293).
