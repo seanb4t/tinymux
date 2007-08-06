@@ -151,6 +151,7 @@ Performance Enhancements:
  -- Make mux_exec() take a char *pdstr instead of char **dstr.
  -- Various things made const and/or consolidated.
  -- Merge fun_wrap and linewrap_general.
+ -- Update sortby algorithm to minimize comparisons (Issue 22).
 
 
 Cosmetic Changes:
@@ -169,3 +170,4 @@ Miscellaneous:
  -- Corrected documentation of E() and PI() to reflect actual
     precision (Issue 283).  Thanks Jake.
  -- Document @restart dropping SSL connections up front.
+ -- Document report and move into walkdb.cpp (Issue 293).
