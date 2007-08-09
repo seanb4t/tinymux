@@ -2566,33 +2566,34 @@ void do_decomp
     {
         if (key == DECOMP_DBREF)
         {
-            mux_strncpy(thingname, tprintf("#%d",thing), LBUF_SIZE-1);
+            mux_strncpy(thingname, tprintf("#%d", thing), LBUF_SIZE-1);
         }
         else
         {
             switch (Typeof(thing))
             {
             case TYPE_THING:
-                mux_strncpy(thingname, Moniker(thing), LBUF_SIZE-1);
+                mux_strncpy(thingname, translate_string(Moniker(thing),true),
+                    LBUF_SIZE-1);
                 val = OBJECT_DEPOSIT(Pennies(thing));
-                notify(executor,
-                    tprintf("@create %s=%d", translate_string(thingname, true),
-                    val));
+                notify(executor, tprintf("@create %s=%d", thingname, val));
                 break;
 
             case TYPE_ROOM:
                 mux_strncpy(thingname, T("here"), LBUF_SIZE-1);
                 notify(executor, tprintf("@dig/teleport %s",
                     translate_string(Moniker(thing), true)));
+                mux_strncpy(thingname, translate_string(Moniker(thing), true),
+                        LBUF_SIZE-1);
                 break;
 
             case TYPE_EXIT:
-                mux_strncpy(thingname, Moniker(thing), LBUF_SIZE-1);
-                notify(executor,
-                    tprintf("@open %s", translate_string(thingname, true)));
+                mux_strncpy(thingname, translate_string(Moniker(thing), true),
+                        LBUF_SIZE-1);
+                notify(executor, tprintf("@open %s", thingname));
                 for (got = thingname; *got; got++)
                 {
-                    if (*got == EXIT_DELIMITER)
+                    if (EXIT_DELIMITER == *got)
                     {
                         *got = '\0';
                         break;
@@ -2607,7 +2608,8 @@ void do_decomp
                 }
                 else
                 {
-                    mux_strncpy(thingname, Name(thing), LBUF_SIZE-1);
+                    mux_strncpy(thingname, translate_string(Name(thing), true),
+                            LBUF_SIZE-1);
                 }
                 break;
             }
@@ -2627,7 +2629,7 @@ void do_decomp
        && pBoolExp != TRUE_BOOLEXP)
     {
         notify(executor, tprintf("@lock %s=%s", thingname,
-            unparse_boolexp_decompile(executor, pBoolExp)));
+            translate_string(unparse_boolexp_decompile(executor, pBoolExp),true)));
     }
     free_boolexp(pBoolExp);
 
