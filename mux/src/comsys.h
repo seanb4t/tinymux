@@ -25,7 +25,7 @@
 //! \def Maximum length for an alias to a channel
 #define MAX_ALIAS_LEN   5
 
-//! \def Actual size of a channel alias 
+//! \def Actual size of a channel alias
 #define ALIAS_SIZE      (MAX_ALIAS_LEN+1)
 
 //! \def Maximum cost to use for a channel
@@ -38,7 +38,7 @@ struct comuser
     dbref who;
     //! Is the user on the channel
     bool bUserIsOn;
-    //! Per channel display name 
+    //! Per channel display name
     UTF8 *title;
     //! Status of the title
     bool ComTitleStatus;
@@ -46,7 +46,7 @@ struct comuser
     struct comuser *on_next;
 };
 
-//! \struct Channel data for Comsys 
+//! \struct Channel data for Comsys
 struct channel
 {
     //! Name of the Channel
@@ -59,7 +59,7 @@ struct channel
     int temp2;
     //! Cost for channel usage
     int charge;
-    //! Person to charge for usage 
+    //! Person to charge for usage
     dbref charge_who;
     int amount_col;
     //! Users on the channel
@@ -71,7 +71,7 @@ struct channel
     //! Linked list of user data for all players on the channel
     struct comuser **users;
     //! Linked list of user data for connected players
-    struct comuser *on_users;   
+    struct comuser *on_users;
     //! Number of messages sent on the channel
     int num_messages;
 };
@@ -82,7 +82,7 @@ typedef struct tagComsys
     //! DBREF of the user
     dbref who;
 
-    //! Number of channels 
+    //! Number of channels
     int numchannels;
     int maxchannels;
     //! Alias for this channel
@@ -129,7 +129,7 @@ void do_comdisconnect(dbref player);
 
 //! \brief Remove player from the active user list of channel
 //! \param player - dbref of the player to remove
-//! \param channel - name of the channel 
+//! \param channel - name of the channel
 void do_comdisconnectchannel(dbref player, UTF8 *channel);
 
 //! \brief Handle connecting player channel activations
@@ -142,13 +142,13 @@ void purge_comsystem(void);
 //! Sort aliases for the given comsys_t data
 void sort_com_aliases(comsys_t *c);
 
-//! \brief Xmit messages to the listening objects on channel & log data 
+//! \brief Xmit messages to the listening objects on channel & log data
 //! \param player - dbref of executor
 //! \param ch - channel data to transmit the message on
-//! \param msgNormal - message to send with comtitle 
+//! \param msgNormal - message to send with comtitle
 //! \param msgNoComtitle - message to send w/o comtitle
-void SendChannelMessage (dbref player, struct channel *ch, UTF8 *msgNormal, 
-        UTF8  *msgNoComtitle);
+void SendChannelMessage(dbref player, struct channel *ch, UTF8 *msgNormal,
+    UTF8 *msgNoComtitle);
 
 //! \brief Process '<alias> who' command to show online channel users
 //! \brief player - enacting player
@@ -176,8 +176,8 @@ void do_delcomchannel(dbref player, UTF8 *channel, bool bQuiet);
 void do_clearcom(dbref executor, dbref caller, dbref enactor, int unused2);
 
 //! \brief Add a new channel subscription/alias for the enactor
-void do_addcom (dbref executor, dbref caller, dbref enactor, int key, int nargs, 
-        UTF8 *arg1, UTF8 *arg2);
+void do_addcom(dbref executor, dbref caller, dbref enactor, int key, int nargs,
+    UTF8 *arg1, UTF8 *arg2);
 
 //! \brief Process a request to set a channel header
 //! \param player - player requesting the change
@@ -201,12 +201,12 @@ struct comuser *select_user(struct channel *ch, dbref player);
 //! \param nValidAlias - return size of the valid alias
 //! \param bValidAlias - is alias valid or not
 //! \return new alias data or NULL on failure
-UTF8 *MakeCanonicalComAlias(const UTF8 *pAlias, size_t *nValidAlias, 
+UTF8 *MakeCanonicalComAlias(const UTF8 *pAlias, size_t *nValidAlias,
         bool *bValidAlias);
 
 //! \brief Allocate and initialize a new comsys_t structure
 //! \return initialized memory or NULL if allocation failed
-comsys_t *create_new_comsys ();
+comsys_t *create_new_comsys();
 
 //! \brief Purge channels owned by player. Internal cleanup called from db.c
 //! \param player - dbref of cleanup target
