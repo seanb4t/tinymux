@@ -37,7 +37,7 @@ typedef enum
     UseSameProcess  = 1,
     UseMainProcess  = 2,
     UseSlaveProcess = 3,
-    UseAnyContexts  = 7
+    UseAnyContext   = 7
 } create_context;
 
 typedef enum
