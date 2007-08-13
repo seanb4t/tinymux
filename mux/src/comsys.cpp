@@ -45,7 +45,7 @@ static UTF8 *RestrictTitleValue(UTF8 *pTitleRequest)
 
 static void do_setcomtitlestatus(dbref player, struct channel *ch, bool status)
 {
-    struct comuser *user = select_user(ch,player);
+    struct comuser *user = select_user(ch, player);
     if (ch && user)
     {
         user->ComTitleStatus = status;
@@ -466,7 +466,7 @@ static UTF8 *get_channel_from_alias(dbref player, UTF8 *alias)
     while (dir && (first <= last))
     {
         current = (first + last) / 2;
-        dir = strcmp((char *)alias,(char *) c->alias + ALIAS_SIZE * current);
+        dir = strcmp((char *)alias, (char *) c->alias + ALIAS_SIZE * current);
         if (dir < 0)
             last = current - 1;
         else
@@ -1525,7 +1525,7 @@ void SendChannelMessage
             free_lbuf(maxbuf);
         }
 
-        if (logmax > 0)
+        if (0 < logmax)
         {
             if (logmax > MAX_RECALL_REQUEST)
             {
@@ -1537,7 +1537,29 @@ void SendChannelMessage
             int atr = mkattr(GOD, p);
             if (0 < atr)
             {
-                atr_add(ch->chan_obj, atr, msgNormal, GOD, AF_CONST|AF_NOPROG|AF_NOPARSE);
+                dbref aowner;
+                int aflags;
+                ATTR *pattr = atr_str(T("LOG_TIMESTAMPS"));
+                if (  pattr
+                   && atr_get_info(obj, pattr->number, &aowner, &aflags))
+                {
+                    CLinearTimeAbsolute ltaNow;
+                    ltaNow.GetLocal();
+
+                    // Save message in history with timestamp.
+                    //
+                    atr_add(ch->chan_obj, atr,
+                            tprintf("[%s] %s", ltaNow.ReturnDateString(0),
+                                msgNormal), GOD, AF_CONST|AF_NOPROG|AF_NOPARSE);
+                }
+                else
+                {
+                    // Save message in history without timestamp.
+                    //
+                    atr_add(ch->chan_obj, atr, msgNormal, GOD,
+                            AF_CONST|AF_NOPROG|AF_NOPARSE);
+                }
+
             }
         }
     }
@@ -1839,6 +1861,63 @@ void do_comlast(dbref player, struct channel *ch, int arg)
     }
 
     raw_notify(player, tprintf("%s -- End Comsys Recall --", ch->header));
+}
+
+// Turn channel history timestamping on or off for the given channel.
+//
+static bool do_chanlog_timestamps(dbref player, UTF8 *channel, UTF8 *arg)
+{
+    UNUSED_PARAMETER(player);
+
+    // Validate arg.
+    //
+    int value = 0;
+    if (  NULL == arg
+       || !is_integer(arg, NULL)
+       || (  (value = mux_atol(arg)) != 0
+          && value != 1))
+    {
+        // arg is not "0" and not "1".
+        //
+        return false;
+    }
+
+    struct channel *ch = select_channel(channel);
+    if (!Good_obj(ch->chan_obj))
+    {
+        // No channel object has been set.
+        //
+        return false;
+    }
+
+    dbref aowner;
+    int aflags;
+    ATTR *pattr = atr_str(T("MAX_LOG"));
+    if (  NULL == pattr
+       || !atr_get_info(ch->chan_obj, pattr->number, &aowner, &aflags))
+    {
+        // Logging isn't enabled.
+        //
+        return false;
+    }
+
+    int atr = mkattr(GOD, T("LOG_TIMESTAMPS"));
+    if (atr <= 0)
+    {
+        return false;
+    }
+
+    if (value)
+    {
+        atr_add(ch->chan_obj, atr, mux_ltoa_t(value), GOD,
+                AF_CONST|AF_NOPROG|AF_NOPARSE);
+    }
+    else
+    {
+        atr_clr(ch->chan_obj, atr);
+    }
+
+    return true;
 }
 
 // Set number of entries for channel logging.
@@ -2331,7 +2410,7 @@ void do_destroychannel(dbref executor, dbref caller, dbref enactor, int eval, in
 }
 
 
-static void do_listchannels(dbref player)
+static void do_listchannels(dbref player, UTF8 *pattern)
 {
     struct channel *ch;
     UTF8 temp[LBUF_SIZE];
@@ -2341,6 +2420,19 @@ static void do_listchannels(dbref player)
     {
         raw_notify(player, T("Warning: Only public channels and your channels will be shown."));
     }
+
+    bool bWild;
+    if (  NULL != pattern
+       && '\0' != *pattern)
+    {
+        bWild = true;
+    }
+    else
+    {
+        bWild = false;
+    }
+
+
     raw_notify(player, T("*** Channel      --Flags--    Obj     Own   Charge  Balance  Users   Messages"));
 
     for (ch = (struct channel *)hash_firstentry(&mudstate.channel_htab);
@@ -2350,20 +2442,28 @@ static void do_listchannels(dbref player)
            || (ch->type & CHANNEL_PUBLIC)
            || Controls(player, ch->charge_who))
         {
-            mux_sprintf(temp, sizeof(temp), "%c%c%c %-13.13s %c%c%c/%c%c%c %7d %7d %8d %8d %6d %10d",
-                (ch->type & CHANNEL_PUBLIC) ? 'P' : '-',
-                (ch->type & CHANNEL_LOUD) ? 'L' : '-',
-                (ch->type & CHANNEL_SPOOF) ? 'S' : '-',
-                ch->name,
-                (ch->type & CHANNEL_PLAYER_JOIN) ? 'J' : '-',
-                (ch->type & CHANNEL_PLAYER_TRANSMIT) ? 'X' : '-',
-                (ch->type & CHANNEL_PLAYER_RECEIVE) ? 'R' : '-',
-                (ch->type & CHANNEL_OBJECT_JOIN) ? 'j' : '-',
-                (ch->type & CHANNEL_OBJECT_TRANSMIT) ? 'x' : '-',
-                (ch->type & CHANNEL_OBJECT_RECEIVE) ? 'r' : '-',
-                (ch->chan_obj != NOTHING) ? ch->chan_obj : -1,
-                ch->charge_who, ch->charge, ch->amount_col, ch->num_users, ch->num_messages);
-            raw_notify(player, temp);
+
+            if (  !bWild
+               || quick_wild(pattern, ch->name))
+            {
+
+                mux_sprintf(temp, sizeof(temp),
+                        "%c%c%c %-13.13s %c%c%c/%c%c%c %7d %7d %8d %8d %6d %10d",
+                        (ch->type & CHANNEL_PUBLIC) ? 'P' : '-',
+                        (ch->type & CHANNEL_LOUD) ? 'L' : '-',
+                        (ch->type & CHANNEL_SPOOF) ? 'S' : '-',
+                        ch->name,
+                        (ch->type & CHANNEL_PLAYER_JOIN) ? 'J' : '-',
+                        (ch->type & CHANNEL_PLAYER_TRANSMIT) ? 'X' : '-',
+                        (ch->type & CHANNEL_PLAYER_RECEIVE) ? 'R' : '-',
+                        (ch->type & CHANNEL_OBJECT_JOIN) ? 'j' : '-',
+                        (ch->type & CHANNEL_OBJECT_TRANSMIT) ? 'x' : '-',
+                        (ch->type & CHANNEL_OBJECT_RECEIVE) ? 'r' : '-',
+                        (ch->chan_obj != NOTHING) ? ch->chan_obj : -1,
+                        ch->charge_who, ch->charge, ch->amount_col,
+                        ch->num_users, ch->num_messages);
+                raw_notify(player, temp);
+            }
         }
     }
     raw_notify(player, T("-- End of list of Channels --"));
@@ -2493,7 +2593,7 @@ void do_comlist
         if (user)
         {
             if (  !bWild
-               || quick_wild(pattern,c->channels[i]))
+               || quick_wild(pattern, c->channels[i]))
             {
 #ifdef MUX_TABLE
                 Table->row_begin();
@@ -2673,7 +2773,7 @@ void do_channelwho(dbref executor, dbref caller, dbref enactor, int eval, int ke
         return;
     }
     if ( !(  Comm_All(executor)
-          || Controls(executor,ch->charge_who)))
+          || Controls(executor, ch->charge_who)))
     {
         raw_notify(executor, NOPERM_MESSAGE);
         return;
@@ -3223,7 +3323,7 @@ void do_chopen
 
     case CSET_PRIVATE:
         ch->type &= ~CHANNEL_PUBLIC;
-        msg = tprintf("@cset: Channel %s taken off the public listings." ,chan);
+        msg = tprintf("@cset: Channel %s taken off the public listings." , chan);
         break;
 
     case CSET_LOUD:
@@ -3284,6 +3384,16 @@ void do_chopen
             msg = tprintf("@cset: Maximum history must be a number less than or equal to %d.", MAX_RECALL_REQUEST);
         }
         break;
+
+    case CSET_LOG_TIME:
+        if (do_chanlog_timestamps(executor, chan, value))
+        {
+            msg = tprintf("@cset: Channel %s timestamp logging set.", chan);
+        }
+        else
+        {
+            msg = tprintf("@cset: Failed.  Is logging enabled for %s?", chan);
+        }
     }
     raw_notify(executor, msg);
 }
@@ -3449,7 +3559,7 @@ void do_chanlist
     }
     if (key & CLIST_FULL)
     {
-        do_listchannels(executor);
+        do_listchannels(executor, pattern);
         return;
     }
 
