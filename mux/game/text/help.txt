@@ -7478,7 +7478,7 @@ HASFLAG()
   Returns true if object <object> has the flag named <flag> set on it. You
   may not be able to retrieve information for objects that you do not own.
 
-  When an <attribute> is given, the following <flag> values can be used.
+  When an <attribute> is given, the following <flag> values can be used:
 
     const, dark, god, hidden, html, locked, no_command, no_inherit, no_name,
     no_parse, regexp, visual, and wizard.
