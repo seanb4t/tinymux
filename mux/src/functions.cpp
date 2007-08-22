@@ -794,6 +794,25 @@ static FUNCTION(fun_restarttime)
     safe_str(lta.ReturnDateString(), buff, bufc);
 }
 
+/*
+ * ---------------------------------------------------------------------------
+ * * fun_restarts: Number of @restarts since initial startup
+ */
+
+static FUNCTION(fun_restarts)
+{
+    UNUSED_PARAMETER(executor);
+    UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(fargs);
+    UNUSED_PARAMETER(nfargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
+
+    safe_str(tprintf("%d", mudstate.restart_count), buff, bufc);
+}
+
 // fun_timefmt
 //
 // timefmt(<format>[, <secs>])
@@ -4538,6 +4557,7 @@ static ATR_HAS_FLAG_ENTRY atr_has_flag_table[] =
     { T("html"),       AF_HTML    },
     { T("locked"),     AF_LOCK    },
     { T("no_command"), AF_NOPROG  },
+    { T("no_name"),    AF_NONAME  },
     { T("no_parse"),   AF_NOPARSE },
     { T("regexp"),     AF_REGEXP  },
     { T("god"),        AF_GOD     },
@@ -10059,6 +10079,7 @@ static FUN builtin_function_list[] =
     {T("DECRYPT"),     fun_decrypt,    MAX_ARG, 2,       2,         0, CA_PUBLIC},
     {T("DEFAULT"),     fun_default,    MAX_ARG, 2,       2, FN_NOEVAL, CA_PUBLIC},
     {T("DELETE"),      fun_delete,     MAX_ARG, 3,       3,         0, CA_PUBLIC},
+    {T("DESTROY"),     fun_destroy,    MAX_ARG, 1,       1,         0, CA_PUBLIC},
     {T("DIE"),         fun_die,        MAX_ARG, 2,       3,         0, CA_PUBLIC},
     {T("DIGITTIME"),   fun_digittime,  MAX_ARG, 1,       1,         0, CA_PUBLIC},
     {T("DIST2D"),      fun_dist2d,     MAX_ARG, 4,       4,         0, CA_PUBLIC},
@@ -10267,6 +10288,7 @@ static FUN builtin_function_list[] =
     {T("REPEAT"),      fun_repeat,     MAX_ARG, 2,       2,         0, CA_PUBLIC},
     {T("REPLACE"),     fun_replace,    MAX_ARG, 3,       4,         0, CA_PUBLIC},
     {T("REST"),        fun_rest,       MAX_ARG, 0,       2,         0, CA_PUBLIC},
+    {T("RESTARTS"),    fun_restarts,   MAX_ARG, 0,       0,         0, CA_PUBLIC},
     {T("RESTARTSECS"), fun_restartsecs, MAX_ARG, 0,      0,         0, CA_PUBLIC},
     {T("RESTARTTIME"), fun_restarttime, MAX_ARG, 0,      0,         0, CA_PUBLIC},
     {T("REVERSE"),     fun_reverse,          1, 1,       1,         0, CA_PUBLIC},
