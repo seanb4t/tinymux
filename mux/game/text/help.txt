@@ -5844,7 +5844,7 @@ CREATE()
   default. This is a side effect function, and should only be
   used when necessary.
 
-  Related Topics:
+  Related Topics: destroy()
 
 & CREDITS
 
@@ -6007,6 +6007,17 @@ DELETE()
     You say, "Would you like tea?"
 
   Related Topics:
+
+& DESTROY()
+DESTROY()
+
+  FUNCTION: destroy(<object>)
+
+  Works the same as @destroy <object>. The destroy() function has no
+  return value.  This is a side effect function, and should only be
+  used when necessary.
+
+  Related Topics: create()
 
 & DESTROY_OK
 DESTROY_OK
@@ -6983,7 +6994,7 @@ FUNCTION CLASSES
 
   Floating Point Conversion: FLOOR ROUND TRUNC
 
-  Game Information:          CONFIG DUMPING MOTD MUDNAME POLL VERSION
+  Game Information:          CONFIG DUMPING MOTD MUDNAME POLL RESTARTS VERSION
 
 { 'help function classes2' for more }
 
@@ -7027,8 +7038,8 @@ FUNCTION CLASSES (continued)
 
   Relational:                EQ GT GTE LT LTE MAX MIN NEQ
 
-  Side-Effect Functions:     CREATE EMIT LINK OEMIT PEMIT REMIT SET SETNAME
-                             SETPARENT TEL TRIGGER
+  Side-Effect Functions:     CREATE DESTROY EMIT LINK OEMIT PEMIT REMIT SET
+                             SETNAME SETPARENT TEL TRIGGER
 
   SQL:                       SQL
 
@@ -7075,12 +7086,13 @@ FUNCTION LIST
     CONNRECORD()CONNTOTAL() CONTROLS()  CONVSECS()  CONVTIME()  COR()
     CORBOOL()   COS()       CPAD()      CRC32()     CREATE()    CTIME()
     CTU()       CWHO()      DEC()       DECRYPT()   DEFAULT()   DELETE()
-    DIE()       DIGITTIME() DIST2D()    DIST3D()    DISTRIBUTE()DOING()
-    DUMPING()   E()         EDEFAULT()  EDIT()      ELEMENTS()  ELOCK()
-    EMIT()      ENCRYPT()   ENTRANCES() EQ()        ERROR()     ESCAPE()
-    ETIMEFMT()  EVAL()      EXIT()      EXP()       EXPTIME()   EXTRACT()
-    FCOUNT()    FDEPTH()    FDIV()      FILTER()    FILTERBOOL()FINDABLE()
-    FIRST()     FLAGS()     FLOOR()     FLOORDIV()  FMOD()      FOLD()
+    DESTROY()   DIE()       DIGITTIME() DIST2D()    DIST3D()    DISTRIBUTE()
+    DOING()     DUMPING()   E()         EDEFAULT()  EDIT()      ELEMENTS()
+    ELOCK()     EMIT()      ENCRYPT()   ENTRANCES() EQ()        ERROR()
+    ESCAPE()    ETIMEFMT()  EVAL()      EXIT()      EXP()       EXPTIME()
+    EXTRACT()   FCOUNT()    FDEPTH()    FDIV()      FILTER()    FILTERBOOL()
+    FINDABLE()  FIRST()     FLAGS()     FLOOR()     FLOORDIV()  FMOD()
+    FOLD()
 
 ("help function list2" for more)
 
@@ -7117,24 +7129,24 @@ FUNCTION LIST (continued)
     POS()       POSS()      POWER()     POWERS()    R()         RAND()
     REGMATCH()  REGMATCHI() REGRAB()    REGRABALL() REGRABALLI()REGRABI()
     REMAINDER() REMIT()     REMOVE()    REPEAT()    REPLACE()   REST()
-    RESTARTSECS()           RESTARTTIME()           REVERSE()   REVWORDS()
-    RIGHT()     RJUST()     RLOC()      ROMAN()     ROOM()      ROUND()
-    RPAD()      RXLEVEL()   S()         SCRAMBLE()  SEARCH()    SECS()
-    SECURE()    SET()       SETDIFF()   SETINTER()  SETNAME()   SETPARENT()
-    SETQ()      SETR()      SETUNION()  SHA1()      SHL()       SHR()
-    SHUFFLE()   SIGN()      SIN()       SINGLETIME()            SORT()
-    SORTBY()    SPACE()     SPELLNUM()  SPLICE()    SQL()       SQRT()
-    SQUISH()    STARTSECS() STARTTIME() STATS()     STEP()      STRCAT()
-    STRIP()     STRIPACCENTS()          STRIPANSI() STRLEN()    STRMATCH()
-    STRMEM()    STRTRUNC()  SUB()       SUBEVAL()   SUBJ()      SUCCESSES()
-    SWITCH()    T()         TABLE()     TAN()       TEL()       TERMINFO()
-    TEXT()      TEXTFILE()  TIME()      TIMEFMT()   TRANSLATE() TR()
-    TRIGGER()   TRIM()      TRUNC()     TXLEVEL()   TYPE()      U()
-    UCSTR()     UDEFAULT()  ULOCAL()    UNPACK()    V()         VADD()
-    VALID()     VCROSS()    VDIM()      VDOT()      VERSION()   VISIBLE()
-    VMAG()      VMUL()      VSUB()      VUNIT()     WHERE()     WIDTH()
-    WORDPOS()   WORDS()     WRAP()      WRITETIME() XGET()      XOR()
-    ZFUN()      ZONE()      ZWHO()
+    RESTARTS()  RESTARTSECS()           RESTARTTIME()           REVERSE()
+    REVWORDS()  RIGHT()     RJUST()     RLOC()      ROMAN()     ROOM()
+    ROUND()     RPAD()      RXLEVEL()   S()         SCRAMBLE()  SEARCH()
+    SECS()      SECURE()    SET()       SETDIFF()   SETINTER()  SETNAME()
+    SETPARENT() SETQ()      SETR()      SETUNION()  SHA1()      SHL()
+    SHR()       SHUFFLE()   SIGN()      SIN()       SINGLETIME()
+    SORT()      SORTBY()    SPACE()     SPELLNUM()  SPLICE()    SQL()
+    SQRT()      SQUISH()    STARTSECS() STARTTIME() STATS()     STEP()
+    STRCAT()    STRIP()     STRIPACCENTS()          STRIPANSI() STRLEN()
+    STRMATCH()  STRMEM()    STRTRUNC()  SUB()       SUBEVAL()   SUBJ()
+    SUCCESSES() SWITCH()    T()         TABLE()     TAN()       TEL()
+    TERMINFO()  TEXT()      TEXTFILE()  TIME()      TIMEFMT()   TRANSLATE()
+    TR()        TRIGGER()   TRIM()      TRUNC()     TXLEVEL()   TYPE()
+    U()         UCSTR()     UDEFAULT()  ULOCAL()    UNPACK()    V()
+    VADD()      VALID()     VCROSS()    VDIM()      VDOT()      VERSION()
+    VISIBLE()   VMAG()      VMUL()      VSUB()      VUNIT()     WHERE()
+    WIDTH()     WORDPOS()   WORDS()     WRAP()      WRITETIME() XGET()
+    XOR()       ZFUN()      ZONE()      ZWHO()
 
 & FUNCTIONS
 FUNCTIONS
@@ -7466,10 +7478,10 @@ HASFLAG()
   Returns true if object <object> has the flag named <flag> set on it. You
   may not be able to retrieve information for objects that you do not own.
 
-  When an <attribute> is given, the following <flag> values can be used.
+  When an <attribute> is given, the following <flag> values can be used:
 
-    const, no_command, dark, god, hidden, html, no_inherit, locked, no_parse,
-    regexp, visual, and wizard.
+    const, dark, god, hidden, html, locked, no_command, no_inherit, no_name,
+    no_parse, regexp, visual, and wizard.
 
   Example:
     > say hasflag(me, wizard)
@@ -11301,6 +11313,16 @@ REST()
 
   Related Topics: first().
 
+& RESTARTS()
+RESTARTS()
+
+  FUNCTION: restarts()
+
+  Returns the number of times the server has been restarted since the initial
+  startup.
+
+  Related Topics: starttime(), restarttime().
+
 & RESTARTSECS()
 RESTARTSECS()
 
@@ -13814,16 +13836,22 @@ WHERE()
 & WHISPER
 WHISPER
 
-  COMMAND: whisper <player>=<message>
+  COMMAND: whisper [<player>[,<player2>[, ...]]]=<message>
 
-  Whispers the message to the named person, if they are in the same room as
-  you. No one else can see the message that you whisper.
+  Whispers the message to one or more players in the same room.  No one else
+  can see the message that you whisper.
 
   You can format the message one of several ways by specifying ':', ';', or
   '"' as the first character of the message.  ':' and ';' format the message
   as 'You sense <player> <message>', with ';' omitting the space between
   <player> and <message>.  '"' formats the message in normal whisper format
   (this is the default).
+
+  Like the page command, the last list of players is used again if the
+  following short-hand is used:
+
+    "w :waves."  or,
+    "w I'm back."
 
   Related Topics: page, pose, say, :, ;, ".
 
