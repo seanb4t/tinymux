@@ -3755,7 +3755,8 @@ static void do_malias_list_all(dbref player)
     malias_t* alias_array = (malias_t*)MEMALLOC(sizeof(malias_t)*ma_top);
     size_t actual_entries = 0;
 
-    for (int i = 0; i < ma_top; i++)
+    int i;
+    for (i = 0; i < ma_top; i++)
     {
         malias_t *m = malias[i];
         if (  m->owner == GOD
@@ -3771,7 +3772,7 @@ static void do_malias_list_all(dbref player)
     }
     qsort(alias_array, actual_entries, sizeof(malias_t), malias_compare);
 
-    for (int i = 0; i < actual_entries; i++)
+    for (i = 0; i < actual_entries; i++)
     {
         malias_t *m = &alias_array[i];
         if (!notified)
