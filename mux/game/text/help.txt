@@ -7480,7 +7480,7 @@ HASFLAG()
 
   When an <attribute> is given, the following <flag> values can be used:
 
-    const, dark, god, hidden, html, locked, no_command, no_inherit, no_name,
+    const, dark, god, hidden, html, locked, no_command, no_inherit, no_name,  
     no_parse, regexp, visual, and wizard.
 
   Example:
@@ -13836,16 +13836,22 @@ WHERE()
 & WHISPER
 WHISPER
 
-  COMMAND: whisper <player>=<message>
+  COMMAND: whisper [<player>[,<player2>[, ...]]]=<message>
 
-  Whispers the message to the named person, if they are in the same room as
-  you. No one else can see the message that you whisper.
+  Whispers the message to one or more players in the same room.  No one else
+  can see the message that you whisper.
 
   You can format the message one of several ways by specifying ':', ';', or
   '"' as the first character of the message.  ':' and ';' format the message
   as 'You sense <player> <message>', with ';' omitting the space between
   <player> and <message>.  '"' formats the message in normal whisper format
   (this is the default).
+
+  Like the page command, the last list of players is used again if the
+  following short-hand is used:
+
+    "w :waves."  or,
+    "w I'm back."
 
   Related Topics: page, pose, say, :, ;, ".
 

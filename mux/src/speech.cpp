@@ -932,8 +932,6 @@ static void whisper_pose(dbref player, dbref target, UTF8 *message, bool bSpace)
     }
     UTF8 *buff = alloc_lbuf("do_pemit.whisper.pose");
     mux_strncpy(buff, Moniker(player), LBUF_SIZE-1);
-    notify(player, tprintf("%s senses \"%s%s%s\"", Moniker(target), buff,
-        bSpace ? " " : "", message));
     notify_with_cause(target, player, tprintf("You sense %s%s%s", buff,
         bSpace ? " " : "", message));
     free_lbuf(buff);
@@ -1104,8 +1102,6 @@ void do_pemit_single
                 {
                     message = newMessage;
                 }
-                notify(player, tprintf("You whisper \"%s\" to %s.", message,
-                    Moniker(target)));
                 notify_with_cause(target, player,
                     tprintf("%s whispers \"%s\"", Moniker(player), message));
                 if (newMessage)
@@ -1237,11 +1233,8 @@ void do_pemit_list
     UTF8 *message
 )
 {
-    // Send a message to a list of dbrefs. The list is destructively
-    // modified.
-    //
-    if (  message[0] == '\0'
-       || list[0] == '\0')
+    if (  '\0' == message[0]
+       || '\0' == list[0])
     {
         return;
     }
@@ -1249,13 +1242,300 @@ void do_pemit_list
     UTF8 *p;
     MUX_STRTOK_STATE tts;
     mux_strtok_src(&tts, list);
-    mux_strtok_ctl(&tts, T(" "));
+    mux_strtok_ctl(&tts, T(", "));
     for (p = mux_strtok_parse(&tts); p; p = mux_strtok_parse(&tts))
     {
         do_pemit_single(player, key, bDoContents, pemit_flags, p, chPoseType,
             message);
     }
 }
+
+
+void do_pemit_whisper
+(
+    dbref executor,
+    dbref caller,
+    dbref enactor,
+    int   key,
+    int   nargs,
+    UTF8 *recipient,
+    UTF8 *message
+)
+{
+    UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(enactor);
+
+    int   nObjects = 0;
+    dbref aObjects[(LBUF_SIZE+1)/2];
+
+    // If the argument count is not 2, pull recipients from A_LASTWHISPER.
+    //
+    if (nargs < 2)
+    {
+        message = recipient;
+        recipient = '\0';
+    }
+
+    bool  bModified = true;
+    int   nPlayers = 0;
+    dbref aPlayers[(LBUF_SIZE+1)/2];
+
+    // Read the A_LASTWHISPER attribute and use that recipient list.
+    //
+    if (  PEMIT_WHISPER == key
+       && (  NULL == recipient
+          || '\0' == recipient[0]))
+    {
+        dbref aowner;
+        int   aflags;
+        recipient = atr_get("do_whisper.1290", executor, A_LASTWHISPER,
+            &aowner, &aflags);
+
+        bModified = false;
+
+        MUX_STRTOK_STATE tts;
+        mux_strtok_src(&tts, recipient);
+        mux_strtok_ctl(&tts, T(", "));
+        UTF8 *r;
+        for (r = mux_strtok_parse(&tts); r; r = mux_strtok_parse(&tts))
+        {
+            dbref targ = mux_atol(r);
+            if (Good_obj(targ))
+            {
+                aPlayers[nPlayers++] = targ;
+            }
+        }
+    }
+
+    if (bModified)
+    {
+        UTF8 *p = recipient;
+        while ('\0' != *p)
+        {
+            UTF8 *q = (UTF8 *)strchr((char *)p, '"');
+            if (q)
+            {
+                *q = '\0';
+            }
+
+            // Decode space-delimited or comma-delimited recipients.
+            //
+            MUX_STRTOK_STATE tts;
+            mux_strtok_src(&tts, p);
+            mux_strtok_ctl(&tts, T(", "));
+            UTF8 *r;
+            for (r = mux_strtok_parse(&tts); r; r = mux_strtok_parse(&tts))
+            {
+                dbref target = lookup_player(executor, r, true);
+                if (NOTHING != target)
+                {
+                    aPlayers[nPlayers++] = target;
+                }
+                else
+                {
+                    init_match(executor, r, NOTYPE);
+                    match_neighbor();
+                    target = match_result();
+
+                    if (NOTHING != target)
+                    {
+                        aPlayers[nPlayers++] = target;
+                    }
+                }
+            }
+
+            if (q)
+            {
+                p = q + 1;
+
+                // Handle quoted named.
+                //
+                q = (UTF8 *)strchr((char *)p, '"');
+                if (q)
+                {
+                    *q = '\0';
+                }
+
+                dbref target = lookup_player(executor, p, true);
+                if (NOTHING != target)
+                {
+                    aPlayers[nPlayers++] = target;
+                }
+                else
+                {
+                    init_match(executor, p, NOTYPE);
+                    match_neighbor();
+                    target = match_result();
+
+                    if (NOTHING != target)
+                    {
+                        aPlayers[nPlayers++] = target;
+                    }
+                }
+
+                if (q)
+                {
+                    p = q + 1;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        int nValid = nPlayers;
+
+        // Remove duplicate dbrefs.
+        //
+        int i;
+        for (i = 0; i < nPlayers-1; i++)
+        {
+            if (NOTHING != aPlayers[i])
+            {
+                int j;
+                for (j = i+1; j < nPlayers; j++)
+                {
+                    if (aPlayers[j] == aPlayers[i])
+                    {
+                        aPlayers[j] = NOTHING;
+                        bModified = true;
+                        nValid--;
+                    }
+                }
+            }
+        }
+    }
+
+    if (  bModified
+       && '\0' != recipient[0])
+    {
+        // Our aPlayers could be different than the one encoded on A_LASTWHISPER
+        // Update the database.
+        //
+        ITL itl;
+        UTF8 *pBuff = alloc_lbuf("do_pemit_whisper.lastwhisper");
+        UTF8 *pBufc = pBuff;
+        ItemToList_Init(&itl, pBuff, &pBufc);
+        for (int i = 0; i < nPlayers; i++)
+        {
+            if (  Good_obj(aPlayers[i])
+               && !ItemToList_AddInteger(&itl, aPlayers[i]))
+            {
+                break;
+            }
+        }
+        ItemToList_Final(&itl);
+
+        atr_add_raw(executor, A_LASTWHISPER, pBuff);
+        free_lbuf(pBuff);
+    }
+
+    // Decode PEMIT_HERE, PEMIT_ROOM, PEMIT_HTML and remove from key.
+    //
+    int mask = PEMIT_HERE | PEMIT_ROOM | PEMIT_HTML;
+    int pemit_flags = key & mask;
+    key &= ~mask;
+
+    int chPoseType = *message;
+    if (':' == chPoseType)
+    {
+        message[0] = ' ';
+    }
+
+    if (  1 == nPlayers
+       && Good_obj(aPlayers[0]))
+    {
+        switch (chPoseType)
+        {
+        case ';':
+            ++message;
+            notify(executor, tprintf("%s senses \"%s%s\"",
+                Moniker(executor), Moniker(aPlayers[0]), message));
+            break;
+
+        case ':':
+            ++message;
+            notify(executor, tprintf("%s senses \"%s %s\"", 
+                Moniker(executor), Moniker(aPlayers[0]), message));
+            break;
+
+        default:
+            notify(executor, tprintf("You whisper \"%s\" to %s.", message,
+                Moniker(aPlayers[0])));
+            break;
+        }
+
+    }
+    else if (1 < nPlayers)
+    {
+        UTF8 *aFriendly = alloc_lbuf("do_pemit_whisper.friendly");
+        UTF8 *pFriendly = aFriendly;
+
+        bool bFirst = true;
+        for (int i = 0; i < nPlayers; i++)
+        {
+            if (NOTHING != aPlayers[i])
+            {
+                if (bFirst)
+                {
+                    bFirst = false;
+                }
+                else if (nPlayers-1 == i) 
+                {
+                    if (2 == nPlayers)
+                    {
+                        safe_copy_buf(T(" and "), 5, aFriendly, &pFriendly);
+                    }
+                    else
+                    {
+                        safe_copy_buf(T(", and "), 6, aFriendly, &pFriendly);
+                    }
+                }
+                else
+                {
+                    safe_copy_buf(T(", "), 2, aFriendly, &pFriendly);
+                }
+                safe_str(Moniker(aPlayers[i]), aFriendly, &pFriendly);
+            }
+        }
+        *pFriendly = '\0';
+
+        switch (chPoseType)
+        {
+        case ';':
+            notify(executor, tprintf("%s sense \"%s%s\"", 
+                aFriendly, Moniker(aPlayers[0]), message));
+            break;
+
+        case ':':
+            notify(executor, tprintf("%s sense \"%s %s\"", 
+                aFriendly, Moniker(aPlayers[0]), message));
+            break;
+
+        default:
+            notify(executor, tprintf("You whisper \"%s\" to %s.", message,
+                aFriendly));
+            break;
+        }
+
+        free_lbuf(aFriendly);
+    }
+
+    for (int i = 0; i < nPlayers; i++)
+    {
+        if (Good_obj(aPlayers[i]))
+        {
+            do_pemit_single(executor, key, false, pemit_flags, 
+                tprintf("#%d", aPlayers[i]), chPoseType, message);
+        }
+    }
+}
+
 
 void do_pemit
 (
@@ -1271,12 +1551,19 @@ void do_pemit
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
 
-    if (nargs < 2)
+    if (  nargs < 2
+       && key != PEMIT_WHISPER)
     {
         return;
     }
 
-    // Decode PEMIT_CONENTS and PEMIT_LIST and remove from key.
+    if (PEMIT_WHISPER == key)
+    {
+        do_pemit_whisper(executor, caller, enactor, key, nargs, recipient, message);
+        return;
+    }
+
+    // Decode PEMIT_CONTENTS and PEMIT_LIST and remove from key.
     //
     bool bDoContents = false;
     if (key & PEMIT_CONTENTS)
@@ -1284,12 +1571,11 @@ void do_pemit
         bDoContents = true;
     }
     bool bDoList = false;
-    if (key & PEMIT_LIST)
+    if (key & (PEMIT_LIST|PEMIT_WHISPER))
     {
         bDoList = true;
     }
     key &= ~(PEMIT_CONTENTS | PEMIT_LIST);
-
 
     // Decode PEMIT_HERE, PEMIT_ROOM, PEMIT_HTML and remove from key.
     //
@@ -1298,7 +1584,8 @@ void do_pemit
     key &= ~mask;
 
     int chPoseType = *message;
-    if (key == PEMIT_WHISPER && chPoseType == ':')
+    if (  PEMIT_WHISPER == key
+       && ':' == chPoseType)
     {
         message[0] = ' ';
     }
