@@ -343,7 +343,6 @@ FUNCTION(fun_trigger)
 FUNCTION(fun_tel)
 {
     UNUSED_PARAMETER(eval);
-    UNUSED_PARAMETER(nfargs);
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
@@ -351,7 +350,29 @@ FUNCTION(fun_tel)
     {
         return;
     }
-    do_teleport(executor, caller, enactor, 0, 2, fargs[0], fargs[1]);
+
+    int key = 0;
+    if (3 <= nfargs)
+    {
+        const UTF8 *p = fargs[2];
+        for (int i = 0; '\0' != p[i] && key != (TELEPORT_QUIET|TELEPORT_LIST); i++)
+        {
+            switch (p[i])
+            {
+            case 'q':
+            case 'Q':
+                key |= TELEPORT_QUIET;
+                break;
+
+            case 'l':
+            case 'L':
+                key |= TELEPORT_LIST;
+                break;
+            }
+        }
+    }
+
+    do_teleport(executor, caller, enactor, key, 2, fargs[0], fargs[1]);
 }
 
 FUNCTION(fun_pemit)
