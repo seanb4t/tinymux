@@ -60,7 +60,7 @@ typedef struct
 static MODULE_INFO *g_pModuleList = NULL;
 static MODULE_INFO *g_pModuleLast = NULL;
 
-static MODULE_INFO  g_NetmuxModule =
+static MODULE_INFO  g_MainModule =
 {
     NULL,
     NULL,
@@ -180,7 +180,7 @@ static int ClassFind(UINT64 cid)
 
 /*! \brief Find which module implements a particular class id.
  *
- * Note that callers may need to test for NetmuxModule and cannot assume the
+ * Note that callers may need to test for MainModule and cannot assume the
  * returned module record is implemented in a module.
  *
  * \param  UINT64   Class ID.
@@ -200,7 +200,8 @@ static MODULE_INFO *ModuleFindFromCID(UINT64 cid)
 
 /*! \brief Find module given its module name.
  *
- * Note that it is not possible to find the 'netmux' module this way.
+ * Note that it is not possible to find the special-case module for the main
+ * program (netmux or stubslave) this way.
  *
  * \param  UTF8[]    Module name.
  * \return           Corresponding module record or NULL if not found.
@@ -222,7 +223,8 @@ static MODULE_INFO *ModuleFindFromName(const UTF8 aModuleName[])
 
 /*! \brief Find module given its filename.
  *
- * Note that it is not possible to find the 'netmux' module this way.
+ * Note that it is not possible to find the special-case module for the main
+ * program (netmux or stubslave) this way.
  *
  * \param  UTF8[]    File name.
  * \return           Corresponding module record or NULL if not found.
@@ -530,48 +532,60 @@ static void ModuleUnload(MODULE_INFO *pModule)
 
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CreateInstance(UINT64 cid, mux_IUnknown *pUnknownOuter, create_context ctx, UINT64 iid, void **ppv)
 {
-    if (0 == (UseSameProcess & ctx))
+    if (  (UseSameProcess & ctx)
+       || (  g_ProcessContext == IsMainProcess
+          && (UseMainProcess & ctx))
+       || (  g_ProcessContext == IsSlaveProcess
+          && (UseSlaveProcess & ctx)))
     {
-        return MUX_E_CLASSNOTAVAILABLE;
+        MODULE_INFO *pModule = ModuleFindFromCID(cid);
+        if (NULL != pModule)
+        {
+            if (pModule == &g_MainModule)
+            {
+                if (NULL == pModule->fpGetClassObject)
+                {
+                    return MUX_E_CLASSNOTAVAILABLE;
+                }
+            }
+            else if (!pModule->bLoaded)
+            {
+                ModuleLoad(pModule);
+                if (!pModule->bLoaded)
+                {
+                    return MUX_E_CLASSNOTAVAILABLE;
+                }
+            }
+
+            mux_IClassFactory *pIClassFactory = NULL;
+            MUX_RESULT mr = pModule->fpGetClassObject(cid, mux_IID_IClassFactory, (void **)&pIClassFactory);
+            if (  MUX_SUCCEEDED(mr)
+               && NULL != pIClassFactory)
+            {
+                mr = pIClassFactory->CreateInstance(pUnknownOuter, iid, ppv);
+                pIClassFactory->Release();
+            }
+            return mr;
+        }
     }
-
-    MODULE_INFO *pModule = ModuleFindFromCID(cid);
-    if (NULL != pModule)
+    else
     {
-        if (pModule == &g_NetmuxModule)
-        {
-            if (NULL == pModule->fpGetClassObject)
-            {
-                return MUX_E_CLASSNOTAVAILABLE;
-            }
-        }
-        else if (!pModule->bLoaded)
-        {
-            ModuleLoad(pModule);
-            if (!pModule->bLoaded)
-            {
-                return MUX_E_CLASSNOTAVAILABLE;
-            }
-        }
-
-        mux_IClassFactory *pIClassFactory = NULL;
-        MUX_RESULT mr = pModule->fpGetClassObject(cid, mux_IID_IClassFactory, (void **)&pIClassFactory);
-        if (  MUX_SUCCEEDED(mr)
-           && NULL != pIClassFactory)
-        {
-            mr = pIClassFactory->CreateInstance(pUnknownOuter, iid, ppv);
-            pIClassFactory->Release();
-        }
-        return mr;
+        // TODO: Implement the out-of-proc case.
+        //
+        // 1. Send cid, pUnknownOuter, and iid to special endpoint '1' on the other side.
+        // 2. Block in pipepump() routine waiting for a proxy cid and marshal packet.
+        // 3. Open IMarhsal interface on local proxy and pass it the marshal packet.
+        // 4. Proxy returns interface pointer which we can then return to our caller.
+        //
     }
     return MUX_E_CLASSNOTAVAILABLE;
 }
 
 /*! \brief Register class ids and factory implemented by the process binary.
  *
- * Modules must pass NULL for pfGetClassObject, but netmux must pass a
- * non-NULL pfGetClassObject.  For modules, the class factory is obtained by
- * using the mux_GetClassObject export.
+ * Modules must pass NULL for pfGetClassObject, but the main program (netmux
+ * or stubslave) must pass a non-NULL pfGetClassObject.  For modules, the
+ * class factory is obtained by using the mux_GetClassObject export.
  *
  * \param int                   Number of class ids to register
  * \param UINT64[]              Class ID table.
@@ -587,10 +601,11 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT
         return MUX_E_INVALIDARG;
     }
 
-    // Modules export a mux_GetClassObject handler, but netmux must pass its
-    // handler in here. Also, it doesn't make sense to load and unload netmux.
-    // But, we want to allow netmux to provide module interfaces, so some
-    // special-casing is done to allow that.
+    // Modules export a mux_GetClassObject handler, but the main program
+    // (netmux or stubslave) must pass its handler in here. Also, it doesn't
+    // make sense to load and unload netmux.  But, we want to allow the main
+    // program to provide module interfaces, so some special-casing is done to
+    // allow that.
     //
     if (  (  NULL != g_pModule
           && NULL != fpGetClassObject)
@@ -619,12 +634,13 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT
     pModule = g_pModule;
     if (NULL == pModule)
     {
-        // These classes are implemented in netmux.
+        // These classes are implemented in the main program (netmux or
+        // stubslave).
         //
-        pModule = &g_NetmuxModule;
+        pModule = &g_MainModule;
         if (NULL != pModule->fpGetClassObject)
         {
-            // Netmux is attempting to register another handler.
+            // The main program is attempting to register another handler.
             //
             return MUX_E_FAIL;
         }
@@ -668,9 +684,10 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT
         g_nClassesAllocated = nAllocate;
     }
 
-    // If these classes are implemented in netmux, save the private GetClassObject method.
+    // If these classes are implemented in the main program (netmux or
+    // stubslave), save the private GetClassObject method.
     //
-    if (&g_NetmuxModule == pModule)
+    if (&g_MainModule == pModule)
     {
         pModule->fpGetClassObject = fpGetClassObject;
     }
@@ -722,10 +739,10 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeClassObjects(int ncid, UINT64
         }
     }
 
-    // If these classes are implemented by netmux, we need to clear the
-    // handler as well.
+    // If these classes are implemented by the main program (netmux or
+    // stubslave), we need to clear the handler as well.
     //
-    if (pModule == &g_NetmuxModule)
+    if (pModule == &g_MainModule)
     {
         pModule->fpGetClassObject = NULL;
     }
@@ -854,7 +871,8 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RemoveModule(const UTF8 aModuleName
 
 /*! \brief Return information about a particular module.
  *
- * Modules do not use this.  Notice that the 'netmux' module is not included.
+ * Modules do not use this.  Notice that the main program module (netmux or
+ * stubslave) is not included.
  *
  * \param UTF8     Filename of dynamic module to remove.
  * \param void **  External module info structure.
@@ -886,7 +904,8 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_ModuleInfo(int iModule, MUX_MODULE_
 
 /*! \brief Periodic service tick for modules.
  *
- * Modules do not use this.  Notice that the 'netmux' module is not unloaded.
+ * Modules do not use this.  Notice that the main program module (netmux or
+ * stubslave) is not included.
  *
  * \return         MUX_RESULT
  */
@@ -912,11 +931,29 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_ModuleTick(void)
     return MUX_S_OK;
 }
 
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx)
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx, PipePump *fpPipePump)
 {
     if (IsUninitialized == g_ProcessContext)
     {
         g_ProcessContext = ctx;
+#if defined(STUB_SLAVE)
+        if (NULL != fpPipePump)
+        {
+            // Save pipepump callback. We need to design in a FIFO write
+            // callback to netmux.  netmux should provide incoming and
+            // outgoing streams.  The pipepump, write, and read packet
+            // handlers need to talk to each other in terms of call-level.
+            // pipepump will block until a certain call-level is handled by a
+            // return. The read packet handler should return the current call
+            // level so that pipepump can determine whether that level has
+            // been achieved.
+            //
+            // The module library should deal with packets, call levels, and
+            // disconnection clean. The main program (stub or netmux) can
+            // handle file descriptors, process spawning, and errors.
+            //
+        }
+#endif
         return MUX_S_OK;
     }
     else
@@ -929,4 +966,20 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_FinalizeModuleLibrary(void)
 {
     g_ProcessContext = IsUninitialized;
     return MUX_S_OK;
+}
+
+/*! \brief Receive and parse data stream from stubslave
+ *
+ * Called from both the main shovechars() loop as well as the pipepump() loop,
+ * this function parses data from the stubslave.  Some potential actions
+ * include unblocking the return of a RPC to the other side as well as calls
+ * from the other side which may ultimate cause other RPC calls to the
+ * stubslave.
+ *
+ * \return         bool    An indication of whether to continue probably.
+ */
+
+extern "C" bool DCL_EXPORT DCL_API mux_ReceiveData(size_t nBuffer, const void *pBuffer)
+{
+    return false;
 }

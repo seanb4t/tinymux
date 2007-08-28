@@ -56,9 +56,11 @@ typedef enum
 #ifdef WIN32
 const UINT64 mux_IID_IUnknown      = 0x0000000100000010i64;
 const UINT64 mux_IID_IClassFactory = 0x0000000100000011i64;
+const UINT64 mux_IID_IMarshal      = 0x0000000100000012i64;
 #else
 const UINT64 mux_IID_IUnknown      = 0x0000000100000010ull;
 const UINT64 mux_IID_IClassFactory = 0x0000000100000011ull;
+const UINT64 mux_IID_IMarshal      = 0x0000000100000012ull;
 #endif
 
 #define interface class
@@ -78,12 +80,22 @@ public:
     virtual MUX_RESULT LockServer(bool bLock) = 0;
 };
 
+interface mux_IMarshal : public mux_IUnknown
+{
+public:
+    virtual MUX_RESULT GetUnmarshalClass(UINT64 riid, marshal_context ctx, UINT64 *pcid) = 0;
+    virtual MUX_RESULT MarshalInterface(size_t *pnBuffer, char **pBuffer, UINT64 riid, marshal_context ctx) = 0;
+    virtual MUX_RESULT UnmarshalInterface(size_t nBuffer, char *pBuffer, UINT64 riid, void **ppv) = 0;
+    virtual MUX_RESULT ReleaseMarshalData(char *pBuffer) = 0;
+    virtual MUX_RESULT DisconnectObject(void) = 0;
+};
+
 extern "C"
 {
     typedef MUX_RESULT DCL_API FPGETCLASSOBJECT(UINT64 cid, UINT64 iid, void **ppv);
 }
 
-// APIs available to netmux and dynamic modules.
+// APIs available to main program (netmux or stubslave) and dynamic modules.
 //
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CreateInstance(UINT64 cid, mux_IUnknown *pUnknownOuter, create_context ctx, UINT64 iid, void **ppv);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT64 acid[], FPGETCLASSOBJECT *pfGetClassObject);
@@ -95,8 +107,13 @@ typedef struct
     bool       bLoaded;
 } MUX_MODULE_INFO;
 
-// APIs intended only for use by netmux.
+typedef void PipePump(void);
+
+// APIs intended only for use by main program (netmux or stubslave).
 //
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx, PipePump *fpPipePump);
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_FinalizeModuleLibrary(void);
+
 #ifdef WIN32
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_AddModule(const UTF8 aModuleName[], const UTF16 aFileName[]);
 #else
@@ -105,5 +122,5 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_AddModule(const UTF8 aModuleName[],
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RemoveModule(const UTF8 aModuleName[]);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_ModuleInfo(int iModule, MUX_MODULE_INFO *pModuleInfo);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_ModuleTick(void);
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx);
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_FinalizeModuleLibrary(void);
+
+extern "C" bool DCL_EXPORT DCL_API mux_ReceiveData(size_t nBuffer, const void *pBuffer);
