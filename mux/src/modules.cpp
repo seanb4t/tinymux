@@ -15,10 +15,6 @@
 
 #if defined(HAVE_DLOPEN) || defined(WIN32)
 
-#ifdef HAVE_DLOPEN
-#include <dlfcn.h>
-#endif // HAVE_DLOPEN
-
 #include "libmux.h"
 #include "modules.h"
 
@@ -57,7 +53,16 @@ extern "C" MUX_RESULT DCL_API netmux_GetClassObject(UINT64 cid, UINT64 iid, void
 
 void init_modules(void)
 {
-    MUX_RESULT mr = mux_RegisterClassObjects(NUM_CIDS, netmux_cids, netmux_GetClassObject);
+#ifdef STUB_SLAVE
+    MUX_RESULT mr = mux_InitModuleLibrary(IsMainProcess, pipepump);
+#else
+    MUX_RESULT mr = mux_InitModuleLibrary(IsMainProcess, NULL);
+#endif
+    if (MUX_SUCCEEDED(mr))
+    {
+        mr = mux_RegisterClassObjects(NUM_CIDS, netmux_cids, netmux_GetClassObject);
+    }
+
     if (MUX_FAILED(mr))
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
@@ -87,9 +92,10 @@ void final_modules(void)
         log_printf("Revoked netmux modules.", mr);
         ENDLOG;
     }
+    mux_FinalizeModuleLibrary();
 }
 
-// Log component which is not directly accessible.
+// CLog component which is not directly accessible.
 //
 CLog::CLog(void) : m_cRef(1)
 {
@@ -193,7 +199,7 @@ void CLog::end_log(void)
     ::end_log();
 }
 
-// Factory for Log component which is not directly accessible.
+// Factory for CLog component which is not directly accessible.
 //
 CLogFactory::CLogFactory(void) : m_cRef(1)
 {
