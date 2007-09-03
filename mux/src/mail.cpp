@@ -4614,6 +4614,7 @@ void do_malias
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
@@ -4622,6 +4623,7 @@ void do_malias
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
 
     if (!mudconf.have_mailer)
@@ -4668,6 +4670,7 @@ void do_mail
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
@@ -4676,6 +4679,7 @@ void do_mail
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
 
     if (!mudconf.have_mailer)
