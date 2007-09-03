@@ -2042,7 +2042,9 @@ void do_addcom
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *channel
+    UTF8 *channel,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
@@ -2050,6 +2052,8 @@ void do_addcom
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -2486,13 +2490,17 @@ void do_comtitle
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -2556,10 +2564,10 @@ void do_comlist
     dbref caller,
     dbref enactor,
     int   eval,
-    int key,
-    UTF8* pattern,
+    int   key,
+    UTF8 *pattern,
     const UTF8 *cargs[],
-    int ncargs
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
@@ -3017,13 +3025,17 @@ void do_editchannel
     int   flag,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -3259,13 +3271,17 @@ void do_cemit
     int   key,
     int   nargs,
     UTF8 *chan,
-    UTF8 *text
+    UTF8 *text,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -3305,11 +3321,15 @@ void do_chopen
     int   key,
     int   nargs,
     UTF8 *chan,
-    UTF8 *value
+    UTF8 *value,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -3432,13 +3452,17 @@ void do_chboot
     int   key,
     int   nargs,
     UTF8 *channel,
-    UTF8 *victim
+    UTF8 *victim,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // I sure hope it's not going to be that long.
     //
