@@ -36,6 +36,7 @@ CMD_ONE_ARG(do_delcom);         /* deletes a comalias */
 /* from mail.cpp */
 
 CMD_TWO_ARG(do_mail);           /* mail command */
+CMD_TWO_ARG(do_folder);    /* mail folder commands */
 CMD_TWO_ARG(do_malias);         /* mail alias command */
 CMD_ONE_ARG(do_prepend);
 CMD_ONE_ARG(do_postpend);
