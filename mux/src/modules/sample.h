@@ -22,10 +22,11 @@ public:
     virtual int Add(int a, int b) = 0;
 };
 
-class CSample : public ISample, public mux_ISpectator
+class CSample : public ISample, public mux_IServerEventsSink
 {
 private:
-    mux_ILog *m_pILog;
+    mux_ILog                 *m_pILog;
+    mux_IServerEventsControl *m_pIServerEventsControl;
 
 public:
     // mux_IUnknown
@@ -34,26 +35,27 @@ public:
     virtual UINT32     AddRef(void);
     virtual UINT32     Release(void);
 
-    // mux_ISpectator
+    // mux_IServerEventsSink
     //
     virtual void startup(void);
     virtual void presync_database(void);
     virtual void presync_database_sigsegv(void);
     virtual void dump_database(int dump_type);
     virtual void dump_complete_signal(void);
-    virtual void local_shutdown(void);
-    virtual void local_dbck(void);
-    virtual void local_connect(dbref player, int isnew, int num);
-    virtual void local_disconnect(dbref player, int num);
-    virtual void local_data_create(dbref object);
-    virtual void local_data_clone(dbref clone, dbref source);
-    virtual void local_data_free(dbref object);
+    virtual void shutdown(void);
+    virtual void dbck(void);
+    virtual void connect(dbref player, int isnew, int num);
+    virtual void disconnect(dbref player, int num);
+    virtual void data_create(dbref object);
+    virtual void data_clone(dbref clone, dbref source);
+    virtual void data_free(dbref object);
 
     // ISample
     //
     virtual int Add(int a, int b);
 
     CSample(void);
+    MUX_RESULT FinalConstruct(void);
     virtual ~CSample();
 
 private:
