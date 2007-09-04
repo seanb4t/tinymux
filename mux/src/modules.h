@@ -13,15 +13,17 @@
 #if defined(HAVE_DLOPEN) || defined(WIN32)
 
 #ifdef WIN32
-const UINT64 CID_Log                = 0x000000020CE18E7Ai64;
-const UINT64 IID_ILog               = 0x000000028B9DC13Ai64;
-const UINT64 CID_Spectator          = 0x00000002A5080812i64;
-const UINT64 IID_ISpectator         = 0x00000002F0F2753Fi64;
+const UINT64 CID_Log                   = 0x000000020CE18E7Ai64;
+const UINT64 IID_ILog                  = 0x000000028B9DC13Ai64;
+const UINT64 CID_ServerEventsSource    = 0x00000002A5080812i64;
+const UINT64 IID_IServerEventsSink     = 0x00000002F0F2753Fi64;
+const UINT64 IID_IServerEventsControl  = 0x000000026EE5256Ei64;
 #else
-const UINT64 CID_Log                = 0x000000020CE18E7Aull;
-const UINT64 IID_ILog               = 0x000000028B9DC13Aull;
-const UINT64 CID_Spectator          = 0x00000002A5080812ull;
-const UINT64 IID_ISpectator         = 0x00000002F0F2753Full;
+const UINT64 CID_Log                   = 0x000000020CE18E7Aull;
+const UINT64 IID_ILog                  = 0x000000028B9DC13Aull;
+const UINT64 CID_ServerEventsSource    = 0x00000002A5080812ull;
+const UINT64 IID_IServerEventsSink     = 0x00000002F0F2753Full;
+const UINT64 IID_IServerEventsControl  = 0x000000026EE5256Eull;
 #endif
 
 interface mux_ILog : public mux_IUnknown
@@ -89,7 +91,7 @@ private:
     UINT32 m_cRef;
 };
 
-interface mux_ISpectator : public mux_IUnknown
+interface mux_IServerEventsSink : public mux_IUnknown
 {
 public:
     // Called after all normal MUX initialization is complete.
@@ -140,37 +142,93 @@ public:
     // Called when the game is shutting down, after the game database has
     // been saved but prior to the logfiles being closed.
     //
-    virtual void local_shutdown(void) = 0;
+    virtual void shutdown(void) = 0;
     
     // Called after the database consistency check is completed.   Add
     // checks for local data consistency here.
     //
-    virtual void local_dbck(void) = 0;
+    virtual void dbck(void) = 0;
 
     // Called when a player connects or creates at the connection screen.
     // isnew of 1 indicates it was a creation, 0 is for a connection.
     // num indicates the number of current connections for player.
     //
-    virtual void local_connect(dbref player, int isnew, int num) = 0;
+    virtual void connect(dbref player, int isnew, int num) = 0;
 
     // Called when player disconnects from the game.  The parameter 'num' is
     // the number of connections the player had upon being disconnected.
     // Any value greater than 1 indicates multiple connections.
     //
-    virtual void local_disconnect(dbref player, int num) = 0;
+    virtual void disconnect(dbref player, int num) = 0;
 
     // Called after any object type is created.
     //
-    virtual void local_data_create(dbref object) = 0;
+    virtual void data_create(dbref object) = 0;
 
     // Called when an object is cloned.  clone is the new object created
     // from source.
     //
-    virtual void local_data_clone(dbref clone, dbref source) = 0;
+    virtual void data_clone(dbref clone, dbref source) = 0;
 
     // Called when the object is truly destroyed, not just set GOING
     //
-    virtual void local_data_free(dbref object) = 0;
+    virtual void data_free(dbref object) = 0;
+};
+
+interface mux_IServerEventsControl : public mux_IUnknown
+{
+public:
+    virtual MUX_RESULT Advise(mux_IServerEventsSink *pIServerEvents) = 0;
+};
+
+typedef struct ServerEventsSinkNode
+{
+    mux_IServerEventsSink        *pSink;
+    struct ServerEventsSinkNode  *pNext;
+} ServerEventsSinkNode;
+
+extern ServerEventsSinkNode *g_pServerEventsSinkListHead;
+
+class CServerEventsSource : public mux_IServerEventsControl
+{
+public:
+    // mux_IUnknown
+    //
+    virtual MUX_RESULT QueryInterface(UINT64 iid, void **ppv);
+    virtual UINT32     AddRef(void);
+    virtual UINT32     Release(void);
+
+    // mux_IServerEventsControl
+    //
+    virtual MUX_RESULT Advise(mux_IServerEventsSink *pIServerEvents);
+
+    CServerEventsSource(void);
+    virtual ~CServerEventsSource();
+
+private:
+    UINT32 m_cRef;
+    mux_IServerEventsSink *m_pSink;
+};
+
+class CServerEventsSourceFactory : public mux_IClassFactory
+{
+public:
+    // mux_IUnknown
+    //
+    virtual MUX_RESULT QueryInterface(UINT64 iid, void **ppv);
+    virtual UINT32     AddRef(void);
+    virtual UINT32     Release(void);
+
+    // mux_IClassFactory
+    //
+    virtual MUX_RESULT CreateInstance(mux_IUnknown *pUnknownOuter, UINT64 iid, void **ppv);
+    virtual MUX_RESULT LockServer(bool bLock);
+
+    CServerEventsSourceFactory(void);
+    virtual ~CServerEventsSourceFactory();
+
+private:
+    UINT32 m_cRef;
 };
 
 extern void init_modules(void);
