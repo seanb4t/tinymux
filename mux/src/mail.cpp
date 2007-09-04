@@ -927,6 +927,23 @@ static int player_folder(dbref player)
     return number;
 }
 
+
+// List mail stats for all current folders
+//
+static void DoListMailBrief(dbref player)
+{
+    for(int folder = 0; folder < MAX_FOLDERS; folder++)
+    {
+        check_mail(player, folder, true);
+    }
+
+    int current_folder = player_folder(player);
+
+    raw_notify(player, tprintf("MAIL: Current folder is %d [%s].",
+                current_folder, get_folder_name(player, current_folder)));
+}
+
+
 // Change or rename a folder
 //
 static void do_mail_change_folder(dbref player, UTF8 *fld, UTF8 *newname)
@@ -937,15 +954,10 @@ static void do_mail_change_folder(dbref player, UTF8 *fld, UTF8 *newname)
     {
         // Check mail in all folders
         //
-        for (pfld = 0; pfld <= MAX_FOLDERS; pfld++)
-        {
-            check_mail(player, pfld, true);
-        }
-        pfld = player_folder(player);
-        raw_notify(player, tprintf("MAIL: Current folder is %d [%s].",
-                       pfld, get_folder_name(player, pfld)));
+        DoListMailBrief(player);
         return;
     }
+
     pfld = parse_folder(player, fld);
     if (pfld < 0)
     {
@@ -1405,8 +1417,33 @@ static UTF8 *status_string(struct mail *mp)
     return tbuf1;
 }
 
-static void do_mail_read(dbref player, UTF8 *msglist)
+static void do_mail_read(dbref player, UTF8 *arg1, UTF8 *arg2)
 {
+    UTF8 *msglist;
+    int folder = player_folder(player);
+    int original_folder = folder;
+
+    // Check the argument list, if arg2 is present and valid, then lookup
+    // mail in the arg1 folder rather than the default folder.
+    //
+    if (  NULL == arg2
+       || '\0' == arg2[0])
+    {
+        msglist = arg1;
+    }
+    else
+    {
+        folder = parse_folder(player, arg1);
+
+        if (-1 == folder)
+        {
+            raw_notify(player, T("MAIL: No such folder."));
+            return;
+        }
+        set_player_folder(player, folder);
+        msglist = arg2;
+    }
+
     struct mail_selector ms;
     if (!parse_msglist(msglist, &ms, player))
     {
@@ -1416,7 +1453,6 @@ static void do_mail_read(dbref player, UTF8 *msglist)
     UTF8 *status, *names;
     int i = 0, j = 0;
     UTF8 *buff = alloc_lbuf("do_mail_read.1");
-    int folder = player_folder(player);
 
     MailList ml(player);
     struct mail *mp;
@@ -1469,6 +1505,13 @@ static void do_mail_read(dbref player, UTF8 *msglist)
         }
     }
     free_lbuf(buff);
+
+    // If the folder was changed, restore the original folder setting
+    //
+    if (folder != original_folder)
+    {
+        set_player_folder(player, original_folder);
+    }
 
     if (!j)
     {
@@ -1628,8 +1671,39 @@ static UTF8 *mail_list_time(const UTF8 *the_time)
     return new0;
 }
 
-static void do_mail_list(dbref player, UTF8 *msglist, bool sub)
+static void do_mail_list(dbref player, UTF8 *arg1, UTF8 *arg2, bool sub)
 {
+    UTF8 *msglist;
+    int folder = player_folder(player);
+    int original_folder = folder;
+
+    // Check the argument list, if arg2 is present and valid, then lookup
+    // mail in the arg1 folder rather than the default folder.
+    //
+    if (  NULL == arg2
+       || '\0' == arg2[0])
+    {
+        msglist = arg1;
+    }
+    else
+    {
+        folder = parse_folder(player, arg1);
+
+        if (-1 == folder)
+        {
+            raw_notify(player, T("MAIL: No such folder."));
+            return;
+        }
+        set_player_folder(player, folder);
+        msglist = arg2;
+        if (  '\0' != msglist
+           && '*' == msglist[0])
+        {
+            msglist[0] = '\0';
+        }
+        sub = true;
+    }
+
     struct mail_selector ms;
 
     if (!parse_msglist(msglist, &ms, player))
@@ -1639,7 +1713,6 @@ static void do_mail_list(dbref player, UTF8 *msglist, bool sub)
     int i = 0;
     UTF8 *time;
     UTF8 szSubjectBuffer[MBUF_SIZE];
-    int folder = player_folder(player);
 
     notify(player,
         tprintf("---------------------------   MAIL: Folder %d   ----------------------------", folder));
@@ -1677,6 +1750,11 @@ static void do_mail_list(dbref player, UTF8 *msglist, bool sub)
         }
     }
     notify(player, (UTF8 *)DASH_LINE);
+
+    if (folder != original_folder)
+    {
+        set_player_folder(player, original_folder);
+    }
 }
 
 void do_mail_purge(dbref player)
@@ -2783,7 +2861,7 @@ static void do_mail_stub(dbref player, UTF8 *arg1, UTF8 *arg2)
 
         // Just the "@mail" command.
         //
-        do_mail_list(player, arg1, true);
+        do_mail_list(player, arg1, NULL, true);
         return;
     }
 
@@ -2821,11 +2899,11 @@ static void do_mail_stub(dbref player, UTF8 *arg1, UTF8 *arg2)
         if (  mux_isdigit(*arg1)
            && !strchr((char *)arg1, '-'))
         {
-            do_mail_read(player, arg1);
+            do_mail_read(player, arg1, NULL);
         }
         else
         {
-            do_mail_list(player, arg1, true);
+            do_mail_list(player, arg1, NULL, true);
         }
         return;
     }
@@ -3719,7 +3797,7 @@ static void do_malias_list_all(dbref player)
         }
 
         const UTF8 *pSpaces = Spaces(40 - m->desc_width);
-        
+
         UTF8 *p = tprintf( "%-12s %s%s %-15.15s",
             m->name, m->desc, pSpaces, Moniker(m->owner));
         raw_notify(player, p);
@@ -4716,10 +4794,10 @@ void do_mail
         do_mail_change_folder(executor, arg1, arg2);
         break;
     case MAIL_LIST:
-        do_mail_list(executor, arg1, false);
+        do_mail_list(executor, arg1, arg2, false);
         break;
     case MAIL_READ:
-        do_mail_read(executor, arg1);
+        do_mail_read(executor, arg1, arg2);
         break;
     case MAIL_CLEAR:
         do_mail_clear(executor, arg1);
@@ -4929,4 +5007,120 @@ void MailList::RemoveAll(void)
         delete mi;
     }
     m_mi = NULL;
+}
+
+static void ListMailInFolderNumber(dbref player, int folder_num, UTF8 *msglist)
+{
+    int original_folder = player_folder(player);
+    set_player_folder(player, folder_num);
+
+    struct mail_selector ms;
+
+    if (!parse_msglist(msglist, &ms, player))
+    {
+        return;
+    }
+    int i = 0;
+    UTF8 *time;
+    UTF8 szSubjectBuffer[MBUF_SIZE];
+
+    notify(player,
+        tprintf("---------------------------   MAIL: Folder %d   ----------------------------", folder_num));
+
+    MailList ml(player);
+    struct mail *mp;
+    for (mp = ml.FirstItem(); !ml.IsEnd(); mp = ml.NextItem())
+    {
+        if (Folder(mp) == folder_num)
+        {
+            i++;
+            if (mail_match(mp, ms, i))
+            {
+                time = mail_list_time(mp->time);
+                size_t nSize = MessageFetchSize(mp->number);
+
+                UTF8 szFromName[MBUF_SIZE];
+                trimmed_name(mp->from, szFromName, 16, 16, 0);
+
+                StripTabsAndTruncate(mp->subject, szSubjectBuffer,
+                        MBUF_SIZE-1, 25);
+
+                notify(player, tprintf("[%s] %-3d (%4d) From: %s Sub: %s",
+                            status_chars(mp), i, nSize, szFromName,
+                            szSubjectBuffer));
+                free_lbuf(time);
+            }
+        }
+    }
+    notify(player, (UTF8 *)DASH_LINE);
+
+    set_player_folder(player, original_folder);
+
+}
+
+static void ListMailInFolder(dbref player, UTF8 *folder_name, UTF8 *msglist)
+{
+    int folder = 0;
+
+    if (  NULL != folder_name
+       && '\0' != folder_name[0])
+    {
+        folder = player_folder(player);
+    }
+    else
+    {
+        folder = parse_folder(player, folder_name);
+    }
+
+    if (-1 == folder)
+    {
+        raw_notify(player, T("MAIL: No such folder."));
+        return;
+    }
+    ListMailInFolderNumber(player, folder, msglist);
+}
+
+void do_folder
+(
+    dbref executor,
+    dbref caller,
+    dbref enactor,
+    int   key,
+    int   nargs,
+    UTF8 *arg1,
+    UTF8 *arg2
+)
+{
+
+    switch(key)
+    {
+    case FOLDER_FILE:
+        do_mail_file(executor, arg1, arg2);
+        break;
+    case FOLDER_LIST:
+        ListMailInFolder(executor, arg1, arg2);
+        break;
+    case FOLDER_READ:
+        do_mail_read(executor, arg1, arg2);
+        break;
+    case FOLDER_SET:
+        do_mail_change_folder(executor, arg1, arg2);
+        break;
+
+    default:
+        if (  NULL == arg1
+           && '\0' == *arg1)
+        {
+            DoListMailBrief(executor);
+        }
+        else if (2 == nargs)
+        {
+            do_mail_read(executor, arg1, arg2);
+        }
+        else
+        {
+            do_mail_change_folder(executor, arg1, arg2);
+        }
+        break;
+    }
 }
