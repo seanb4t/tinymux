@@ -52,7 +52,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_GetClassObject(UINT64 cid, UINT64 i
         {
             ; // Nothing.
         }
-        
+
         if (NULL == pSampleFactory)
         {
             return MUX_E_OUTOFMEMORY;
@@ -109,19 +109,24 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_Unregister(void)
     return mux_RevokeClassObjects(NUM_CIDS, sample_cids);
 }
 
-#define LOG_ALWAYS      0x80000000  /* Always log it */
-
 // Sample component which is not directly accessible.
 //
 CSample::CSample(void) : m_cRef(1)
 {
     g_cComponents++;
-
     m_pILog = NULL;
+    m_pIServerEventsControl = NULL;
+}
 
-    // Use of CLog provided by netmux.
+#define LOG_ALWAYS      0x80000000  /* Always log it */
+
+MUX_RESULT CSample::FinalConstruct(void)
+{
+    MUX_RESULT mr;
+
+    // Use CLog provided by netmux.
     //
-    MUX_RESULT mr = mux_CreateInstance(CID_Log, NULL, UseSameProcess, IID_ILog, (void **)&m_pILog);
+    mr = mux_CreateInstance(CID_Log, NULL, UseSameProcess, IID_ILog, (void **)&m_pILog);
     if (MUX_SUCCEEDED(mr))
     {
         if (m_pILog->start_log(LOG_ALWAYS, T("INI"), T("INFO")))
@@ -130,6 +135,21 @@ CSample::CSample(void) : m_cRef(1)
             m_pILog->end_log();
         }
     }
+
+    // Use CServerEventsSource to hook up our IServerEventsSink callback interface.
+    //
+    mux_IServerEventsSink *pIServerEventsSink = NULL;
+    mr = QueryInterface(IID_IServerEventsSink, (void **)&pIServerEventsSink);
+    if (MUX_SUCCEEDED(mr))
+    {
+        mr = mux_CreateInstance(CID_ServerEventsSource, NULL, UseSameProcess, IID_IServerEventsControl, (void **)&m_pIServerEventsControl);
+        if (MUX_SUCCEEDED(mr))
+        {
+            m_pIServerEventsControl->Advise(pIServerEventsSink);
+        }
+        pIServerEventsSink->Release();
+    }
+    return mr;
 }
 
 CSample::~CSample()
@@ -146,6 +166,12 @@ CSample::~CSample()
         m_pILog = NULL;
     }
 
+    if (NULL != m_pIServerEventsControl)
+    {
+        m_pIServerEventsControl->Release();
+        m_pIServerEventsControl = NULL;
+    }
+
     g_cComponents--;
 }
 
@@ -159,9 +185,9 @@ MUX_RESULT CSample::QueryInterface(UINT64 iid, void **ppv)
     {
         *ppv = static_cast<ISample *>(this);
     }
-    else if (IID_ISpectator == iid)
+    else if (IID_IServerEventsSink == iid)
     {
-        *ppv = static_cast<mux_ISpectator *>(this);
+        *ppv = static_cast<mux_IServerEventsSink *>(this);
     }
     else
     {
@@ -259,12 +285,22 @@ MUX_RESULT CSampleFactory::CreateInstance(mux_IUnknown *pUnknownOuter, UINT64 ii
         ; // Nothing.
     }
 
+    MUX_RESULT mr;
     if (NULL == pSample)
     {
         return MUX_E_OUTOFMEMORY;
     }
+    else
+    {
+        mr = pSample->FinalConstruct();
+        if (MUX_FAILED(mr))
+        {
+            pSample->Release();
+            return mr;
+        }
+    }
 
-    MUX_RESULT mr = pSample->QueryInterface(iid, ppv);
+    mr = pSample->QueryInterface(iid, ppv);
     pSample->Release();
     return mr;
 }
@@ -286,7 +322,7 @@ MUX_RESULT CSampleFactory::LockServer(bool bLock)
 //
 void CSample::startup(void)
 {
-    m_pILog->log_printf("Sample module sees CSample::startup event.");
+    m_pILog->log_printf("Sample module sees CSample::startup event." ENDLINE);
 }
 
 // This is called prior to the game syncronizing its own state to its own
@@ -297,6 +333,7 @@ void CSample::startup(void)
 //
 void CSample::presync_database(void)
 {
+    m_pILog->log_printf("Sample module sees CSample::presync_database event." ENDLINE);
 }
 
 // Like the above routine except that it called from the SIGSEGV handler.
@@ -305,6 +342,7 @@ void CSample::presync_database(void)
 //
 void CSample::presync_database_sigsegv(void)
 {
+    m_pILog->log_printf("Sample module sees CSample::presync_database_sigsegv event." ENDLINE);
 }
 
 // This is called prior to the game database writing out it's own
@@ -325,6 +363,7 @@ void CSample::presync_database_sigsegv(void)
 //
 void CSample::dump_database(int dump_type)
 {
+    m_pILog->log_printf("Sample module sees CSample::dump_database event." ENDLINE);
 }
 
 // The function is called when the dumping process has completed.
@@ -336,53 +375,61 @@ void CSample::dump_database(int dump_type)
 //
 void CSample::dump_complete_signal(void)
 {
+    m_pILog->log_printf("Sample module sees CSample::dump_complete_signal event." ENDLINE);
 }
 
 // Called when the game is shutting down, after the game database has
 // been saved but prior to the logfiles being closed.
 //
-void CSample::local_shutdown(void)
+void CSample::shutdown(void)
 {
+    m_pILog->log_printf("Sample module sees CSample::shutdown event." ENDLINE);
 }
 
 // Called after the database consistency check is completed.   Add
 // checks for local data consistency here.
 //
-void CSample::local_dbck(void)
+void CSample::dbck(void)
 {
+    m_pILog->log_printf("Sample module sees CSample::dbck event." ENDLINE);
 }
 
 // Called when a player connects or creates at the connection screen.
 // isnew of 1 indicates it was a creation, 0 is for a connection.
 // num indicates the number of current connections for player.
 //
-void CSample::local_connect(dbref player, int isnew, int num)
+void CSample::connect(dbref player, int isnew, int num)
 {
+    m_pILog->log_printf("Sample module sees CSample::connect event." ENDLINE);
 }
 
 // Called when player disconnects from the game.  The parameter 'num' is
 // the number of connections the player had upon being disconnected.
 // Any value greater than 1 indicates multiple connections.
 //
-void CSample::local_disconnect(dbref player, int num)
+void CSample::disconnect(dbref player, int num)
 {
+    m_pILog->log_printf("Sample module sees CSample::disconnect event." ENDLINE);
 }
 
 // Called after any object type is created.
 //
-void CSample::local_data_create(dbref object)
+void CSample::data_create(dbref object)
 {
+    m_pILog->log_printf("Sample module sees CSample::data_create event." ENDLINE);
 }
 
 // Called when an object is cloned.  clone is the new object created
 // from source.
 //
-void CSample::local_data_clone(dbref clone, dbref source)
+void CSample::data_clone(dbref clone, dbref source)
 {
+    m_pILog->log_printf("Sample module sees CSample::data_clone event." ENDLINE);
 }
 
 // Called when the object is truly destroyed, not just set GOING
 //
-void CSample::local_data_free(dbref object)
+void CSample::data_free(dbref object)
 {
+    m_pILog->log_printf("Sample module sees CSample::data_free event." ENDLINE);
 }
