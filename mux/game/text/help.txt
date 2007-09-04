@@ -1734,6 +1734,31 @@ Related Topics: @name.
 
   Related Topics: @search.
 
+& @FOLDER
+@FOLDER
+
+  COMMAND:  @folder[/<switch>] [arg1]=[arg2]
+
+  @folder operates on @mail folders to view, set, and read mail messages
+  within folders.  The available switches are /file, /list, /read, and /set.
+
+  Usage:
+
+  @folder                         - Lists mail stats for all @mail folders.
+  @folder <folder>                - Sets the active folder to <folder>.
+  @folder <folder>=<message list> - Reads the <message list> in folder.
+  @folder/file <folder>=<msgs>    - Files <msgs> in <folder> like @mail/file.
+  @folder/list <folder>[=<msgs>]  - Lists <msgs> if provided from <folder> or
+                                    all messages in <folder>.
+  @folder/read <folder>=<mgs>     - Display <msgs> in <folder>
+  @folder/set  <folder>[=<name>]  - Set the active folder number if no name is
+                                    given, or give <folder> <name>.
+
+  Other than @folder/set or @folder <folder>, the @folder command does not
+  change the active folder for @mail.
+
+  Related Topics:  @mail, mail-folders
+
 & @FORCE
 @FORCE
 
@@ -2507,6 +2532,7 @@ Related Topics: @name.
   Related Topics:
     mail-sending    mail-reading     mail-folders      mail-other
     mail-admin      @malias          mail-reviewing    mail-examples
+    @folder
 
 & @MAILSUCC
 @MAILSUCC
@@ -9281,7 +9307,7 @@ MAIL-OTHER
 
   @mail/purge
         Actually deletes all messages marked for clearing with
-        @mail/clear. This is done automatically when you log out.
+        @mail/clear.  This is done automatically when you log out.
 
   @mail/tag [<msg-list | all>]
   @mail/untag [<msg-list> | all>]
@@ -9308,18 +9334,20 @@ MAIL-OTHER (continued)
 MAIL-READING
 
   @mail <msg #>
-  @mail/read <msg-list>
+  @mail/read [<folder>=]<msg-list>
         This displays messages which match the msg# or msg-list from
-        your current folder.
+        your current folder. If <folder> is specified, mail is read from
+        that folder without changing the current folder.
 
   @mail
   @mail <msg-list, but not a single msg #>
         This gives a brief list of all mail in the current folder,
         with sender name, a list of receiving players, subject, and
         message status.
-  @mail/list [<msg-list>]
-        This gives the same list, but with time sent instead of subject.
-        The status field is a set of characters (ex: NC-UF+) which mean:
+  @mail/list [<folder>=][<msg-list>]
+        Without <folder>, this gives the same list, but with time sent instead
+        of subject.  The status field is a set of characters (ex: NC-UF+) which
+        mean:
                 N = New (unread) message
                 C = Cleared message
                 U = Urgent message
@@ -12968,8 +12996,8 @@ TEL()
   comes before and after the '=' sign. Returns nothing. This is a side
   effect function, and should only be used when necessary.
 
-  The <flags> argument can contain 'q' and/or 'l' to allow the behavior of 
-  @teleport/quiet and @teleport/list, respectively.   
+  The <flags> argument can contain 'q' and/or 'l' to allow the behavior of
+  @teleport/quiet and @teleport/list, respectively.
 
   Related Topics: @teleport
 

@@ -224,6 +224,7 @@ struct confdata
     UTF8    mail_sendname[128];
     UTF8    mail_subject[128];
 
+    UTF8    crash_msg[GBUF_SIZE];       /* Notification message on signals */
     UTF8    downmotd_msg[GBUF_SIZE];    /* Settable 'logins disabled' message */
     UTF8    fullmotd_msg[GBUF_SIZE];    /* Settable 'Too many players' message */
     UTF8    motd_msg[GBUF_SIZE];    /* Wizard-settable login message */
@@ -337,7 +338,7 @@ struct statedata
     bool bStackLimitReached;    // Was stack slammed?
     bool bStandAlone;           // Are we running in dbconvert mode.
     bool panicking;             // are we in the middle of dying horribly?
-    bool shutdown_flag;         /* Should interface be shut down? */
+    bool shutdown_flag;         // Should interface be shut down?
     bool inpipe;                // Are we collecting output for a pipe?
 #ifndef WIN32
     bool          restarting;   // Are we restarting?
