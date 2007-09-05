@@ -467,13 +467,16 @@ static int mod_email_sock_close(SOCKET sock)
     return SOCKET_CLOSE(sock);
 }
 
-void do_plusemail(dbref executor, dbref cause, dbref enactor, int key,
-                 int nfargs, UTF8 *arg1, UTF8 *arg2)
+void do_plusemail(dbref executor, dbref cause, dbref enactor, int eval, int key,
+                 int nargs, UTF8 *arg1, UTF8 *arg2, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(cause);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
-    UNUSED_PARAMETER(nfargs);
+    UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 inputline[LBUF_SIZE];
 
