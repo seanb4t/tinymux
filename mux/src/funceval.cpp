@@ -286,7 +286,6 @@ static bool check_command(dbref player, const UTF8 *name, UTF8 *buff, UTF8 **buf
 
 FUNCTION(fun_link)
 {
-    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nfargs);
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
@@ -295,7 +294,7 @@ FUNCTION(fun_link)
     {
         return;
     }
-    do_link(executor, caller, enactor, 0, 2, fargs[0], fargs[1]);
+    do_link(executor, caller, enactor, eval, 0, 2, fargs[0], fargs[1], NULL, 0);
 }
 
 #if defined(FIRANMUX)
@@ -346,7 +345,6 @@ FUNCTION(fun_trigger)
 
 FUNCTION(fun_tel)
 {
-    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
@@ -376,7 +374,7 @@ FUNCTION(fun_tel)
         }
     }
 
-    do_teleport(executor, caller, enactor, key, 2, fargs[0], fargs[1]);
+    do_teleport(executor, caller, enactor, eval, key, 2, fargs[0], fargs[1], NULL, 0);
 }
 
 FUNCTION(fun_pemit)
@@ -422,7 +420,7 @@ FUNCTION(fun_emit)
     {
         return;
     }
-    do_say(executor, caller, enactor, 0, SAY_EMIT, fargs[0]);
+    do_say(executor, caller, enactor, 0, SAY_EMIT, fargs[0], NULL, 0);
 }
 
 FUNCTION(fun_remit)
@@ -443,7 +441,6 @@ FUNCTION(fun_remit)
 
 FUNCTION(fun_cemit)
 {
-    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
@@ -451,7 +448,7 @@ FUNCTION(fun_cemit)
     {
         return;
     }
-    do_cemit(executor, caller, enactor, 0, nfargs, fargs[0], fargs[1]);
+    do_cemit(executor, caller, enactor, eval, 0, nfargs, fargs[0], fargs[1], NULL, 0);
 }
 
 // ------------------------------------------------------------------------
@@ -582,7 +579,7 @@ FUNCTION(fun_destroy)
     {
         return;
     }
-    do_destroy(executor, caller, enactor, 0, DEST_ONE, fargs[0]);
+    do_destroy(executor, caller, enactor, 0, DEST_ONE, fargs[0], NULL, 0);
 }
 
 FUNCTION(fun_textfile)

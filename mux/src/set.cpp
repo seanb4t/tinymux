@@ -58,16 +58,22 @@ void do_chzone
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *newobj
+    UTF8 *newobj,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_zones)
     {
@@ -159,15 +165,21 @@ void do_name
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *newname
+    UTF8 *newname,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing = match_controlled(executor, name);
     if (thing == NOTHING)
@@ -270,16 +282,22 @@ void do_alias
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *alias
+    UTF8 *alias,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing = match_controlled(executor, name);
     if (thing == NOTHING)
@@ -382,16 +400,22 @@ void do_forwardlist
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *target,
-    UTF8 *newlist
+    UTF8 *newlist,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing = match_controlled(executor, target);
     if (thing == NOTHING)
@@ -442,15 +466,21 @@ void do_lock
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *keytext
+    UTF8 *keytext,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing;
     ATTR *ap;
@@ -534,11 +564,13 @@ void do_lock
  * * Remove a lock from an object of attribute.
  */
 
-void do_unlock(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name)
+void do_unlock(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing;
     ATTR *ap;
@@ -596,12 +628,14 @@ void do_unlock(dbref executor, dbref caller, dbref enactor, int eval, int key, U
  * * do_unlink: Unlink an exit from its destination or remove a dropto.
  */
 
-void do_unlink(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name)
+void do_unlink(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref exit;
 
@@ -780,15 +814,21 @@ void do_chown
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *newown
+    UTF8 *newown,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref nOwnerOrig, nOwnerNew, thing;
     bool bDoit;
@@ -1111,15 +1151,21 @@ void do_set
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *flagname
+    UTF8 *flagname,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing, aowner;
     int aflags;
@@ -1276,15 +1322,21 @@ void do_power
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *flag
+    UTF8 *flag,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (  !flag
        || !*flag)
@@ -1308,15 +1360,21 @@ void do_setattr
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   attrnum,
     int   nargs,
     UTF8 *name,
-    UTF8 *attrtext
+    UTF8 *attrtext,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     init_match(executor, name, NOTYPE);
     match_everything(MAT_EXIT_PARENTS);
@@ -1330,11 +1388,13 @@ void do_setattr
 }
 
 void do_cpattr(dbref executor, dbref caller, dbref enactor, int eval, int key,
-               UTF8 *oldpair, UTF8 *newpair[], int nargs)
+    UTF8 *oldpair, UTF8 *newpair[], int nargs, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (  isEmpty(oldpair)
        || isEmpty(newpair[0])
@@ -1370,12 +1430,14 @@ void do_cpattr(dbref executor, dbref caller, dbref enactor, int eval, int key,
 }
 
 void do_mvattr(dbref executor, dbref caller, dbref enactor, int eval, int key,
-               UTF8 *what, UTF8 *args[], int nargs)
+               UTF8 *what, UTF8 *args[], int nargs, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // Make sure we have something to do.
     //
@@ -1772,12 +1834,14 @@ static void edit_string_ansi(UTF8 *src, UTF8 **dst, UTF8 **returnstr, UTF8 *from
 }
 
 void do_edit(dbref executor, dbref caller, dbref enactor, int eval, int key,
-             UTF8 *it, UTF8 *args[], int nargs)
+             UTF8 *it, UTF8 *args[], int nargs, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing, aowner;
     int atr, aflags;
@@ -1861,12 +1925,14 @@ void do_edit(dbref executor, dbref caller, dbref enactor, int eval, int key,
     }
 }
 
-void do_wipe(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *it)
+void do_wipe(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *it, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing;
 
@@ -1926,8 +1992,11 @@ void do_wipe(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF
 }
 
 void do_trigger(dbref executor, dbref caller, dbref enactor, int eval, int key,
-                UTF8 *object, UTF8 *argv[], int nargs)
+                UTF8 *object, UTF8 *argv[], int nargs, const UTF8 *cargs[], int ncargs)
 {
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
+
     dbref thing;
     ATTR *pattr;
 
@@ -1964,12 +2033,14 @@ void do_trigger(dbref executor, dbref caller, dbref enactor, int eval, int key,
     }
 }
 
-void do_use(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *object)
+void do_use(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *object, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *df_use, *df_ouse, *temp;
     dbref thing, aowner;
@@ -2041,14 +2112,20 @@ void do_setvattr
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *s;
     int anum;
@@ -2080,5 +2157,5 @@ void do_setvattr
         notify_quiet(executor, T("That's not a good name for an attribute."));
         return;
     }
-    do_setattr(executor, caller, enactor, anum, 2, s, arg2);
+    do_setattr(executor, caller, enactor, 0, anum, 2, s, arg2, NULL, 0);
 }

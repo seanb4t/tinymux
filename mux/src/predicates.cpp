@@ -804,15 +804,21 @@ void do_addcommand
     dbref player,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *command
+    UTF8 *command,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // Validate command name.
     //
@@ -938,12 +944,14 @@ void do_addcommand
 }
 
 void do_listcommands(dbref player, dbref caller, dbref enactor, int eval,
-                     int key, UTF8 *name)
+                     int key, UTF8 *name, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     CMDENT *old;
     ADDENT *nextp;
@@ -1023,16 +1031,22 @@ void do_delcommand
     dbref player,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *command
+    UTF8 *command,
+    const UTF8 *cargs[],
+    int  ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!*name)
     {
@@ -1258,12 +1272,14 @@ void handle_prog(DESC *d, UTF8 *message)
     free_lbuf(cmd);
 }
 
-void do_quitprog(dbref player, dbref caller, dbref enactor, int eval, int key, UTF8 *name)
+void do_quitprog(dbref player, dbref caller, dbref enactor, int eval, int key, UTF8 *name, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref doer;
 
@@ -1347,16 +1363,22 @@ void do_prog
     dbref player,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *command
+    UTF8 *command,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (  !name
        || !*name)
@@ -1497,10 +1519,11 @@ void do_prog
 /* ---------------------------------------------------------------------------
  * do_restart: Restarts the game.
  */
-void do_restart(dbref executor, dbref caller, dbref enactor, int key)
+void do_restart(dbref executor, dbref caller, dbref enactor, int eval, int key)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
 
     if (!Can_SiteAdmin(executor))
@@ -1595,10 +1618,11 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int key)
 
 #ifdef WIN32
 
-void do_backup(dbref player, dbref caller, dbref enactor, int key)
+void do_backup(dbref player, dbref caller, dbref enactor, int eval, int key)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
 
     notify(player, T("This feature is not yet available on Win32-hosted MUX."));
@@ -1606,19 +1630,24 @@ void do_backup(dbref player, dbref caller, dbref enactor, int key)
 
 #else // WIN32
 
-void do_backup(dbref player, dbref caller, dbref enactor, int key)
+void do_backup(dbref executor, dbref caller, dbref enactor, int eval, int key)
 {
+    UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(key);
+
 #ifndef WIN32
     if (mudstate.dumping)
     {
-        notify(player, T("Dumping. Please try again later."));
+        notify(executor, T("Dumping. Please try again later."));
     }
 #endif // !WIN32
 
     raw_broadcast(0, "GAME: Backing up database. Please wait.");
     STARTLOG(LOG_ALWAYS, "WIZ", "BACK");
     log_text(T("Backup by "));
-    log_name(player);
+    log_name(executor);
     ENDLOG;
 
 #ifdef MEMORY_BASED
@@ -1642,22 +1671,25 @@ void do_backup(dbref player, dbref caller, dbref enactor, int key)
  * do_comment: Implement the @@ (comment) command. Very cpu-intensive :-)
  */
 
-void do_comment(dbref executor, dbref caller, dbref enactor, int key)
-{
-    UNUSED_PARAMETER(executor);
-    UNUSED_PARAMETER(caller);
-    UNUSED_PARAMETER(enactor);
-    UNUSED_PARAMETER(key);
-}
-
-void do_eval(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *str)
+void do_comment(dbref executor, dbref caller, dbref enactor, int eval, int key)
 {
     UNUSED_PARAMETER(executor);
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
-    UNUSED_PARAMETER(str);
+}
+
+void do_eval(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg1, const UTF8 *cargs[], int ncargs)
+{
+    UNUSED_PARAMETER(executor);
+    UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(arg1);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 }
 
 static dbref promote_dflt(dbref old, dbref new0)
@@ -2593,11 +2625,13 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
  */
 
 void do_verb(dbref executor, dbref caller, dbref enactor, int eval, int key,
-             UTF8 *victim_str, UTF8 *args[], int nargs)
+             UTF8 *victim_str, UTF8 *args[], int nargs, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // Look for the victim.
     //
@@ -2777,7 +2811,7 @@ void OutOfMemory(const UTF8 *SourceFile, unsigned int LineNo)
     if (  !mudstate.bStandAlone
        && mudstate.bCanRestart)
     {
-        do_restart(GOD, GOD, GOD, 0);
+        do_restart(GOD, GOD, GOD, 0, 0);
     }
     else
     {
@@ -2795,7 +2829,7 @@ bool AssertionFailed(const UTF8 *SourceFile, unsigned int LineNo)
     if (  !mudstate.bStandAlone
        && mudstate.bCanRestart)
     {
-        do_restart(GOD, GOD, GOD, 0);
+        do_restart(GOD, GOD, GOD, 0, 0);
     }
     else
     {

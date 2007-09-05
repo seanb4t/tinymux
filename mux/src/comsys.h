@@ -173,11 +173,11 @@ void do_leavechannel(dbref player, struct channel *ch);
 void do_delcomchannel(dbref player, UTF8 *channel, bool bQuiet);
 
 //! \brief Clear all channel subscriptions for the enactor ("clearcom")
-void do_clearcom(dbref executor, dbref caller, dbref enactor, int unused2);
+void do_clearcom(dbref executor, dbref caller, dbref enactor, int eval, int key);
 
 //! \brief Add a new channel subscription/alias for the enactor
-void do_addcom(dbref executor, dbref caller, dbref enactor, int key, int nargs,
-    UTF8 *arg1, UTF8 *arg2);
+void do_addcom(dbref executor, dbref caller, dbref enactor, int eval, int key, int nargs,
+    UTF8 *arg1, UTF8 *arg2, const UTF8 *cargs[], int ncargs);
 
 //! \brief Process a request to set a channel header
 //! \param player - player requesting the change
