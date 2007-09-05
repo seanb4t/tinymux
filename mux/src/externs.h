@@ -15,7 +15,7 @@
 
 // From bsd.cpp.
 //
-void boot_slave(dbref executor, dbref caller, dbref enactor, int key);
+void boot_slave(dbref executor, dbref caller, dbref enactor, int eval, int key);
 void close_sockets(bool emergency, const UTF8 *message);
 void CleanUpSlaveSocket(void);
 void CleanUpSlaveProcess(void);
@@ -102,8 +102,8 @@ size_t MessageFetchSize(int number);
 //
 void DCL_CDECL raw_broadcast(int, char *, ...);
 void list_siteinfo(dbref);
-void logged_out0(dbref executor, dbref caller, dbref enactor, int key);
-void logged_out1(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg);
+void logged_out0(dbref executor, dbref caller, dbref enactor, int eval, int key);
+void logged_out1(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg, const UTF8 *cargs[], int ncargs);
 void init_logout_cmdtab(void);
 void desc_reload(dbref);
 void make_portlist(dbref, dbref, UTF8 *, UTF8 **);
@@ -125,7 +125,7 @@ extern bool break_called;
 void tcache_init(void);
 UTF8 *parse_to(UTF8 **, UTF8, int);
 void parse_arglist(dbref executor, dbref caller, dbref enactor, UTF8 *,
-                    int, UTF8 *[], int, const UTF8*[], int, int *);
+                    int, UTF8 *[], int, const UTF8 *[], int, int *);
 int get_gender(dbref);
 void mux_exec(const UTF8 *pdstr, size_t nStr, UTF8 *buff, UTF8 **bufc, dbref executor,
               dbref caller, dbref enactor, int eval, const UTF8 *cargs[], int ncargs);
@@ -874,7 +874,7 @@ void do_pemit_single
     UTF8 *message
 );
 void do_say(dbref executor, dbref caller, dbref enactor, int eval, int key,
-                   UTF8 *message);
+                   UTF8 *message, const UTF8 *cargs[], int ncargs);
 
 int  boot_off(dbref player, const UTF8 *message);
 void do_mail_clear(dbref player, UTF8 *msglist);
@@ -886,8 +886,8 @@ void check_mail(dbref player, int folder, bool silent);
 const UTF8 *mail_fetch_message(dbref player, int num);
 int  mail_fetch_from(dbref player, int num);
 void raw_notify_html(dbref player, const mux_string &sMsg);
-void do_lock(dbref executor, dbref caller, dbref enactor, int key,
-                    int nargs, UTF8 *name, UTF8 *keytext);
+void do_lock(dbref executor, dbref caller, dbref enactor, int eval, int key,
+                    int nargs, UTF8 *name, UTF8 *keytext, const UTF8 *cargs[], int ncargs);
 void check_events(void);
 void list_system_resources(dbref player);
 
