@@ -4091,9 +4091,11 @@ static void do_expmail_abort(dbref player)
     raw_notify(player, T("MAIL: Message aborted."));
 }
 
-void do_prepend(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *text)
+void do_prepend(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *text, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_mailer)
     {
@@ -4148,9 +4150,11 @@ void do_prepend(dbref executor, dbref caller, dbref enactor, int eval, int key, 
     }
 }
 
-void do_postpend(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *text)
+void do_postpend(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *text, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_mailer)
     {
@@ -4692,15 +4696,21 @@ void do_malias
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_mailer)
     {
@@ -4746,15 +4756,21 @@ void do_mail
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_mailer)
     {
@@ -5085,24 +5101,35 @@ void do_folder
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
+    UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
-    switch(key)
+    switch (key)
     {
     case FOLDER_FILE:
         do_mail_file(executor, arg1, arg2);
         break;
+
     case FOLDER_LIST:
         ListMailInFolder(executor, arg1, arg2);
         break;
+
     case FOLDER_READ:
         do_mail_read(executor, arg1, arg2);
         break;
+
     case FOLDER_SET:
         do_mail_change_folder(executor, arg1, arg2);
         break;

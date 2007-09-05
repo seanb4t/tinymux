@@ -86,9 +86,11 @@ static bool sp_ok(dbref player)
 }
 
 void do_think(dbref executor, dbref caller, dbref enactor, int eval, int key,
-    UTF8 *message)
+    UTF8 *message, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *buf, *bp;
 
@@ -100,11 +102,13 @@ void do_think(dbref executor, dbref caller, dbref enactor, int eval, int key,
     free_lbuf(buf);
 }
 
-void do_say(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *message)
+void do_say(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *message, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // Make sure speaker is somewhere if speaking in a place
     //
@@ -329,11 +333,13 @@ static const UTF8 *broadcast_msg = T("Broadcast: ");
 static const UTF8 *admin_msg = T("Admin: ");
 
 void do_shout(dbref executor, dbref caller, dbref enactor, int eval, int key,
-    UTF8 *message)
+    UTF8 *message, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *p = NULL, *messageNew = NULL, *buf2 = NULL, *bp = NULL;
     bool bNoTag = (key & SHOUT_NOTAG)   ? true : false;
@@ -550,15 +556,21 @@ void do_page
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     int   nPlayers = 0;
     dbref aPlayers[(LBUF_SIZE+1)/2];
@@ -1542,14 +1554,20 @@ void do_pemit
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *recipient,
-    UTF8 *message
+    UTF8 *message,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (  nargs < 2
        && key != PEMIT_WHISPER)

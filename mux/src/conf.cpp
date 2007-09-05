@@ -2314,16 +2314,22 @@ void do_admin
     dbref executor,
     dbref caller,
     dbref enactor,
-    int   extra,
+    int   eval,
+    int   key,
     int   nargs,
     UTF8 *kw,
-    UTF8 *value
+    UTF8 *value,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
-    UNUSED_PARAMETER(extra);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     int i = cf_set(kw, value, executor);
     if ((i >= 0) && !Quiet(executor))

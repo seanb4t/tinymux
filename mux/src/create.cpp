@@ -137,11 +137,13 @@ static void open_exit(dbref player, dbref loc, UTF8 *direction, UTF8 *linkto)
 }
 
 void do_open(dbref executor, dbref caller, dbref enactor, int eval, int key,
-             UTF8 *direction, UTF8 *links[], int nlinks)
+             UTF8 *direction, UTF8 *links[], int nlinks, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *dest;
 
@@ -247,13 +249,19 @@ void do_link
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *what,
-    UTF8 *where
+    UTF8 *where,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // Find the thing to link
     //
@@ -269,7 +277,7 @@ void do_link
     //
     if (!where || !*where)
     {
-        do_unlink(executor, caller, enactor, 0, key, what);
+        do_unlink(executor, caller, enactor, 0, key, what, NULL, 0);
         return;
     }
 
@@ -421,16 +429,22 @@ void do_parent
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *tname,
-    UTF8 *pname
+    UTF8 *pname,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing, parent, curr;
     int lev;
@@ -504,10 +518,12 @@ void do_parent
 // do_dig: Create a new room.
 //
 void do_dig(dbref executor, dbref caller, dbref enactor, int eval, int key,
-            UTF8 *name, UTF8 *args[], int nargs)
+            UTF8 *name, UTF8 *args[], int nargs, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // we don't need to know player's location!  hooray!
     //
@@ -563,15 +579,21 @@ void do_create
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *coststr
+    UTF8 *coststr,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     int cost = 0;
     if (!name || !*name)
@@ -618,15 +640,21 @@ void do_clone
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref clone, thing, new_owner, loc;
     int cost;
@@ -850,15 +878,21 @@ void do_pcreate
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *name,
-    UTF8 *pass
+    UTF8 *pass,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     const UTF8 *pmsg;
     bool isrobot = (key == PCRE_ROBOT);
@@ -937,11 +971,13 @@ static bool can_destroy_player(dbref player, dbref victim)
     return true;
 }
 
-void do_destroy(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *what)
+void do_destroy(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *what, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // You can destroy anything you control.
     //
