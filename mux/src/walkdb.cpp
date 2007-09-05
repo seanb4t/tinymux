@@ -37,8 +37,10 @@ static void bind_and_queue(dbref executor, dbref caller, dbref enactor,
 // and /delimit allows specification of a delimiter.
 //
 void do_dolist(dbref executor, dbref caller, dbref enactor, int eval, int key,
-               UTF8 *list, UTF8 *command, const UTF8 *cargs[], int ncargs)
+               int nargs, UTF8 *list, UTF8 *command, const UTF8 *cargs[], int ncargs)
 {
+    UNUSED_PARAMETER(nargs);
+
     if (!list || *list == '\0')
     {
         notify(executor, T("That's terrific, but what should I do with the list?"));
@@ -89,12 +91,14 @@ void do_dolist(dbref executor, dbref caller, dbref enactor, int eval, int key,
 
 // Regular @find command
 //
-void do_find(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name)
+void do_find(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *buff;
 
@@ -192,11 +196,13 @@ bool get_stats(dbref player, dbref who, STATS *info)
 
 // Reworked by R'nice
 //
-void do_stats(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name)
+void do_stats(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref owner;
 
@@ -350,15 +356,21 @@ void do_chownall
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *from,
-    UTF8 *to
+    UTF8 *to,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     init_match(executor, from, TYPE_PLAYER);
     match_neighbor();
@@ -923,9 +935,11 @@ static void search_mark(dbref player, int key)
     return;
 }
 
-void do_search(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg)
+void do_search(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *buff, *outbuf, *bp;
     dbref thing, from, to;
@@ -1119,10 +1133,11 @@ void do_search(dbref executor, dbref caller, dbref enactor, int eval, int key, U
 // ---------------------------------------------------------------------------
 // do_markall: set or clear the mark bits of all objects in the db.
 //
-void do_markall(dbref executor, dbref caller, dbref enactor, int key)
+void do_markall(dbref executor, dbref caller, dbref enactor, int eval, int key)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
 
     int i;
 
@@ -1298,11 +1313,12 @@ dbref olist_next(void)
 }
 
 #define NPERIODS 24
-void do_report(dbref executor, dbref caller, dbref enactor, int extra)
+void do_report(dbref executor, dbref caller, dbref enactor, int eval, int key)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
-    UNUSED_PARAMETER(extra);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(key);
 
     UTF8 *buff = alloc_mbuf("do_report");
     int nBin[NPERIODS];

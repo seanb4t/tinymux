@@ -1229,6 +1229,7 @@ static void BuildChannelMessage
     bool bSpoof,
     const UTF8 *pHeader,
     struct comuser *user,
+    dbref ch_obj,
     UTF8 *pPose,
     UTF8 **messNormal,
     UTF8 **messNoComtitle
@@ -1293,6 +1294,30 @@ static void BuildChannelMessage
         }
     }
 
+    bool bChannelSayString = false;
+    bool bChannelSpeechMod = false;
+
+    if (Good_obj(ch_obj))
+    {
+        dbref aowner;
+        int aflags;
+        UTF8* test_attr = atr_get("BuildChannelMessage.1302", ch_obj,
+                A_SAYSTRING, &aowner, &aflags);
+
+        if ('\0' != test_attr[0])
+        {
+            bChannelSayString = true;
+        }
+
+        test_attr = atr_get("BuildChannelMessage.1302", ch_obj,
+                A_SPEECHMOD, &aowner, &aflags);
+
+        if ('\0' != test_attr[0])
+        {
+            bChannelSpeechMod = true;
+        }
+    }
+
     UTF8 *saystring = NULL;
     UTF8 *newPose = NULL;
 
@@ -1300,7 +1325,8 @@ static void BuildChannelMessage
     {
     case ':':
         pPose++;
-        newPose = modSpeech(user->who, pPose, true, (UTF8 *)"channel/pose");
+        newPose = modSpeech(bChannelSpeechMod ? ch_obj : user->who, pPose, true,
+                (UTF8 *)"channel/pose");
         if (newPose)
         {
             pPose = newPose;
@@ -1316,7 +1342,8 @@ static void BuildChannelMessage
 
     case ';':
         pPose++;
-        newPose = modSpeech(user->who, pPose, true, (UTF8 *)"channel/pose");
+        newPose = modSpeech(bChannelSpeechMod ? ch_obj : user->who, pPose, true,
+                (UTF8 *)"channel/pose");
         if (newPose)
         {
             pPose = newPose;
@@ -1329,12 +1356,14 @@ static void BuildChannelMessage
         break;
 
     default:
-        newPose = modSpeech(user->who, pPose, true, (UTF8 *)"channel");
+        newPose = modSpeech(bChannelSpeechMod ? ch_obj : user->who, pPose, true,
+                (UTF8 *)"channel");
         if (newPose)
         {
             pPose = newPose;
         }
-        saystring = modSpeech(user->who, pPose, false, (UTF8 *)"channel");
+        saystring = modSpeech(bChannelSayString ? ch_obj : user->who, pPose,
+                false, (UTF8 *)"channel");
         if (saystring)
         {
             safe_chr(' ', *messNormal, &mnptr);
@@ -1467,7 +1496,7 @@ static void do_processcom(dbref player, UTF8 *arg1, UTF8 *arg2)
         UTF8 *messNormal;
         UTF8 *messNoComtitle;
         BuildChannelMessage((ch->type & CHANNEL_SPOOF) != 0, ch->header, user,
-            arg2, &messNormal, &messNoComtitle);
+            ch->chan_obj, arg2, &messNormal, &messNoComtitle);
         SendChannelMessage(player, ch, messNormal, messNoComtitle);
     }
 }
@@ -1677,7 +1706,8 @@ void do_joinchannel(dbref player, struct channel *ch)
     {
         UTF8 *messNormal, *messNoComtitle;
         BuildChannelMessage((ch->type & CHANNEL_SPOOF) != 0, ch->header, user,
-            (UTF8 *)":has joined this channel.", &messNormal, &messNoComtitle);
+            ch->chan_obj, (UTF8 *)":has joined this channel.", &messNormal,
+            &messNoComtitle);
         SendChannelMessage(player, ch, messNormal, messNoComtitle);
     }
     ChannelMOTD(ch->chan_obj, user->who, attr);
@@ -1696,7 +1726,8 @@ void do_leavechannel(dbref player, struct channel *ch)
         {
             UTF8 *messNormal, *messNoComtitle;
             BuildChannelMessage((ch->type & CHANNEL_SPOOF) != 0, ch->header, user,
-                (UTF8 *)":has left this channel.", &messNormal, &messNoComtitle);
+                ch->chan_obj, (UTF8 *)":has left this channel.", &messNormal,
+                &messNoComtitle);
             SendChannelMessage(player, ch, messNormal, messNoComtitle);
         }
         ChannelMOTD(ch->chan_obj, user->who, A_COMOFF);
@@ -2038,16 +2069,22 @@ void do_addcom
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *channel
+    UTF8 *channel,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -2147,12 +2184,14 @@ void do_addcom
     raw_notify(executor, tprintf("Channel %s added with alias %s.", channel, pValidAlias));
 }
 
-void do_delcom(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg1)
+void do_delcom(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg1, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -2235,8 +2274,9 @@ void do_delcomchannel(dbref player, UTF8 *channel, bool bQuiet)
                     {
                         UTF8 *messNormal, *messNoComtitle;
                         BuildChannelMessage((ch->type & CHANNEL_SPOOF) != 0,
-                            ch->header, user, (UTF8 *)":has left this channel.",
-                            &messNormal, &messNoComtitle);
+                            ch->header, user, ch->chan_obj,
+                            (UTF8 *)":has left this channel.", &messNormal,
+                            &messNoComtitle);
                         SendChannelMessage(player, ch, messNormal, messNoComtitle);
                     }
                     raw_notify(player, tprintf("You have left channel %s.",
@@ -2267,12 +2307,14 @@ void do_delcomchannel(dbref player, UTF8 *channel, bool bQuiet)
     }
 }
 
-void do_createchannel(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *channel)
+void do_createchannel(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *channel, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if ('\0' == channel[0])
     {
@@ -2366,12 +2408,14 @@ void do_createchannel(dbref executor, dbref caller, dbref enactor, int eval, int
     raw_notify(executor, tprintf("Channel %s created.", newchannel->name));
 }
 
-void do_destroychannel(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *channel)
+void do_destroychannel(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *channel, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     struct channel *ch;
     int j;
@@ -2474,15 +2518,21 @@ void do_comtitle
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -2546,14 +2596,18 @@ void do_comlist
     dbref caller,
     dbref enactor,
     int   eval,
-    int key,
-    UTF8* pattern
+    int   key,
+    UTF8 *pattern,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -2658,9 +2712,10 @@ void do_channelnuke(dbref player)
     }
 }
 
-void do_clearcom(dbref executor, dbref caller, dbref enactor, int unused2)
+void do_clearcom(dbref executor, dbref caller, dbref enactor, int eval, int key)
 {
-    UNUSED_PARAMETER(unused2);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(key);
 
     if (!mudconf.have_comsys)
     {
@@ -2672,16 +2727,18 @@ void do_clearcom(dbref executor, dbref caller, dbref enactor, int unused2)
     int i;
     for (i = (c->numchannels) - 1; i > -1; --i)
     {
-        do_delcom(executor, caller, enactor, 0, 0, c->alias + i * ALIAS_SIZE);
+        do_delcom(executor, caller, enactor, 0, 0, c->alias + i * ALIAS_SIZE, NULL, 0);
     }
 }
 
-void do_allcom(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg1)
+void do_allcom(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg1, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(key);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -2731,12 +2788,14 @@ void sort_users(struct channel *ch)
     }
 }
 
-void do_channelwho(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg1)
+void do_channelwho(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg1, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -2821,7 +2880,8 @@ static void do_comdisconnectraw_notify(dbref player, UTF8 *chan)
     {
         UTF8 *messNormal, *messNoComtitle;
         BuildChannelMessage((ch->type & CHANNEL_SPOOF) != 0, ch->header, cu,
-            (UTF8 *)":has disconnected.", &messNormal, &messNoComtitle);
+            ch->chan_obj, (UTF8 *)":has disconnected.", &messNormal,
+            &messNoComtitle);
         SendChannelMessage(player, ch, messNormal, messNoComtitle);
     }
 }
@@ -2842,7 +2902,8 @@ static void do_comconnectraw_notify(dbref player, UTF8 *chan)
     {
         UTF8 *messNormal, *messNoComtitle;
         BuildChannelMessage((ch->type & CHANNEL_SPOOF) != 0, ch->header, cu,
-            (UTF8 *)":has connected.", &messNormal, &messNoComtitle);
+            ch->chan_obj, (UTF8 *)":has connected.", &messNormal,
+            &messNoComtitle);
         SendChannelMessage(player, ch, messNormal, messNoComtitle);
     }
 }
@@ -2994,15 +3055,21 @@ void do_editchannel
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   flag,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -3234,15 +3301,21 @@ void do_cemit
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *chan,
-    UTF8 *text
+    UTF8 *text,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -3278,13 +3351,19 @@ void do_chopen
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *chan,
-    UTF8 *value
+    UTF8 *value,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {
@@ -3293,7 +3372,7 @@ void do_chopen
     }
     if (key == CSET_LIST)
     {
-        do_chanlist(executor, caller, enactor, 0, 1, NULL);
+        do_chanlist(executor, caller, enactor, 0, 1, NULL, NULL, 0);
         return;
     }
 
@@ -3403,15 +3482,21 @@ void do_chboot
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *channel,
-    UTF8 *victim
+    UTF8 *victim,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // I sure hope it's not going to be that long.
     //
@@ -3462,9 +3547,10 @@ void do_chboot
         UTF8 *mess1, *mess1nct;
         UTF8 *mess2, *mess2nct;
         BuildChannelMessage((ch->type & CHANNEL_SPOOF) != 0, ch->header, user,
-                            (UTF8 *)":boots", &mess1, &mess1nct);
+                            ch->chan_obj, (UTF8 *)":boots", &mess1, &mess1nct);
         BuildChannelMessage((ch->type & CHANNEL_SPOOF) != 0, 0, vu,
-                            (UTF8 *)":off the channel.", &mess2, &mess2nct);
+                            ch->chan_obj, (UTF8 *)":off the channel.", &mess2,
+                            &mess2nct);
         UTF8 *messNormal = alloc_lbuf("do_chboot.messnormal");
         UTF8 *messNoComtitle = alloc_lbuf("do_chboot.messnocomtitle");
         UTF8 *mnp = messNormal;
@@ -3545,12 +3631,16 @@ void do_chanlist
     dbref enactor,
     int   eval,
     int   key,
-    UTF8 *pattern
+    UTF8 *pattern,
+    const UTF8 *cargs[],
+    int  ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (!mudconf.have_comsys)
     {

@@ -605,6 +605,7 @@ static CMDENT_NO_ARG command_table_no_arg[] =
 
 static CMDENT_ONE_ARG command_table_one_arg[] =
 {
+    {T("@apply_marked"), NULL,       CA_WIZARD|CA_GBL_INTERP,    0,  CS_ONE_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND,   0, do_apply_marked},
     {T("@boot"),         boot_sw,    CA_NO_GUEST|CA_NO_SLAVE,    0,  CS_ONE_ARG|CS_INTERP, 0, do_boot},
     {T("@ccreate"),      NULL,       CA_NO_SLAVE|CA_NO_GUEST,    0,  CS_ONE_ARG,           0, do_createchannel},
     {T("@cdestroy"),     NULL,       CA_NO_SLAVE|CA_NO_GUEST,    0,  CS_ONE_ARG,           0, do_destroychannel},
@@ -672,14 +673,8 @@ static CMDENT_ONE_ARG command_table_one_arg[] =
     {T("\""),            NULL,       CA_LOCATION|CF_DARK|CA_NO_SLAVE,  SAY_PREFIX, CS_ONE_ARG|CS_INTERP|CS_LEADIN, 0, do_say},
     {T("-"),             NULL,       CA_NO_GUEST|CA_NO_SLAVE|CF_DARK,  0,  CS_ONE_ARG|CS_LEADIN,   0, do_postpend},
     {T("~"),             NULL,       CA_NO_GUEST|CA_NO_SLAVE|CF_DARK,  0,  CS_ONE_ARG|CS_LEADIN,   0, do_prepend},
+    {T("#"),             NULL,       CA_NO_SLAVE|CA_GBL_INTERP|CF_DARK, 0, CS_ONE_ARG|CS_INTERP|CS_CMDARG, 0, do_force_prefixed},
     {(UTF8 *)NULL,            NULL,       0,                          0,    0,                  0, NULL}
-};
-
-static CMDENT_ONE_ARG_CMDARG command_table_one_arg_cmdarg[] =
-{
-    {T("@apply_marked"), NULL,       CA_WIZARD|CA_GBL_INTERP,    0,      CS_ONE_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND,   0, do_apply_marked},
-    {T("#"),             NULL,       CA_NO_SLAVE|CA_GBL_INTERP|CF_DARK,    0,      CS_ONE_ARG|CS_INTERP|CS_CMDARG, 0, do_force_prefixed},
-    {(UTF8 *)NULL,            NULL,       0,     0,      0,             0,  NULL}
 };
 
 static CMDENT_TWO_ARG command_table_two_arg[] =
@@ -687,7 +682,9 @@ static CMDENT_TWO_ARG command_table_two_arg[] =
     {T("@addcommand"),  NULL,       CA_GOD,                                           0,           CS_TWO_ARG,           0, do_addcommand},
     {T("@admin"),       NULL,       CA_WIZARD,                                        0,           CS_TWO_ARG|CS_INTERP, 0, do_admin},
     {T("@alias"),       NULL,       CA_NO_GUEST|CA_NO_SLAVE,                          0,           CS_TWO_ARG,           0, do_alias},
+    {T("@assert"),      NULL,       CA_PUBLIC,                                        0,           CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_assert},
     {T("@attribute"),   attrib_sw,  CA_GOD,                                           0,           CS_TWO_ARG|CS_INTERP, 0, do_attribute},
+    {T("@break"),       NULL,       CA_PUBLIC,                                        0,           CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_break},
     {T("@cboot"),       cboot_sw,   CA_NO_SLAVE|CA_NO_GUEST,                          0,           CS_TWO_ARG,           0, do_chboot},
     {T("@ccharge"),     NULL,       CA_NO_SLAVE|CA_NO_GUEST,                          1,           CS_TWO_ARG,           0, do_editchannel},
     {T("@cchown"),      NULL,       CA_NO_SLAVE|CA_NO_GUEST,                          0,           CS_TWO_ARG,           0, do_editchannel},
@@ -702,11 +699,14 @@ static CMDENT_TWO_ARG command_table_two_arg[] =
     {T("@cset"),        cset_sw,    CA_NO_SLAVE,                                      0,           CS_TWO_ARG|CS_INTERP, 0, do_chopen},
     {T("@decompile"),   decomp_sw,  CA_PUBLIC,                                        0,           CS_TWO_ARG|CS_INTERP, 0, do_decomp},
     {T("@delcommand"),  NULL,       CA_GOD,                                           0,           CS_TWO_ARG,           0, do_delcommand},
+    {T("@dolist"),      dolist_sw,  CA_GBL_INTERP,                                    0,           CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_dolist},
     {T("@drain"),       NULL,       CA_GBL_INTERP|CA_NO_SLAVE|CA_NO_GUEST,            NFY_DRAIN,   CS_TWO_ARG,           0, do_notify},
+    {T("@email"),       NULL,       CA_WIZARD,                                        0,           CS_TWO_ARG,           0, do_plusemail},
     {T("@femit"),       femit_sw,   CA_LOCATION|CA_NO_GUEST|CA_NO_SLAVE,              PEMIT_FEMIT, CS_TWO_ARG|CS_INTERP, 0, do_pemit},
     {T("@fixdb"),       fixdb_sw,   CA_GOD,                                           0,           CS_TWO_ARG|CS_INTERP, 0, do_fixdb},
     {T("@flag"),        flag_sw,    CA_GOD,                                           0,           CS_TWO_ARG,           0, do_flag},
     {T("@folder"),      folder_sw,  CA_NO_SLAVE|CA_NO_GUEST,                          0,           CS_TWO_ARG|CS_INTERP, 0, do_folder},
+    {T("@force"),       NULL,       CA_NO_SLAVE|CA_GBL_INTERP|CA_NO_GUEST,            0,           CS_TWO_ARG|CS_INTERP|CS_CMDARG, 0, do_force},
     {T("@forwardlist"), NULL,       CA_NO_SLAVE|CA_NO_GUEST,                          0,           CS_TWO_ARG,           0, do_forwardlist},
     {T("@fpose"),       fpose_sw,   CA_LOCATION|CA_NO_SLAVE,                          PEMIT_FPOSE, CS_TWO_ARG|CS_INTERP, 0, do_pemit},
     {T("@fsay"),        NULL,       CA_LOCATION|CA_NO_SLAVE,                          PEMIT_FSAY,  CS_TWO_ARG|CS_INTERP, 0, do_pemit},
@@ -728,6 +728,9 @@ static CMDENT_TWO_ARG command_table_two_arg[] =
     {T("@pemit"),       pemit_sw,   CA_NO_GUEST|CA_NO_SLAVE,                          PEMIT_PEMIT, CS_TWO_ARG|CS_INTERP, 0, do_pemit},
     {T("@power"),       NULL,       CA_PUBLIC,                                        0,           CS_TWO_ARG,           0, do_power},
     {T("@program"),     NULL,       CA_PUBLIC,                                        0,           CS_TWO_ARG|CS_INTERP, 0, do_prog},
+#ifdef QUERY_SLAVE
+    {T("@query"),       query_sw,   CA_WIZARD,                                        0,           CS_TWO_ARG|CS_INTERP|CS_CMDARG, 0, do_query},
+#endif
     {T("@quota"),       quota_sw,   CA_PUBLIC,                                        0,           CS_TWO_ARG|CS_INTERP, 0, do_quota},
     {T("@robot"),       NULL,       CA_NO_SLAVE|CA_GBL_BUILD|CA_NO_GUEST|CA_PLAYER,   PCRE_ROBOT,  CS_TWO_ARG,           0, do_pcreate},
 #ifdef REALITY_LVLS
@@ -739,7 +742,7 @@ static CMDENT_TWO_ARG command_table_two_arg[] =
     {T("@txlevel"),     NULL,       CA_WIZARD,                                        0,           CS_TWO_ARG|CS_INTERP, 0, do_txlevel},
 #endif
     {T("@toad"),        toad_sw,    CA_WIZARD,                                        0,           CS_TWO_ARG|CS_INTERP, 0, do_toad},
-    {T("@email"),       NULL,       CA_WIZARD,                                        0,           CS_TWO_ARG,           0, do_plusemail},
+    {T("@wait"),        wait_sw,    CA_GBL_INTERP,                                    0,           CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_wait},
     {T("addcom"),       NULL,       CA_NO_SLAVE,                                      0,           CS_TWO_ARG,           0, do_addcom},
     {T("comtitle"),     comtitle_sw,CA_NO_SLAVE,                                      0,           CS_TWO_ARG,           0, do_comtitle},
     {T("give"),         give_sw,    CA_LOCATION|CA_NO_GUEST,                          0,           CS_TWO_ARG|CS_INTERP, 0, do_give},
@@ -748,7 +751,7 @@ static CMDENT_TWO_ARG command_table_two_arg[] =
     {T("slay"),         NULL,       CA_WIZARD,                                        KILL_SLAY,   CS_TWO_ARG|CS_INTERP, 0, do_kill},
     {T("whisper"),      NULL,       CA_LOCATION|CA_NO_SLAVE,                          PEMIT_WHISPER, CS_TWO_ARG|CS_INTERP, 0, do_pemit},
     {T("&"),            NULL,       CA_NO_GUEST|CA_NO_SLAVE|CF_DARK,                  0,           CS_TWO_ARG|CS_LEADIN, 0, do_setvattr},
-    {(UTF8 *)NULL,           NULL,       0,                                                0,           0,                    0, NULL}
+    {(UTF8 *)NULL,      NULL,       0,                                                0,           0,                    0, NULL}
 };
 
 static CMDENT_TWO_ARG_ARGV command_table_two_arg_argv[] =
@@ -757,31 +760,13 @@ static CMDENT_TWO_ARG_ARGV command_table_two_arg_argv[] =
     {T("@dig"),        dig_sw,     CA_NO_SLAVE|CA_NO_GUEST|CA_GBL_BUILD, 0,  CS_TWO_ARG|CS_ARGV|CS_INTERP,   0, do_dig},
     {T("@edit"),       NULL,       CA_NO_SLAVE|CA_NO_GUEST,              0,  CS_TWO_ARG|CS_ARGV|CS_STRIP_AROUND, 0, do_edit},
     {T("@icmd"),       icmd_sw,    CA_GOD,                               0,  CS_TWO_ARG|CS_ARGV|CS_INTERP,   0, do_icmd},
+    {T("@if"),         NULL,       CA_GBL_INTERP,                        0,  CS_TWO_ARG|CS_ARGV|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_if},
     {T("@mvattr"),     NULL,       CA_NO_SLAVE|CA_NO_GUEST|CA_GBL_BUILD, 0,  CS_TWO_ARG|CS_ARGV,             0, do_mvattr},
     {T("@open"),       open_sw,    CA_NO_SLAVE|CA_GBL_BUILD|CA_NO_GUEST, 0,  CS_TWO_ARG|CS_ARGV|CS_INTERP,   0, do_open},
+    {T("@switch"),     switch_sw,  CA_GBL_INTERP,                        0,  CS_TWO_ARG|CS_ARGV|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_switch},
     {T("@trigger"),    trig_sw,    CA_GBL_INTERP,                        0,  CS_TWO_ARG|CS_ARGV,             0, do_trigger},
     {T("@verb"),       verb_sw,    CA_GBL_INTERP|CA_NO_SLAVE,            0,  CS_TWO_ARG|CS_ARGV|CS_INTERP|CS_STRIP_AROUND, 0, do_verb},
     {(UTF8 *)NULL,          NULL,       0,                                    0,  0,              0, NULL}
-};
-
-static CMDENT_TWO_ARG_CMDARG command_table_two_arg_cmdarg[] =
-{
-    {T("@assert"), NULL,       CA_PUBLIC,     0, CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_assert},
-    {T("@break"),  NULL,       CA_PUBLIC,     0, CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_break},
-    {T("@dolist"), dolist_sw,  CA_GBL_INTERP, 0, CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_dolist},
-    {T("@force"),  NULL,       CA_NO_SLAVE|CA_GBL_INTERP|CA_NO_GUEST, 0, CS_TWO_ARG|CS_INTERP|CS_CMDARG, 0, do_force},
-#ifdef QUERY_SLAVE
-    {T("@query"),  query_sw,   CA_WIZARD,     0, CS_TWO_ARG|CS_INTERP|CS_CMDARG,                   0, do_query},
-#endif
-    {T("@wait"),   wait_sw,    CA_GBL_INTERP, 0, CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_wait},
-    {(UTF8 *)NULL,      NULL,       0,             0, 0,                                                0, NULL}
-};
-
-static CMDENT_TWO_ARG_ARGV_CMDARG command_table_two_arg_argv_cmdarg[] =
-{
-    {T("@if"),     NULL,       CA_GBL_INTERP,  0,  CS_TWO_ARG|CS_ARGV|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_if},
-    {T("@switch"), switch_sw,  CA_GBL_INTERP,  0,  CS_TWO_ARG|CS_ARGV|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_switch},
-    {(UTF8 *)NULL,      NULL,       0,              0,  0,                                                        0, NULL}
 };
 
 static CMDENT *prefix_cmds[256];
@@ -816,20 +801,6 @@ void commands_one_arg_add(CMDENT_ONE_ARG cmdent[])
     }
 }
 
-void commands_one_arg_cmdarg_add(CMDENT_ONE_ARG_CMDARG cmdent[])
-{
-    CMDENT_ONE_ARG_CMDARG *cp1ac;
-    for (cp1ac = cmdent; cp1ac->cmdname; cp1ac++)
-    {
-        if (!hashfindLEN(cp1ac->cmdname, strlen((char *)cp1ac->cmdname),
-                         &mudstate.command_htab))
-        {
-            hashaddLEN(cp1ac->cmdname, strlen((char *)cp1ac->cmdname), cp1ac,
-                       &mudstate.command_htab);
-        }
-    }
-}
-
 void commands_two_arg_add(CMDENT_TWO_ARG cmdent[])
 {
     CMDENT_TWO_ARG *cp2a;
@@ -853,34 +824,6 @@ void commands_two_arg_argv_add(CMDENT_TWO_ARG_ARGV cmdent[])
                          &mudstate.command_htab))
         {
             hashaddLEN(cp2aa->cmdname, strlen((char *)cp2aa->cmdname), cp2aa,
-                       &mudstate.command_htab);
-        }
-    }
-}
-
-void commands_two_arg_cmdarg_add(CMDENT_TWO_ARG_CMDARG cmdent[])
-{
-    CMDENT_TWO_ARG_CMDARG  *cp2ac;
-    for (cp2ac = cmdent; cp2ac->cmdname; cp2ac++)
-    {
-        if (!hashfindLEN(cp2ac->cmdname, strlen((char *)cp2ac->cmdname),
-                         &mudstate.command_htab))
-        {
-            hashaddLEN(cp2ac->cmdname, strlen((char *)cp2ac->cmdname), cp2ac,
-                       &mudstate.command_htab);
-        }
-    }
-}
-
-void commands_two_arg_argv_cmdarg_add(CMDENT_TWO_ARG_ARGV_CMDARG cmdent[])
-{
-    CMDENT_TWO_ARG_ARGV_CMDARG  *cp2aac;
-    for (cp2aac = cmdent; cp2aac->cmdname; cp2aac++)
-    {
-        if (!hashfindLEN(cp2aac->cmdname, strlen((char *)cp2aac->cmdname),
-                         &mudstate.command_htab))
-        {
-            hashaddLEN(cp2aac->cmdname, strlen((char *)cp2aac->cmdname), cp2aac,
                        &mudstate.command_htab);
         }
     }
@@ -942,11 +885,8 @@ void init_cmdtab(void)
     //
     commands_no_arg_add(command_table_no_arg);
     commands_one_arg_add(command_table_one_arg);
-    commands_one_arg_cmdarg_add(command_table_one_arg_cmdarg);
     commands_two_arg_add(command_table_two_arg);
     commands_two_arg_argv_add(command_table_two_arg_argv);
-    commands_two_arg_cmdarg_add(command_table_two_arg_cmdarg);
-    commands_two_arg_argv_cmdarg_add(command_table_two_arg_argv_cmdarg);
 
     set_prefix_cmds();
 
@@ -957,7 +897,7 @@ void init_cmdtab(void)
  *
  * Command entries for known prefix commands (<code>" : ; \ # & - ~</code>)
  * are copied from the regular command table. Entries for all other starting
- * characters are set to \c NULL.
+ * characters are set to NULL.
  *
  * \return         None.
  */
@@ -1297,7 +1237,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
     switch (cmdp->callseq & CS_NARG_MASK)
     {
     case CS_NO_ARGS: // <cmd>   (no args)
-        (*(((CMDENT_NO_ARG *)cmdp)->handler))(executor, caller, enactor, key);
+        (*(((CMDENT_NO_ARG *)cmdp)->handler))(executor, caller, enactor, eval, key);
         break;
 
     case CS_ONE_ARG:    // <cmd> <arg>
@@ -1339,12 +1279,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
 
         // Call the correct handler.
         //
-        if (cmdp->callseq & CS_CMDARG)
-        {
-            (*(((CMDENT_ONE_ARG_CMDARG *)cmdp)->handler))(executor, caller,
-                enactor, eval, key, buf1, cargs, ncargs);
-        }
-        else if (cmdp->callseq & CS_ADDED)
+        if (cmdp->callseq & CS_ADDED)
         {
             for (add = cmdp->addent; add != NULL; add = add->next)
             {
@@ -1455,7 +1390,7 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
         else
         {
             (*(((CMDENT_ONE_ARG *)cmdp)->handler))(executor, caller,
-                enactor, eval, key, buf1);
+                enactor, eval, key, buf1, cargs, ncargs);
         }
 
         // Free the buffer if one was allocated.
@@ -1505,18 +1440,8 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
                 eval|interp|EV_STRIP_LS|EV_STRIP_TS, args, MAX_ARG, cargs,
                 ncargs, &nargs);
 
-            // Call the correct command handler.
-            //
-            if (cmdp->callseq & CS_CMDARG)
-            {
-                (*(((CMDENT_TWO_ARG_ARGV_CMDARG *)cmdp)->handler))(executor,
-                    caller, enactor, eval, key, buf1, args, nargs, cargs, ncargs);
-            }
-            else
-            {
-                (*(((CMDENT_TWO_ARG_ARGV *)cmdp)->handler))(executor, caller,
-                    enactor, eval, key, buf1, args, nargs);
-            }
+            (*(((CMDENT_TWO_ARG_ARGV *)cmdp)->handler))(executor, caller,
+                enactor, eval, key, buf1, args, nargs, cargs, ncargs);
 
             // Free the argument buffers.
             //
@@ -1545,18 +1470,8 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
                 buf2 = parse_to(&arg, '\0', eval|interp|EV_STRIP_LS|EV_STRIP_TS|EV_TOP);
             }
 
-            // Call the correct command handler.
-            //
-            if (cmdp->callseq & CS_CMDARG)
-            {
-                (*(((CMDENT_TWO_ARG_CMDARG *)cmdp)->handler))(executor,
-                    caller, enactor, eval, key, buf1, buf2, cargs, ncargs);
-            }
-            else
-            {
-                (*(((CMDENT_TWO_ARG *)cmdp)->handler))(executor, caller,
-                    enactor, key, nargs2, buf1, buf2);
-            }
+            (*(((CMDENT_TWO_ARG *)cmdp)->handler))(executor, caller,
+                enactor, eval, key, nargs2, buf1, buf2, cargs, ncargs);
 
             // Free the buffer, if needed.
             //
@@ -1922,7 +1837,7 @@ UTF8 *process_command
                 mudstate.debug_cmd = cmdsave;
                 return preserve_cmd;
             }
-            do_move(executor, caller, enactor, eval, 0, (UTF8 *)"home");
+            do_move(executor, caller, enactor, eval, 0, (UTF8 *)"home", NULL, 0);
             mudstate.debug_cmd = cmdsave;
             return preserve_cmd;
         }
@@ -2309,7 +2224,7 @@ UTF8 *process_command
                         process_hook(executor, cmdp, HOOK_BEFORE, false);
                     }
 
-                    do_leave(executor, caller, executor, 0);
+                    do_leave(executor, caller, executor, 0, 0);
 
                     if (  (cmdp->hookmask & HOOK_AFTER)
                         && bGoodHookObj)
@@ -2601,17 +2516,6 @@ static void list_cmdtable(dbref player)
         }
     }
 
-    for ( CMDENT_ONE_ARG_CMDARG *cmdp1ac = command_table_one_arg_cmdarg;
-          cmdp1ac->cmdname;
-          cmdp1ac++)
-    {
-        if (  check_access(player, cmdp1ac->perms)
-            && !(cmdp1ac->perms & CF_DARK))
-        {
-            ItemToList_AddString(&itl, cmdp1ac->cmdname);
-        }
-    }
-
     for ( CMDENT_TWO_ARG *cmdp2a = command_table_two_arg;
           cmdp2a->cmdname;
           cmdp2a++)
@@ -2631,28 +2535,6 @@ static void list_cmdtable(dbref player)
             && !(cmdp2av->perms & CF_DARK))
         {
             ItemToList_AddString(&itl, cmdp2av->cmdname);
-        }
-    }
-
-    for ( CMDENT_TWO_ARG_CMDARG *cmdp2ac = command_table_two_arg_cmdarg;
-          cmdp2ac->cmdname;
-          cmdp2ac++)
-    {
-        if (  check_access(player, cmdp2ac->perms)
-            && !(cmdp2ac->perms & CF_DARK))
-        {
-            ItemToList_AddString(&itl, cmdp2ac->cmdname);
-        }
-    }
-
-    for ( CMDENT_TWO_ARG_ARGV_CMDARG *cmdp2avc = command_table_two_arg_argv_cmdarg;
-          cmdp2avc->cmdname;
-          cmdp2avc++)
-    {
-        if (  check_access(player, cmdp2avc->perms)
-            && !(cmdp2avc->perms & CF_DARK))
-        {
-            ItemToList_AddString(&itl, cmdp2avc->cmdname);
         }
     }
 
@@ -2758,17 +2640,6 @@ static void list_cmdaccess(dbref player)
         }
     }
 
-    for ( CMDENT_ONE_ARG_CMDARG *cmdp1ac = command_table_one_arg_cmdarg;
-          cmdp1ac->cmdname;
-          cmdp1ac++)
-    {
-        if (  check_access(player, cmdp1ac->perms)
-           && !(cmdp1ac->perms & CF_DARK))
-        {
-            listset_nametab(player, access_nametab, cmdp1ac->perms, cmdp1ac->cmdname, true);
-        }
-    }
-
     for ( CMDENT_TWO_ARG *cmdp2a = command_table_two_arg;
           cmdp2a->cmdname;
           cmdp2a++)
@@ -2788,28 +2659,6 @@ static void list_cmdaccess(dbref player)
            && !(cmdp2av->perms & CF_DARK))
         {
             listset_nametab(player, access_nametab, cmdp2av->perms, cmdp2av->cmdname, true);
-        }
-    }
-
-    for ( CMDENT_TWO_ARG_CMDARG *cmdp2ac = command_table_two_arg_cmdarg;
-          cmdp2ac->cmdname;
-          cmdp2ac++)
-    {
-        if (  check_access(player, cmdp2ac->perms)
-           && !(cmdp2ac->perms & CF_DARK))
-        {
-            listset_nametab(player, access_nametab, cmdp2ac->perms, cmdp2ac->cmdname, true);
-        }
-    }
-
-    for ( CMDENT_TWO_ARG_ARGV_CMDARG *cmdp2avc = command_table_two_arg_argv_cmdarg;
-          cmdp2avc->cmdname;
-          cmdp2avc++)
-    {
-        if (  check_access(player, cmdp2avc->perms)
-           && !(cmdp2avc->perms & CF_DARK))
-        {
-            listset_nametab(player, access_nametab, cmdp2avc->perms, cmdp2avc->cmdname, true);
         }
     }
 
@@ -2867,18 +2716,6 @@ static void list_cmdswitches(dbref player)
         }
     }
 
-    for ( CMDENT_ONE_ARG_CMDARG *cmdp1ac = command_table_one_arg_cmdarg;
-          cmdp1ac->cmdname;
-          cmdp1ac++)
-    {
-        if (  cmdp1ac->switches
-           && check_access(player, cmdp1ac->perms)
-           && !(cmdp1ac->perms & CF_DARK))
-        {
-            display_nametab(player, cmdp1ac->switches, cmdp1ac->cmdname, false);
-        }
-    }
-
     for ( CMDENT_TWO_ARG *cmdp2a = command_table_two_arg;
           cmdp2a->cmdname;
           cmdp2a++)
@@ -2900,30 +2737,6 @@ static void list_cmdswitches(dbref player)
            && !(cmdp2av->perms & CF_DARK))
         {
             display_nametab(player, cmdp2av->switches, cmdp2av->cmdname, false);
-        }
-    }
-
-    for ( CMDENT_TWO_ARG_CMDARG *cmdp2ac = command_table_two_arg_cmdarg;
-          cmdp2ac->cmdname;
-          cmdp2ac++)
-    {
-        if (  cmdp2ac->switches
-           && check_access(player, cmdp2ac->perms)
-           && !(cmdp2ac->perms & CF_DARK))
-        {
-            display_nametab(player, cmdp2ac->switches, cmdp2ac->cmdname, false);
-        }
-    }
-
-    for ( CMDENT_TWO_ARG_ARGV_CMDARG *cmdp2avc = command_table_two_arg_argv_cmdarg;
-          cmdp2avc->cmdname;
-          cmdp2avc++)
-    {
-        if (  cmdp2avc->switches
-           && check_access(player, cmdp2avc->perms)
-           && !(cmdp2avc->perms & CF_DARK))
-        {
-            display_nametab(player, cmdp2avc->switches, cmdp2avc->cmdname, false);
         }
     }
 }
@@ -3889,13 +3702,15 @@ NAMETAB list_names[] =
     {(UTF8 *) NULL,                0,  0,          0}
 };
 
-void do_list(dbref executor, dbref caller, dbref enactor, int eval, int extra,
-             UTF8 *arg)
+void do_list(dbref executor, dbref caller, dbref enactor, int eval, int key,
+    UTF8 *arg, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
-    UNUSED_PARAMETER(extra);
+    UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     MUX_STRTOK_STATE tts;
     mux_strtok_src(&tts, arg);
@@ -4007,9 +3822,10 @@ void do_list(dbref executor, dbref caller, dbref enactor, int eval, int extra,
 }
 
 void do_assert(dbref executor, dbref caller, dbref enactor, int eval, int key,
-               UTF8 *arg1, UTF8 *command, const UTF8 *cargs[], int ncargs)
+               int nargs, UTF8 *arg1, UTF8 *command, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(nargs);
 
     if (!xlate(arg1))
     {
@@ -4027,9 +3843,10 @@ void do_assert(dbref executor, dbref caller, dbref enactor, int eval, int key,
 }
 
 void do_break(dbref executor, dbref caller, dbref enactor, int eval, int key,
-              UTF8 *arg1, UTF8 *command, const UTF8 *cargs[], int ncargs)
+              int nargs, UTF8 *arg1, UTF8 *command, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(nargs);
 
     if (xlate(arg1))
     {
@@ -4051,11 +3868,13 @@ void do_break(dbref executor, dbref caller, dbref enactor, int eval, int key,
 // Bludgeoned into MUX by Jake Nelson 7/2002.
 //
 void do_icmd(dbref player, dbref cause, dbref enactor, int eval, int key,
-             UTF8 *name, UTF8 *args[], int nargs)
+             UTF8 *name, UTF8 *args[], int nargs, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(cause);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     CMDENT *cmdp;
     UTF8 *buff1, *pt1, *pt2, *pt3, *atrpt, *pt5;
@@ -4419,9 +4238,11 @@ void do_icmd(dbref player, dbref cause, dbref enactor, int eval, int key,
 // do_train: show someone else in the same room what code you're entering and the result
 // From RhostMUSH, changed to use notify_all_from_inside.
 //
-void do_train(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *string)
+void do_train(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *string, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(key);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (0 < mudstate.train_nest_lev)
     {
@@ -4450,13 +4271,16 @@ void do_train(dbref executor, dbref caller, dbref enactor, int eval, int key, UT
     mudstate.train_nest_lev--;
 }
 
-void do_moniker(dbref executor, dbref caller, dbref enactor, int key,
-                 int nfargs, UTF8 *name, UTF8 *instr)
+void do_moniker(dbref executor, dbref caller, dbref enactor, int eval, int key,
+                 int nargs, UTF8 *name, UTF8 *instr, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
-    UNUSED_PARAMETER(nfargs);
+    UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref thing = match_thing(executor, name);
     if (!Good_obj(thing))
@@ -4557,11 +4381,13 @@ static void hook_loop(dbref executor, CMDENT *cmdp, UTF8 *s_ptr, UTF8 *s_ptrbuff
     notify(executor, tprintf(pFmt, pCmd, s_ptrbuff));
 }
 
-void do_hook(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name)
+void do_hook(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *name, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     bool negate, found;
     UTF8 *s_ptr, *s_ptrbuff, *cbuff, *p;
@@ -4676,19 +4502,6 @@ void do_hook(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF
                 }
             }
             {
-                CMDENT_ONE_ARG_CMDARG *cmdp2;
-                for (cmdp2 = command_table_one_arg_cmdarg; cmdp2->cmdname; cmdp2++)
-                {
-                    s_ptrbuff[0] = '\0';
-                    s_ptr = s_ptrbuff;
-                    if (cmdp2->hookmask)
-                    {
-                        found = true;
-                        hook_loop(executor, (CMDENT *)cmdp2, s_ptr, s_ptrbuff);
-                    }
-                }
-            }
-            {
                 CMDENT_TWO_ARG *cmdp2;
                 for (cmdp2 = command_table_two_arg; cmdp2->cmdname; cmdp2++)
                 {
@@ -4704,32 +4517,6 @@ void do_hook(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF
             {
                 CMDENT_TWO_ARG_ARGV *cmdp2;
                 for (cmdp2 = command_table_two_arg_argv; cmdp2->cmdname; cmdp2++)
-                {
-                    s_ptrbuff[0] = '\0';
-                    s_ptr = s_ptrbuff;
-                    if (cmdp2->hookmask)
-                    {
-                        found = true;
-                        hook_loop(executor, (CMDENT *)cmdp2, s_ptr, s_ptrbuff);
-                    }
-                }
-            }
-            {
-                CMDENT_TWO_ARG_CMDARG *cmdp2;
-                for (cmdp2 = command_table_two_arg_cmdarg; cmdp2->cmdname; cmdp2++)
-                {
-                    s_ptrbuff[0] = '\0';
-                    s_ptr = s_ptrbuff;
-                    if (cmdp2->hookmask)
-                    {
-                        found = true;
-                        hook_loop(executor, (CMDENT *)cmdp2, s_ptr, s_ptrbuff);
-                    }
-                }
-            }
-            {
-                CMDENT_TWO_ARG_ARGV_CMDARG *cmdp2;
-                for (cmdp2 = command_table_two_arg_argv_cmdarg; cmdp2->cmdname; cmdp2++)
                 {
                     s_ptrbuff[0] = '\0';
                     s_ptr = s_ptrbuff;
