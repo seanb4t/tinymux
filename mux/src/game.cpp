@@ -3205,6 +3205,7 @@ int DCL_CDECL main(int argc, char *argv[])
 #endif
 
     mudconf.config_file = StringClone(conffile);
+    mudconf.log_dir = StringClone(pErrorBasename);
     cf_read();
 
 #if defined(INLINESQL)
