@@ -373,11 +373,13 @@ int halt_que(dbref executor, dbref object)
 // ---------------------------------------------------------------------------
 // do_halt: Command interface to halt_que.
 //
-void do_halt(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *target)
+void do_halt(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *target, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     dbref executor_targ, obj_targ;
 
@@ -604,15 +606,21 @@ void do_notify
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *what,
-    UTF8 *count
+    UTF8 *count,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *obj = parse_to(&what, '/', 0);
     init_match(executor, obj, NOTYPE);
@@ -973,13 +981,16 @@ void do_wait
     dbref caller,
     dbref enactor,
     int   eval,
-    int key,
+    int   key,
+    int   nargs,
     UTF8 *event,
     UTF8 *cmd,
     const UTF8 *cargs[],
-    int ncargs
+    int   ncargs
 )
 {
+    UNUSED_PARAMETER(nargs);
+
     CLinearTimeAbsolute ltaWhen;
     CLinearTimeDelta    ltd;
 
@@ -1329,11 +1340,13 @@ int CallBack_ShowSQLQueries(PTASK_RECORD p)
 // ---------------------------------------------------------------------------
 // do_ps: tell executor what commands they have pending in the queue
 //
-void do_ps(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *target)
+void do_ps(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *target, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     UTF8 *bufp;
     dbref executor_targ, obj_targ;
@@ -1463,11 +1476,13 @@ static int CallBack_Warp(PTASK_RECORD p)
 // ---------------------------------------------------------------------------
 // do_queue: Queue management
 //
-void do_queue(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg)
+void do_queue(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *arg, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
     UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     if (key == QUEUE_KICK)
     {

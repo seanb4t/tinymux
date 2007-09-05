@@ -807,15 +807,21 @@ void do_attribute
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *aname,
-    UTF8 *value
+    UTF8 *value,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     // Look up the user-named attribute we want to play with.
     //
@@ -947,15 +953,21 @@ void do_fixdb
     dbref executor,
     dbref caller,
     dbref enactor,
+    int   eval,
     int   key,
     int   nargs,
     UTF8 *arg1,
-    UTF8 *arg2
+    UTF8 *arg2,
+    const UTF8 *cargs[],
+    int   ncargs
 )
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(nargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
 
     init_match(executor, arg1, NOTYPE);
     match_everything(0);
@@ -3513,7 +3525,7 @@ void ReleaseAllResources(dbref obj)
     if (mudconf.have_comsys)
     {
         do_comdisconnect(obj);
-        do_clearcom(obj, obj, obj, 0);
+        do_clearcom(obj, obj, obj, 0, 0);
         do_channelnuke(obj);
         del_comsys(obj);
     }
