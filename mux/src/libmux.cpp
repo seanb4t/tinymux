@@ -53,9 +53,9 @@ typedef struct mod_info
 
 typedef struct
 {
-    UINT64           cid;
-    MODULE_INFO     *pModule;
-} CLASS_INFO;
+    CLASS_INFO    ci;
+    MODULE_INFO  *pModule;
+} CLASS_INFO_PRIVATE;
 
 static MODULE_INFO *g_pModuleList = NULL;
 static MODULE_INFO *g_pModuleLast = NULL;
@@ -73,11 +73,15 @@ static MODULE_INFO  g_MainModule =
     false
 };
 
-static int          g_nClasses = 0;
-static int          g_nClassesAllocated = 0;
-static CLASS_INFO  *g_pClasses = NULL;
+static int                  g_nClasses = 0;
+static int                  g_nClassesAllocated = 0;
+static CLASS_INFO_PRIVATE  *g_pClasses = NULL;
 
 static MODULE_INFO *g_pModule = NULL;
+
+static int                  g_nInterfaces = 0;
+static int                  g_nInterfacesAllocated = 0;
+static INTERFACE_INFO      *g_pInterfaces = NULL;
 
 static process_context g_ProcessContext = IsUninitialized;
 
@@ -147,11 +151,11 @@ static UTF16 *CopyUTF16(const UTF16 *pString)
  *
  * The return value may be beyond the end of the array, so callers should check bounds.
  *
- * \param  UINT64   Class ID.
- * \return          Index into g_pClasses.
+ * \param  cid  Class ID.
+ * \return      Index into g_pClasses.
  */
 
-static int ClassFind(UINT64 cid)
+static int ClassFind(MUX_CID cid)
 {
     // Binary search for the class id.
     //
@@ -161,21 +165,20 @@ static int ClassFind(UINT64 cid)
     while (lo <= hi)
     {
         mid = ((hi - lo) >> 1) + lo;
-        if (cid < g_pClasses[mid].cid)
+        if (cid < g_pClasses[mid].ci.cid)
         {
             hi = mid - 1;
         }
-        else if (g_pClasses[mid].cid < cid)
+        else if (g_pClasses[mid].ci.cid < cid)
         {
             lo = mid + 1;
         }
-        else // (g_pClasses[mid].cid == cid)
+        else // (g_pClasses[mid].ci.cid == cid)
         {
             return mid;
         }
     }
     return lo;
-
 }
 
 /*! \brief Find which module implements a particular class id.
@@ -183,15 +186,15 @@ static int ClassFind(UINT64 cid)
  * Note that callers may need to test for MainModule and cannot assume the
  * returned module record is implemented in a module.
  *
- * \param  UINT64   Class ID.
- * \return          Pointer to module.
+ * \param  cid  Class ID.
+ * \return      Pointer to module.
  */
 
-static MODULE_INFO *ModuleFindFromCID(UINT64 cid)
+static MODULE_INFO *ModuleFindFromCID(MUX_CID cid)
 {
     int i = ClassFind(cid);
     if (  i < g_nClasses
-       && g_pClasses[i].cid == cid)
+       && g_pClasses[i].ci.cid == cid)
    {
         return g_pClasses[i].pModule;
     }
@@ -266,16 +269,16 @@ static int GrowByFactor(int i)
  *
  * This routine assumes the array is large enough to hold the addition.
  *
- * \param UINT64         Class ID
- * \param pModule        Module that implements it.
- * \return               None.
+ * \param pci        Class-related attributes including cid.
+ * \param pModule    Module that implements it.
+ * \return           None.
  */
 
-static void ClassAdd(UINT64 cid, MODULE_INFO *pModule)
+static void ClassAdd(CLASS_INFO *pci, MODULE_INFO *pModule)
 {
-    int i = ClassFind(cid);
+    int i = ClassFind(pci->cid);
     if (  i < g_nClasses
-       && g_pClasses[i].cid == cid)
+       && g_pClasses[i].ci.cid == pci->cid)
     {
         return;
     }
@@ -284,33 +287,94 @@ static void ClassAdd(UINT64 cid, MODULE_INFO *pModule)
     {
         memmove( g_pClasses + i + 1,
                  g_pClasses + i,
-                 (g_nClasses - i) * sizeof(CLASS_INFO));
+                 (g_nClasses - i) * sizeof(CLASS_INFO_PRIVATE));
     }
     g_nClasses++;
 
-    g_pClasses[i].cid = cid;
+    g_pClasses[i].ci = *pci;
     g_pClasses[i].pModule = pModule;
 }
 
 /*! \brief Removes a class id from the table while maintaining order.
  *
- * \param UINT64         Class ID
- * \param pModule        Module that implements it.
- * \return               None.
+ * \param cid       Class ID
+ * \return          None.
  */
 
-static void ClassRemove(UINT64 cid)
+static void ClassRemove(MUX_CID cid)
 {
     int i = ClassFind(cid);
     if (  i < g_nClasses
-       && g_pClasses[i].cid == cid)
+       && g_pClasses[i].ci.cid == cid)
     {
         g_nClasses--;
         if (i != g_nClasses)
         {
             memmove( g_pClasses + i,
                      g_pClasses + i + 1,
-                     (g_nClasses - i) * sizeof(CLASS_INFO));
+                     (g_nClasses - i) * sizeof(CLASS_INFO_PRIVATE));
+        }
+    }
+}
+
+static int InterfaceFind(MUX_IID iid)
+{
+    // Binary search for the interface id.
+    //
+    int lo = 0;
+    int mid;
+    int hi = g_nInterfaces - 1;
+    while (lo <= hi)
+    {
+        mid = ((hi - lo) >> 1) + lo;
+        if (iid < g_pInterfaces[mid].iid)
+        {
+            hi = mid - 1;
+        }
+        else if (g_pInterfaces[mid].iid < iid)
+        {
+            lo = mid + 1;
+        }
+        else // (g_pInterfaces[mid].iid == iid)
+        {
+            return mid;
+        }
+    }
+    return lo;
+}
+
+static void InterfaceAdd(INTERFACE_INFO *pii)
+{
+    int i = InterfaceFind(pii->iid);
+    if (  i < g_nInterfaces
+       && g_pInterfaces[i].iid == pii->iid)
+    {
+        return;
+    }
+
+    if (i != g_nInterfaces)
+    {
+        memmove( g_pInterfaces + i + 1,
+                 g_pInterfaces + i,
+                 (g_nInterfaces - i) * sizeof(INTERFACE_INFO));
+    }
+    g_nInterfaces++;
+
+    g_pInterfaces[i] = *pii;
+}
+
+static void InterfaceRemove(MUX_IID iid)
+{
+    int i = InterfaceFind(iid);
+    if (  i < g_nInterfaces
+       && g_pInterfaces[i].iid == iid)
+    {
+        g_nInterfaces--;
+        if (i != g_nInterfaces)
+        {
+            memmove( g_pInterfaces + i,
+                     g_pInterfaces + i + 1,
+                     (g_nInterfaces - i) * sizeof(INTERFACE_INFO));
         }
     }
 }
@@ -442,7 +506,7 @@ static void ModuleRemove(MODULE_INFO *pModule)
             {
                 if (g_pClasses[i].pModule == pModule)
                 {
-                    ClassRemove(g_pClasses[i].cid);
+                    ClassRemove(g_pClasses[i].ci.cid);
                 }
             }
 
@@ -525,12 +589,12 @@ static void ModuleUnload(MODULE_INFO *pModule)
 
 /*! \brief Creates an instance of the given class with the given interface.
  *
- * \param  UINT64    Class ID
- * \param  UINT64    Interface ID
- * \return           MUX_RESULT
+ * \param  cid   Class ID
+ * \param  iid   Interface ID
+ * \return       MUX_RESULT
  */
 
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CreateInstance(UINT64 cid, mux_IUnknown *pUnknownOuter, create_context ctx, UINT64 iid, void **ppv)
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CreateInstance(MUX_CID cid, mux_IUnknown *pUnknownOuter, create_context ctx, MUX_IID iid, void **ppv)
 {
     if (  (UseSameProcess & ctx)
        || (  g_ProcessContext == IsMainProcess
@@ -587,16 +651,17 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CreateInstance(UINT64 cid, mux_IUnk
  * or stubslave) must pass a non-NULL pfGetClassObject.  For modules, the
  * class factory is obtained by using the mux_GetClassObject export.
  *
- * \param int                   Number of class ids to register
- * \param UINT64[]              Class ID table.
- * \param mux_IClassFactory     Pointer to Factory capable of creating
- *                              instances of the given components.
- * \return                      MUX_RESULT
+ * \param nci                  Number of components to register.
+ * \param aci                  Table of component-related info.
+ * \param fpGetClassObject     Pointer to Factory capable of creating
+ *                             instances of the given components.
+ * \return                     MUX_RESULT
  */
 
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT64 acid[], FPGETCLASSOBJECT *fpGetClassObject)
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int nci, CLASS_INFO aci[], FPGETCLASSOBJECT *fpGetClassObject)
 {
-    if (ncid <= 0)
+    if (  nci <= 0
+       || NULL == aci)
     {
         return MUX_E_INVALIDARG;
     }
@@ -619,16 +684,16 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT
     //
     MODULE_INFO *pModule = NULL;
     int i;
-    for (i = 0; i < ncid; i++)
+    for (i = 0; i < nci; i++)
     {
-        pModule = ModuleFindFromCID(acid[i]);
+        pModule = ModuleFindFromCID(aci[i].cid);
         if (NULL != pModule)
         {
             return MUX_E_INVALIDARG;
         }
     }
 
-    // Find corresponding MODULE_INFO. Since we're the ones that requested the
+    // Find corresponding MODULE_INFO. Since we're the one that requested the
     // module to register its classes, we know which module is registering.
     //
     pModule = g_pModule;
@@ -649,14 +714,14 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT
     // Make sure there is enough room in the class table for additional class
     // ids.
     //
-    if (g_nClassesAllocated < g_nClasses + ncid)
+    if (g_nClassesAllocated < g_nClasses + nci)
     {
-        int nAllocate = GrowByFactor(g_nClasses + ncid);
+        int nAllocate = GrowByFactor(g_nClasses + nci);
 
-        CLASS_INFO *pNewClasses = NULL;
+        CLASS_INFO_PRIVATE *pNewClasses = NULL;
         try
         {
-            pNewClasses = new CLASS_INFO[nAllocate];
+            pNewClasses = new CLASS_INFO_PRIVATE[nAllocate];
         }
         catch (...)
         {
@@ -692,9 +757,9 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT
         pModule->fpGetClassObject = fpGetClassObject;
     }
 
-    for (i = 0; i < ncid; i++)
+    for (i = 0; i < nci; i++)
     {
-        ClassAdd(acid[i], pModule);
+        ClassAdd(&(aci[i]), pModule);
     }
     return MUX_S_OK;
 }
@@ -702,14 +767,15 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int ncid, UINT
 /*! \brief De-register class ids and possibly the handler implemented by the
  *         process binary.
  *
- * \param int                   Number of component ids to register
- * \param UINT64[]              Component ID table.
- * \return                      MUX_RESULT
+ * \param nci    Number of components to revoke
+ * \param aci    Table of component-related info.
+ * \return       MUX_RESULT
  */
 
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeClassObjects(int ncid, UINT64 acid[])
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeClassObjects(int nci, CLASS_INFO aci[])
 {
-    if (ncid <= 0)
+    if (  nci <= 0
+       || NULL == aci)
     {
         return MUX_E_INVALIDARG;
     }
@@ -718,9 +784,9 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeClassObjects(int ncid, UINT64
     //
     MODULE_INFO *pModule = NULL;
     int i;
-    for (i = 0; i < ncid; i++)
+    for (i = 0; i < nci; i++)
     {
-        MODULE_INFO *q = ModuleFindFromCID(acid[i]);
+        MODULE_INFO *q = ModuleFindFromCID(aci[i].cid);
         if (NULL == q)
         {
             // Attempt to revoke a class ids which were never registered.
@@ -749,11 +815,78 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeClassObjects(int ncid, UINT64
 
     // Remove the requested class ids.
     //
-    for (i = 0; i < ncid; i++)
+    for (i = 0; i < nci; i++)
     {
-        ClassRemove(acid[i]);
+        ClassRemove(aci[i].cid);
     }
     return MUX_S_OK;
+}
+
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterInterfaces(int nii, INTERFACE_INFO aii[])
+{
+    if (  nii <= 0
+       || NULL == aii)
+    {
+        return MUX_E_INVALIDARG;
+    }
+
+    // Make sure there is enough room in the interface table.
+    //
+    if (g_nInterfacesAllocated < g_nInterfaces + nii)
+    {
+        int nAllocate = GrowByFactor(g_nInterfaces + nii);
+
+        INTERFACE_INFO *pNewInterfaces = NULL;
+        try
+        {
+            pNewInterfaces = new INTERFACE_INFO[nAllocate];
+        }
+        catch (...)
+        {
+            ; // Nothing.
+        }
+        
+        if (NULL == pNewInterfaces)
+        {
+            return MUX_E_OUTOFMEMORY;
+        }
+
+        if (NULL != g_pInterfaces)
+        {
+            int j;
+            for (j = 0; j < g_nInterfaces; j++)
+            {
+                pNewInterfaces[j] = g_pInterfaces[j];
+            }
+
+            delete [] g_pInterfaces;
+            g_pInterfaces = NULL;
+        }
+
+        g_pInterfaces = pNewInterfaces;
+        g_nInterfacesAllocated = nAllocate;
+    }
+
+    for (int i = 0; i < nii; i++)
+    {
+        InterfaceAdd(&aii[i]);
+    }
+    MUX_S_OK;
+}
+
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeInterfaces(int nii, INTERFACE_INFO aii[])
+{
+    if (  nii <= 0
+       || NULL == aii)
+    {
+        return MUX_E_INVALIDARG;
+    }
+
+    for (int i = 0; i < nii; i++)
+    {
+        InterfaceRemove(aii[i].iid);
+    }
+    MUX_S_OK;
 }
 
 /*! \brief Add module to the set of available modules.
