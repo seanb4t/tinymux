@@ -52,7 +52,7 @@ II. Design Increments.
       channel.
     - When a call frame to channel 0 is received, it will contain cid and iid.
       Create the requested object, and get its mux_IMarshal interface.  Since
-      we are using customer marshalling, we assume the mux_IMarshal interface
+      we are using custom marshaling, we assume the mux_IMarshal interface
       must exist.
     - Get the proxy CID.
     - mux_IMarshal::MarshalInterface() allocates a new channel (e.g., 1)
@@ -131,6 +131,16 @@ III. Packet Format.
   C. Message Frame (non-blocking).
 
      ReturnMagic 0x35971836
+     Length      0x--------
+     ToChannel   0x--------
+     Data..................
+     ......................
+     ......................
+     EndMagic    0x27118B26
+
+  D. Disconnect Frame.
+
+     DiscMagic   0x960AA381
      Length      0x--------
      ToChannel   0x--------
      Data..................
