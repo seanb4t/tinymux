@@ -16,10 +16,11 @@ static INT32 g_cServerLocks = 0;
 
 static ISample *g_pISample = NULL;
 
-#define NUM_CIDS 1
-static UINT64 sample_cids[NUM_CIDS] =
+#define NUM_CLASSES 2
+static CLASS_INFO sample_classes[NUM_CLASSES] =
 {
-    CID_Sample
+    { CID_Sample },
+    { CID_SumProxy }
 };
 
 // The following four functions are for access by dlopen.
@@ -37,7 +38,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CanUnloadNow(void)
     }
 }
 
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_GetClassObject(UINT64 cid, UINT64 iid, void **ppv)
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_GetClassObject(MUX_CID cid, MUX_IID iid, void **ppv)
 {
     MUX_RESULT mr = MUX_E_CLASSNOTAVAILABLE;
 
@@ -61,6 +62,26 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_GetClassObject(UINT64 cid, UINT64 i
         mr = pSampleFactory->QueryInterface(iid, ppv);
         pSampleFactory->Release();
     }
+    else if (CID_SumProxy == cid)
+    {
+        CSumProxyFactory *pSumProxyFactory = NULL;
+        try
+        {
+            pSumProxyFactory = new CSumProxyFactory;
+        }
+        catch (...)
+        {
+            ; // Nothing.
+        }
+
+        if (NULL == pSumProxyFactory)
+        {
+            return MUX_E_OUTOFMEMORY;
+        }
+
+        mr = pSumProxyFactory->QueryInterface(iid, ppv);
+        pSumProxyFactory->Release();
+    }
     return mr;
 }
 
@@ -72,7 +93,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_Register(void)
     {
         // Advertise our components.
         //
-        mr = mux_RegisterClassObjects(NUM_CIDS, sample_cids, NULL);
+        mr = mux_RegisterClassObjects(NUM_CLASSES, sample_classes, NULL);
         if (MUX_FAILED(mr))
         {
             return mr;
@@ -89,7 +110,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_Register(void)
         }
         else
         {
-            (void)mux_RevokeClassObjects(NUM_CIDS, sample_cids);
+            (void)mux_RevokeClassObjects(NUM_CLASSES, sample_classes);
             mr = MUX_E_OUTOFMEMORY;
         }
     }
@@ -106,7 +127,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_Unregister(void)
         g_pISample = NULL;
     }
 
-    return mux_RevokeClassObjects(NUM_CIDS, sample_cids);
+    return mux_RevokeClassObjects(NUM_CLASSES, sample_classes);
 }
 
 // Sample component which is not directly accessible.
@@ -175,7 +196,7 @@ CSample::~CSample()
     g_cComponents--;
 }
 
-MUX_RESULT CSample::QueryInterface(UINT64 iid, void **ppv)
+MUX_RESULT CSample::QueryInterface(MUX_IID iid, void **ppv)
 {
     if (mux_IID_IUnknown == iid)
     {
@@ -230,7 +251,7 @@ CSampleFactory::~CSampleFactory()
 {
 }
 
-MUX_RESULT CSampleFactory::QueryInterface(UINT64 iid, void **ppv)
+MUX_RESULT CSampleFactory::QueryInterface(MUX_IID iid, void **ppv)
 {
     if (mux_IID_IUnknown == iid)
     {
@@ -266,7 +287,7 @@ UINT32 CSampleFactory::Release(void)
     return m_cRef;
 }
 
-MUX_RESULT CSampleFactory::CreateInstance(mux_IUnknown *pUnknownOuter, UINT64 iid, void **ppv)
+MUX_RESULT CSampleFactory::CreateInstance(mux_IUnknown *pUnknownOuter, MUX_IID iid, void **ppv)
 {
     // Disallow attempts to aggregate this component.
     //
@@ -432,4 +453,193 @@ void CSample::data_clone(dbref clone, dbref source)
 void CSample::data_free(dbref object)
 {
     m_pILog->log_printf("Sample module sees CSample::data_free event." ENDLINE);
+}
+
+// SumProxy component which is not directly accessible.
+//
+CSumProxy::CSumProxy(void) : m_cRef(1)
+{
+    g_cComponents++;
+}
+
+MUX_RESULT CSumProxy::FinalConstruct(void)
+{
+    return MUX_S_OK;
+}
+
+CSumProxy::~CSumProxy()
+{
+    g_cComponents--;
+}
+
+MUX_RESULT CSumProxy::QueryInterface(MUX_IID iid, void **ppv)
+{
+    if (mux_IID_IUnknown == iid)
+    {
+        *ppv = static_cast<ISum *>(this);
+    }
+    else if (IID_ISum == iid)
+    {
+        *ppv = static_cast<ISum *>(this);
+    }
+    else if (mux_IID_IMarshal == iid)
+    {
+        *ppv = static_cast<mux_IMarshal *>(this);
+    }
+    else
+    {
+        *ppv = NULL;
+        return MUX_E_NOINTERFACE;
+    }
+    reinterpret_cast<mux_IUnknown *>(*ppv)->AddRef();
+    return MUX_S_OK;
+}
+
+UINT32 CSumProxy::AddRef(void)
+{
+    m_cRef++;
+    return m_cRef;
+}
+
+UINT32 CSumProxy::Release(void)
+{
+    m_cRef--;
+    if (0 == m_cRef)
+    {
+        delete this;
+        return 0;
+    }
+    return m_cRef;
+}
+
+MUX_RESULT CSumProxy::GetUnmarshalClass(MUX_IID riid, marshal_context ctx, MUX_CID *pcid)
+{
+    return MUX_E_NOTIMPLEMENTED;
+}
+
+MUX_RESULT CSumProxy::MarshalInterface(size_t *pnBuffer, char **pBuffer, MUX_IID riid, marshal_context ctx)
+{
+    return MUX_E_NOTIMPLEMENTED;
+}
+
+MUX_RESULT CSumProxy::UnmarshalInterface(size_t nBuffer, char *pBuffer, MUX_IID riid, void **ppv)
+{
+    // TODO: Given a marshal packet from the remote component, we should be able to connect and provide a proxy ISum.
+    //
+    return QueryInterface(riid, ppv);
+}
+
+MUX_RESULT CSumProxy::ReleaseMarshalData(char *pBuffer)
+{
+    return MUX_S_OK;
+}
+
+MUX_RESULT CSumProxy::DisconnectObject(void)
+{
+    return MUX_E_NOTIMPLEMENTED;
+}
+
+MUX_RESULT CSumProxy::Add(int a, int b, int *sum)
+{
+    // TODO: Communicate with the remote component to service this request.
+    //
+    return MUX_E_NOTIMPLEMENTED;
+}
+
+// Factory for SumProxy component which is not directly accessible.
+//
+CSumProxyFactory::CSumProxyFactory(void) : m_cRef(1)
+{
+}
+
+CSumProxyFactory::~CSumProxyFactory()
+{
+}
+
+MUX_RESULT CSumProxyFactory::QueryInterface(MUX_IID iid, void **ppv)
+{
+    if (mux_IID_IUnknown == iid)
+    {
+        *ppv = static_cast<mux_IClassFactory *>(this);
+    }
+    else if (mux_IID_IClassFactory == iid)
+    {
+        *ppv = static_cast<mux_IClassFactory *>(this);
+    }
+    else
+    {
+        *ppv = NULL;
+        return MUX_E_NOINTERFACE;
+    }
+    reinterpret_cast<mux_IUnknown *>(*ppv)->AddRef();
+    return MUX_S_OK;
+}
+
+UINT32 CSumProxyFactory::AddRef(void)
+{
+    m_cRef++;
+    return m_cRef;
+}
+
+UINT32 CSumProxyFactory::Release(void)
+{
+    m_cRef--;
+    if (0 == m_cRef)
+    {
+        delete this;
+        return 0;
+    }
+    return m_cRef;
+}
+
+MUX_RESULT CSumProxyFactory::CreateInstance(mux_IUnknown *pUnknownOuter, MUX_IID iid, void **ppv)
+{
+    // Disallow attempts to aggregate this component.
+    //
+    if (NULL != pUnknownOuter)
+    {
+        return MUX_E_NOAGGREGATION;
+    }
+
+    CSumProxy *pSumProxy = NULL;
+    try
+    {
+        pSumProxy = new CSumProxy;
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    MUX_RESULT mr;
+    if (NULL == pSumProxy)
+    {
+        return MUX_E_OUTOFMEMORY;
+    }
+    else
+    {
+        mr = pSumProxy->FinalConstruct();
+        if (MUX_FAILED(mr))
+        {
+            pSumProxy->Release();
+            return mr;
+        }
+    }
+
+    mr = pSumProxy->QueryInterface(iid, ppv);
+    pSumProxy->Release();
+    return mr;
+}
+
+MUX_RESULT CSumProxyFactory::LockServer(bool bLock)
+{
+    if (bLock)
+    {
+        g_cServerLocks++;
+    }
+    else
+    {
+        g_cServerLocks--;
+    }
+    return MUX_S_OK;
 }
