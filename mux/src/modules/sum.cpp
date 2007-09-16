@@ -14,8 +14,6 @@
 static INT32 g_cComponents  = 0;
 static INT32 g_cServerLocks = 0;
 
-static ISum *g_pISum = NULL;
-
 #define NUM_CLASSES 1
 static CLASS_INFO sum_classes[NUM_CLASSES] =
 {
@@ -66,46 +64,14 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_GetClassObject(MUX_CID cid, MUX_IID
 
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_Register(void)
 {
-    MUX_RESULT mr = MUX_E_UNEXPECTED;
-
-    if (NULL == g_pISum)
-    {
-        // Advertise our components.
-        //
-        mr = mux_RegisterClassObjects(NUM_CLASSES, sum_classes, NULL);
-        if (MUX_FAILED(mr))
-        {
-            return mr;
-        }
-
-        // Create an instance of our CSum component.
-        //
-        ISum *pISum = NULL;
-        mr = mux_CreateInstance(CID_Sum, NULL, UseSameProcess, IID_ISum, (void **)&pISum);
-        if (MUX_SUCCEEDED(mr))
-        {
-            g_pISum = pISum;
-            pISum = NULL;
-        }
-        else
-        {
-            (void)mux_RevokeClassObjects(NUM_CLASSES, sum_classes);
-            mr = MUX_E_OUTOFMEMORY;
-        }
-    }
+    // Advertise our components.
+    //
+    MUX_RESULT mr = mux_RegisterClassObjects(NUM_CLASSES, sum_classes, NULL);
     return mr;
 }
 
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_Unregister(void)
 {
-    // Destroy our CSum component.
-    //
-    if (NULL != g_pISum)
-    {
-        g_pISum->Release();
-        g_pISum = NULL;
-    }
-
     return mux_RevokeClassObjects(NUM_CLASSES, sum_classes);
 }
 
@@ -272,66 +238,56 @@ MUX_RESULT CSum_Call(CHANNEL_INFO *pci, QUEUE_INFO *pqi)
     return MUX_E_NOTIMPLEMENTED;
 }
 
-MUX_RESULT CSum::MarshalInterface(size_t *pnBuffer, void **pBuffer, MUX_IID riid, marshal_context ctx)
+MUX_RESULT CSum::MarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, marshal_context ctx)
 {
     // Parameter validation and initialization.
     //
     MUX_RESULT mr = MUX_S_OK;
-    if (NULL == pnBuffer)
+    if (NULL == pqi)
     {
         mr = MUX_E_INVALIDARG;
     }
-    *pnBuffer = 0;
-
-    if (  NULL == pBuffer
-       || NULL == *pBuffer)
+    else if (IID_ISum != riid)
     {
-        mr = MUX_E_INVALIDARG;
+        mr = MUX_E_FAIL;
     }
-    *pBuffer = NULL;
-
-    if (MUX_FAILED(mr))
+    else if (CrossProcess != ctx)
     {
-        return mr;
+        mr = MUX_E_NOTIMPLEMENTED;
     }
-
-    if (IID_ISum != riid)
+    else
     {
-       return MUX_E_FAIL;
-    }
-
-    if (CrossProcess != ctx)
-    {
-        return MUX_E_NOTIMPLEMENTED;
-    }
-
-    // Construct a packet sufficient to allow the proxy to communicate with us.
-    //
-    m_pChannel = Pipe_AllocateChannel(CSum_Call, NULL, CSum_Disconnect);
-
-    ISum *pISum = NULL;
-    mr = QueryInterface(IID_ISum, (void **)&pISum);
-    if (MUX_SUCCEEDED(mr))
-    {
-        m_pChannel->pInterface = pISum;
-        m_mipkt.nChannel = m_pChannel->nChannel;
-        *pBuffer = &m_mipkt;
-        *pnBuffer = sizeof(m_mipkt);
+        ISum *pISum = NULL;
+        mr = QueryInterface(IID_ISum, (void **)&pISum);
+        if (MUX_SUCCEEDED(mr))
+        {
+            // Construct a packet sufficient to allow the proxy to communicate with us.
+            //
+            m_pChannel = Pipe_AllocateChannel(CSum_Call, NULL, CSum_Disconnect);
+            if (NULL != m_pChannel)
+            {
+                m_pChannel->pInterface = pISum;
+                Pipe_AppendBytes(pqi, sizeof(m_pChannel->nChannel), (UTF8*)(&m_pChannel->nChannel));
+                mr =  MUX_S_OK;
+            }
+            else
+            {
+                pISum->Release();
+                pISum = NULL;
+                mr = MUX_E_OUTOFMEMORY;
+            }
+        }
     }
     return mr;
 }
 
-MUX_RESULT CSum::UnmarshalInterface(size_t nBuffer, void *pBuffer, MUX_IID riid, void **ppv)
+MUX_RESULT CSum::UnmarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, void **ppv)
 {
     return MUX_E_UNEXPECTED;
 }
 
-MUX_RESULT CSum::ReleaseMarshalData(char *pBuffer)
+MUX_RESULT CSum::ReleaseMarshalData(QUEUE_INFO *pqi)
 {
-    if (NULL != pBuffer)
-    {
-        delete pBuffer;
-    }
     return MUX_S_OK;
 }
 
