@@ -239,7 +239,7 @@ void raw_notify_newline(dbref player)
  * raw_broadcast: Send message to players who have indicated flags
  */
 
-void DCL_CDECL raw_broadcast(int inflags, char *fmt, ...)
+void DCL_CDECL raw_broadcast(int inflags, const char *fmt, ...)
 {
     if (!fmt || !*fmt)
     {
@@ -464,7 +464,7 @@ void queue_write_LEN(DESC *d, const char *b, size_t n)
             {
                 tp->hdr.flags |= TBLK_FLAG_LOCKED;
             }
-            else 
+            else
 #endif
             if (0 == (tp->hdr.flags & TBLK_FLAG_LOCKED))
             {
@@ -979,8 +979,8 @@ static void announce_connect(dbref player, DESC *d)
         db[player].fs.word[FLAG_WORD1] &= ~DARK;
     }
 
-    char *pRoomAnnounceFmt;
-    char *pMonitorAnnounceFmt;
+    const char *pRoomAnnounceFmt;
+    const char *pMonitorAnnounceFmt;
     if (num < 2)
     {
         pRoomAnnounceFmt = "%s has connected.";
@@ -2752,10 +2752,12 @@ void do_command(DESC *d, UTF8 *command)
     // Split off the command from the arguments.
     //
     size_t iArg = 0;
+    UTF8* cmd_argument = command;
     while (  '\0' != command[iArg]
           && !mux_isspace(command[iArg]))
     {
         iArg++;
+        cmd_argument++;
     }
 
     // Look up the command in the logged-out command table.
@@ -2792,7 +2794,7 @@ void do_command(DESC *d, UTF8 *command)
     else
     {
         mudstate.debug_cmd = cp->name;
-        do_logged_out_internal(d, cp->flag & CMD_MASK, command + iArg + 1);
+        do_logged_out_internal(d, cp->flag & CMD_MASK, cmd_argument);
     }
     // QUIT or LOGOUT will close the connection and cause the
     // descriptor to be freed!

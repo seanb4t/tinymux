@@ -36,9 +36,9 @@ public:
     // mux_IMarshal
     //
     virtual MUX_RESULT GetUnmarshalClass(MUX_IID riid, marshal_context ctx, MUX_CID *pcid);
-    virtual MUX_RESULT MarshalInterface(size_t *pnBuffer, char **pBuffer, MUX_IID riid, marshal_context ctx);
-    virtual MUX_RESULT UnmarshalInterface(size_t nBuffer, char *pBuffer, MUX_IID riid, void **ppv);
-    virtual MUX_RESULT ReleaseMarshalData(char *pBuffer);
+    virtual MUX_RESULT MarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, marshal_context ctx);
+    virtual MUX_RESULT UnmarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, void **ppv);
+    virtual MUX_RESULT ReleaseMarshalData(QUEUE_INFO *pqi);
     virtual MUX_RESULT DisconnectObject(void);
 
     // ISum
@@ -50,7 +50,8 @@ public:
     virtual ~CSum();
 
 private:
-    UINT32 m_cRef;
+    UINT32        m_cRef;
+    CHANNEL_INFO *m_pChannel;
 };
 
 class CSumFactory : public mux_IClassFactory

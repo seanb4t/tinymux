@@ -37,6 +37,8 @@
 
 #if defined(HAVE_DLOPEN) && defined(STUB_SLAVE)
 #include "libmux.h"
+extern QUEUE_INFO Queue_In;
+extern QUEUE_INFO Queue_Out;
 #endif
 
 #ifdef SOLARIS
@@ -555,7 +557,7 @@ void CleanUpStubSlaveProcess(void)
 
 void boot_stubslave(dbref executor, dbref caller, dbref enactor, int)
 {
-    char *pFailedFunc = 0;
+    const char *pFailedFunc = NULL;
     int sv[2];
     int i;
     int maxfds;
@@ -689,7 +691,7 @@ void boot_slave(dbref executor, dbref caller, dbref enactor, int eval, int key)
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
 
-    char *pFailedFunc = 0;
+    const char *pFailedFunc = NULL;
     int sv[2];
     int i;
     int maxfds;
@@ -822,7 +824,7 @@ failure:
  * \return         -1 for failure and 0 for success.
  */
 
-static int get_stubslave_result(void)
+static int StubSlaveRead(void)
 {
     char buf[LBUF_SIZE];
 
@@ -849,11 +851,36 @@ static int get_stubslave_result(void)
         return -1;
     }
 
-    // TODO: Pay attention to return value and control whether to continue
-    // pumping the pipe.
-    //
-    if (mux_ReceiveData(len, buf))
+    Pipe_AppendBytes(&Queue_In, len, buf);
+    return 0;
+}
+
+static int StubSlaveWrite(void)
+{
+    char buf[LBUF_SIZE];
+
+    size_t nWanted = sizeof(buf);
+    if (  Pipe_GetBytes(&Queue_Out, &nWanted, buf)
+       && 0 < nWanted)
     {
+        int len = mux_write(stubslave_socket, buf, nWanted);
+        if (len < 0)
+        {
+            int iSocketError = SOCKET_LAST_ERROR;
+            if (  SOCKET_EAGAIN == iSocketError
+               || SOCKET_EWOULDBLOCK == iSocketError)
+            {
+                return -1;
+            }
+            CleanUpStubSlaveSocket();
+            CleanUpStubSlaveProcess();
+
+            STARTLOG(LOG_ALWAYS, "NET", "STUB");
+            log_text(T("write() of stubslave failed. Stubslave stopped."));
+            ENDLOG;
+
+            return -1;
+        }
     }
     return 0;
 }
@@ -1934,7 +1961,7 @@ void shovechars(int nPorts, PortInfo aPorts[])
         {
             if (CheckInput(stubslave_socket))
             {
-                while (0 == get_stubslave_result())
+                while (0 == StubSlaveRead())
                 {
                     ; // Nothing.
                 }
@@ -1942,7 +1969,7 @@ void shovechars(int nPorts, PortInfo aPorts[])
 
             if (CheckOutput(stubslave_socket))
             {
-                // TODO: Push stuff out.
+                StubSlaveWrite();
             }
         }
 #endif // STUB_SLAVE
@@ -2022,7 +2049,7 @@ extern "C" void DCL_API pipepump(void)
 
     mudstate.debug_cmd = T("< pipepump >");
 
-    while (  !mudstate.shutdown_flag
+    if (  !mudstate.shutdown_flag
           && !IS_INVALID_SOCKET(stubslave_socket))
     {
         FD_ZERO(&input_set);
@@ -2031,16 +2058,10 @@ extern "C" void DCL_API pipepump(void)
         // Listen for replies from the stubslave socket.
         //
         FD_SET(stubslave_socket, &input_set);
-
-#if 0
-        // TODO: This will become necessary because we could be blocked on a
-        // call to the slave at the same time it makes a call to us.
-        //
-        if ()
+        if (0 < Pipe_QueueLength(&Queue_Out))
         {
             FD_SET(stubslave_socket, &output_set);
         }
-#endif
 
         // Wait for something to happen.
         //
@@ -2066,14 +2087,14 @@ extern "C" void DCL_API pipepump(void)
             {
                 log_perror(T("NET"), T("FAIL"), T("checking for activity"), T("select"));
             }
-            continue;
+            return;
         }
 
         // Get data from from stubslave.
         //
         if (CheckInput(stubslave_socket))
         {
-            while (0 == get_stubslave_result())
+            while (0 == StubSlaveRead())
             {
                 ; // Nothing.
             }
@@ -2081,7 +2102,7 @@ extern "C" void DCL_API pipepump(void)
 
         if (CheckOutput(stubslave_socket))
         {
-            // TODO: Push stuff out.
+            StubSlaveWrite();
         }
     }
 }
