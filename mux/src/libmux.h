@@ -21,6 +21,12 @@ typedef int MUX_RESULT;
 typedef UINT64 MUX_CID;
 typedef UINT64 MUX_IID;
 
+const UINT8 CallMagic[4]   = { 0xC3, 0x9B, 0x71, 0xF9 };
+const UINT8 ReturnMagic[4] = { 0x35, 0x97, 0x2D, 0xD0 };
+const UINT8 MsgMagic[4]    = { 0xF6, 0x9E, 0x18, 0x36 };
+const UINT8 DiscMagic[4]   = { 0x96, 0x0A, 0xA3, 0x81 };
+const UINT8 EndMagic[4]    = { 0x27, 0x11, 0x8B, 0x26 };
+
 #define MUX_S_OK                 (0)
 #define MUX_S_FALSE              (1)
 #define MUX_E_FAIL              (-1)
@@ -41,7 +47,7 @@ typedef enum
 {
     UseSameProcess  = 1,
     UseMainProcess  = 2,
-    UseSlaveProcess = 3,
+    UseSlaveProcess = 4,
     UseAnyContext   = 7
 } create_context;
 
@@ -151,13 +157,8 @@ typedef struct
 {
     QUEUE_BLOCK *pHead;
     QUEUE_BLOCK *pTail;
+    size_t      nBytes;
 } QUEUE_INFO;
-
-void Pipe_InitializeQueueInfo(QUEUE_INFO *pqi);
-void Pipe_AppendBytes(QUEUE_INFO *pqi, size_t n, const UINT8 *p);
-void Pipe_EmptyQueue(QUEUE_INFO *pqi);
-bool Pipe_GetByte(QUEUE_INFO *pqi, UINT8 ach[0]);
-bool Pipe_GetBytes(QUEUE_INFO *pqi, size_t *pn, UINT8 *pch);
 
 typedef MUX_RESULT FCALL(struct channel_info *pci, QUEUE_INFO *pqi);
 typedef MUX_RESULT FMSG(struct channel_info *pci, QUEUE_INFO *pqi);
@@ -173,7 +174,17 @@ typedef struct channel_info
 } CHANNEL_INFO;
 
 CHANNEL_INFO *Pipe_AllocateChannel(FCALL *pfCall, FMSG *pfMsg, FDISC *pfDisc);
-void Pipe_FreeChannel(CHANNEL_INFO *pci);
+void          Pipe_AppendBytes(QUEUE_INFO *pqi, size_t n, const void *p);
+void          Pipe_AppendQueue(QUEUE_INFO *pqiOut, QUEUE_INFO *pqiIn);
+bool          Pipe_DecodeFrames(UINT32 nReturnChannel, QUEUE_INFO *pqiFrame);
+void          Pipe_EmptyQueue(QUEUE_INFO *pqi);
+void          Pipe_FreeChannel(CHANNEL_INFO *pci);
+bool          Pipe_GetByte(QUEUE_INFO *pqi, UINT8 ach[0]);
+bool          Pipe_GetBytes(QUEUE_INFO *pqi, size_t *pn, void *pch);
+void          Pipe_InitializeChannelZero(FCALL *pfCall0, FMSG *pfMsg0, FDISC *pfDisc0);
+void          Pipe_InitializeQueueInfo(QUEUE_INFO *pqi);
+size_t        Pipe_QueueLength(QUEUE_INFO *pqi);
+MUX_RESULT    Pipe_SendCallPacketAndWait(UINT32 nChannel, QUEUE_INFO *pqi);
 
 // The following is part of what is called 'Custom Marshaling'.
 //
@@ -181,9 +192,9 @@ interface mux_IMarshal : public mux_IUnknown
 {
 public:
     virtual MUX_RESULT GetUnmarshalClass(MUX_IID riid, marshal_context ctx, MUX_CID *pcid) = 0;
-    virtual MUX_RESULT MarshalInterface(size_t *pnBuffer, void **pBuffer, MUX_IID riid, marshal_context ctx) = 0;
-    virtual MUX_RESULT UnmarshalInterface(size_t nBuffer, void *pBuffer, MUX_IID riid, void **ppv) = 0;
-    virtual MUX_RESULT ReleaseMarshalData(char *pBuffer) = 0;
+    virtual MUX_RESULT MarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, marshal_context ctx) = 0;
+    virtual MUX_RESULT UnmarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, void **ppv) = 0;
+    virtual MUX_RESULT ReleaseMarshalData(QUEUE_INFO *pqi) = 0;
     virtual MUX_RESULT DisconnectObject(void) = 0;
 };
 
@@ -227,7 +238,7 @@ typedef void PipePump(void);
 
 // APIs intended only for use by main program (netmux or stubslave).
 //
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx, PipePump *fpPipePump);
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx, PipePump *fpPipePump, QUEUE_INFO *pQueue_In, QUEUE_INFO *pQueue_Out);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_FinalizeModuleLibrary(void);
 
 #ifdef WIN32
@@ -238,7 +249,5 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_AddModule(const UTF8 aModuleName[],
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RemoveModule(const UTF8 aModuleName[]);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_ModuleInfo(int iModule, MUX_MODULE_INFO *pModuleInfo);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_ModuleMaintenance(void);
-
-extern "C" bool DCL_EXPORT DCL_API mux_ReceiveData(size_t nBuffer, const void *pBuffer);
 
 #endif // LIBMUX_H
