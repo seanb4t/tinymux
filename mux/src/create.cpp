@@ -71,7 +71,7 @@ static void open_exit(dbref player, dbref loc, UTF8 *direction, UTF8 *linkto)
     }
     else if (!Controls(player, loc))
     {
-        if(!(Open_ok(loc) && could_doit(player, loc, A_LOPEN)))
+        if (!(Open_ok(loc) && could_doit(player, loc, A_LOPEN)))
         {
             notify_quiet(player, NOPERM_MESSAGE);
             return;
@@ -971,6 +971,62 @@ static bool can_destroy_player(dbref player, dbref victim)
     return true;
 }
 
+static void ProcessMasterRoomADestroy(dbref thing)
+{
+    int nxargs = 2;
+    const UTF8 *xargs[2];
+
+    switch (Typeof(thing))
+    {
+    case TYPE_ROOM:
+        xargs[1] = T("ROOM");
+        break;
+
+    case TYPE_EXIT:
+        xargs[1] = T("EXIT");
+        break;
+
+    case TYPE_PLAYER:
+        xargs[1] = T("PLAYER");
+        break;
+
+    case TYPE_THING:
+        xargs[1] = T("THING");
+        break;
+
+    default:
+        xargs[1] = T("#-1");
+        break;
+    }
+
+    dbref master_room_obj = -1;
+    DOLIST(master_room_obj, Contents(mudconf.master_room))
+    {
+        if (thing == master_room_obj)
+        {
+            break;
+        }
+
+        if (Controls(master_room_obj, thing))
+        {
+            int aowner, aflags;
+            UTF8* act = atr_pget(master_room_obj, A_ADESTROY, &aowner, &aflags);
+            if ('\0' != act[0])
+            {
+                CLinearTimeAbsolute lta;
+                UTF8 buf[SBUF_SIZE];
+                mux_sprintf(buf, SBUF_SIZE, "#%d", thing);
+                xargs[0] = buf;
+                wait_que(master_room_obj, master_room_obj, master_room_obj,
+                        AttrTrace(aflags, 0), false, lta, NOTHING, 0, act, nxargs,
+                        (const UTF8 **) xargs, mudstate.global_regs);
+
+            }
+            free_lbuf(act);
+        }
+    }
+}
+
 void do_destroy(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8 *what, const UTF8 *cargs[], int ncargs)
 {
     UNUSED_PARAMETER(caller);
@@ -1034,8 +1090,8 @@ void do_destroy(dbref executor, dbref caller, dbref enactor, int eval, int key, 
 
     // Make sure we can do it, on a type-specific basis.
     //
-    if(  isPlayer(thing)
-      && !can_destroy_player(executor, thing))
+    if (  isPlayer(thing)
+       && !can_destroy_player(executor, thing))
     {
         return;
     }
@@ -1132,6 +1188,8 @@ void do_destroy(dbref executor, dbref caller, dbref enactor, int eval, int key, 
             }
         }
     }
+
+    ProcessMasterRoomADestroy(thing);
 
     if (bInstant)
     {
