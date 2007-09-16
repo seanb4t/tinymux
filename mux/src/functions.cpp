@@ -8997,8 +8997,8 @@ static int tf1_width_table[4][3] =
 
 static struct
 {
-    char *specs[4];
-    int  div[3];
+    const char *specs[4];
+    int         div[3];
 } tf1_case_table[4] =
 {
     {
@@ -10174,6 +10174,7 @@ static FUN builtin_function_list[] =
     {T("LADD"),        fun_ladd,       MAX_ARG, 0,       2,         0, CA_PUBLIC},
     {T("LAND"),        fun_land,       MAX_ARG, 0,       2,         0, CA_PUBLIC},
     {T("LAST"),        fun_last,       MAX_ARG, 0,       2,         0, CA_PUBLIC},
+    {T("LASTCREATE"),  fun_lastcreate, MAX_ARG, 0,       2,         0, CA_PUBLIC},
     {T("LATTR"),       fun_lattr,      MAX_ARG, 1,       1,         0, CA_PUBLIC},
     {T("LATTRCMDS"),   fun_lattrcmds,  MAX_ARG, 1,       1,         0, CA_PUBLIC},
     {T("LATTRP"),      fun_lattrp,     MAX_ARG, 1,       1,         0, CA_PUBLIC},

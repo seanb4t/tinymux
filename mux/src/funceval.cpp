@@ -2955,6 +2955,101 @@ FUNCTION(fun_last)
     delete words;
 }
 
+
+// For an named object, or the executor, find the last created object
+// (optionally qualified by type).
+//
+FUNCTION(fun_lastcreate)
+{
+    UNUSED_PARAMETER(caller);
+    UNUSED_PARAMETER(enactor);
+
+    // Determine the target by name, or use the executor if no name is given.
+    //
+    dbref target = executor;
+    if (  0 < nfargs
+       && '\0' != fargs[0][0])
+    {
+        target = match_thing_quiet(executor, fargs[0]);
+        if (!Good_obj(target))
+        {
+            safe_nomatch(buff, bufc);
+            return;
+        }
+
+        // Verify that the executor has access to the named object.  Notice
+        // that an executor always has access to itself.
+        //
+        if (  !WizRoy(executor)
+           && !Controls(executor, target))
+        {
+            safe_noperm(buff, bufc);
+            return;
+        }
+    }
+
+    // If a type is given, qualify the result.
+    //
+    int iObjectPosition = 4;
+    if (  1 < nfargs
+       && '\0' != fargs[1][0])
+    {
+        switch (fargs[1][0])
+        {
+        case 'R':
+        case 'r':
+            iObjectPosition = 0;
+            break;
+    
+        case 'T':
+        case 't':
+            iObjectPosition = 1;
+            break;
+    
+        case 'E':
+        case 'e':
+            iObjectPosition = 2;
+            break;
+    
+        case 'P':
+        case 'p':
+            iObjectPosition = 3;
+            break;
+        }
+    }
+
+    int aowner;
+    int aflags;
+
+    UTF8* newobject_string = atr_get("fun_lastcreate.2998", target,
+            A_NEWOBJS, &aowner, &aflags);
+
+    if (  NULL == newobject_string
+       || '\0' == newobject_string)
+    {
+        safe_str(T("#-1"), buff, bufc);
+        return;
+    }
+
+    MUX_STRTOK_STATE tts;
+    mux_strtok_src(&tts, newobject_string);
+    mux_strtok_ctl(&tts, T(" "));
+
+    int i;
+    UTF8* ptr;
+    for (ptr = mux_strtok_parse(&tts), i = 0; ptr && i < 5;
+         ptr = mux_strtok_parse(&tts), i++)
+    {
+        if (i == iObjectPosition)
+        {
+            dbref jLastCreated = mux_atol(ptr);
+            safe_tprintf_str(buff, bufc, "#%d", jLastCreated);
+            break;
+        }
+    }
+    free_lbuf(newobject_string);
+}
+
 // Borrowed from TinyMUSH 2.2
 //
 FUNCTION(fun_matchall)

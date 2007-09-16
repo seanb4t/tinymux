@@ -83,6 +83,14 @@ static int                  g_nInterfaces = 0;
 static int                  g_nInterfacesAllocated = 0;
 static INTERFACE_INFO      *g_pInterfaces = NULL;
 
+PipePump   *g_fpPipePump = NULL;
+QUEUE_INFO *g_pQueue_In  = NULL;
+QUEUE_INFO *g_pQueue_Out = NULL;
+
+CHANNEL_INFO *aChannels = NULL;
+int           nChannels = 0;
+int           nChannelsAllocated = 0;
+
 static process_context g_ProcessContext = IsUninitialized;
 
 // TODO: The uniqueness tests are probably too strong.  It may be desireable
@@ -596,6 +604,8 @@ static void ModuleUnload(MODULE_INFO *pModule)
 
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CreateInstance(MUX_CID cid, mux_IUnknown *pUnknownOuter, create_context ctx, MUX_IID iid, void **ppv)
 {
+    MUX_RESULT mr = MUX_S_OK;
+
     if (  (UseSameProcess & ctx)
        || (  g_ProcessContext == IsMainProcess
           && (UseMainProcess & ctx))
@@ -609,7 +619,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CreateInstance(MUX_CID cid, mux_IUn
             {
                 if (NULL == pModule->fpGetClassObject)
                 {
-                    return MUX_E_CLASSNOTAVAILABLE;
+                    mr = MUX_E_CLASSNOTAVAILABLE;
                 }
             }
             else if (!pModule->bLoaded)
@@ -617,32 +627,65 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_CreateInstance(MUX_CID cid, mux_IUn
                 ModuleLoad(pModule);
                 if (!pModule->bLoaded)
                 {
-                    return MUX_E_CLASSNOTAVAILABLE;
+                    mr =  MUX_E_CLASSNOTAVAILABLE;
                 }
             }
 
-            mux_IClassFactory *pIClassFactory = NULL;
-            MUX_RESULT mr = pModule->fpGetClassObject(cid, mux_IID_IClassFactory, (void **)&pIClassFactory);
-            if (  MUX_SUCCEEDED(mr)
-               && NULL != pIClassFactory)
+            if (MUX_SUCCEEDED(mr))
             {
-                mr = pIClassFactory->CreateInstance(pUnknownOuter, iid, ppv);
-                pIClassFactory->Release();
+                mux_IClassFactory *pIClassFactory = NULL;
+                MUX_RESULT mr = pModule->fpGetClassObject(cid, mux_IID_IClassFactory, (void **)&pIClassFactory);
+                if (  MUX_SUCCEEDED(mr)
+                   && NULL != pIClassFactory)
+                {
+                    mr = pIClassFactory->CreateInstance(pUnknownOuter, iid, ppv);
+                    pIClassFactory->Release();
+                }
             }
-            return mr;
         }
     }
+#ifdef STUB_SLAVE
     else
     {
-        // TODO: Implement the out-of-proc case.
+        // Out-of-Proc.
         //
-        // 1. Send cid, pUnknownOuter, and iid to special endpoint '1' on the other side.
-        // 2. Block in pipepump() routine waiting for a proxy cid and marshal packet.
-        // 3. Open IMarhsal interface on local proxy and pass it the marshal packet.
-        // 4. Proxy returns interface pointer which we can then return to our caller.
+        // 1. Send cid and iid to a priori endpoint on the other side and
+        //    block until the other side responds with a return frame.
         //
+        QUEUE_INFO qiFrame;
+
+        Pipe_InitializeQueueInfo(&qiFrame);
+        Pipe_AppendBytes(&qiFrame, sizeof(cid), (UINT8*)(&cid));
+        Pipe_AppendBytes(&qiFrame, sizeof(iid), (UINT8*)(&iid));
+
+        mr = Pipe_SendCallPacketAndWait(0, &qiFrame);
+
+        if (MUX_SUCCEEDED(mr))
+        {
+            MUX_CID cidProxy = 0;
+            size_t nWanted = sizeof(cidProxy);
+            if (  Pipe_GetBytes(&qiFrame, &nWanted, (UINT8*)(&cidProxy))
+               && sizeof(cidProxy) == nWanted)
+            {
+                // Open an IMarshal interface on the given proxy and pass it the marshal packet.
+                //
+                mux_IMarshal *pIMarshal = NULL;
+                mr = mux_CreateInstance(cidProxy, NULL, UseSameProcess, mux_IID_IMarshal, (void **)&pIMarshal);
+                if (MUX_SUCCEEDED(mr))
+                {
+                    mr = pIMarshal->UnmarshalInterface(&qiFrame, iid, ppv);
+                    pIMarshal->Release();
+                }
+            }
+            else
+            {
+                mr =  MUX_E_CLASSNOTAVAILABLE;
+            }
+        }
+        Pipe_EmptyQueue(&qiFrame);
     }
-    return MUX_E_CLASSNOTAVAILABLE;
+#endif // STUB_SLAVE
+    return mr;
 }
 
 /*! \brief Register class ids and factory implemented by the process binary.
@@ -727,7 +770,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int nci, CLASS
         {
             ; // Nothing.
         }
-        
+
         if (NULL == pNewClasses)
         {
             return MUX_E_OUTOFMEMORY;
@@ -845,7 +888,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterInterfaces(int nii, INTERFA
         {
             ; // Nothing.
         }
-        
+
         if (NULL == pNewInterfaces)
         {
             return MUX_E_OUTOFMEMORY;
@@ -1064,13 +1107,15 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_ModuleMaintenance(void)
     return MUX_S_OK;
 }
 
-extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx, PipePump *fpPipePump)
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx, PipePump *fpPipePump, QUEUE_INFO *pQueue_In, QUEUE_INFO *pQueue_Out)
 {
     if (IsUninitialized == g_ProcessContext)
     {
         g_ProcessContext = ctx;
 #if defined(STUB_SLAVE)
-        if (NULL != fpPipePump)
+        if (  NULL != fpPipePump
+           && NULL != pQueue_In
+           && NULL != pQueue_Out)
         {
             // Save pipepump callback. We need to design in a FIFO write
             // callback to netmux.  netmux should provide incoming and
@@ -1085,7 +1130,20 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context c
             // disconnection clean. The main program (stub or netmux) can
             // handle file descriptors, process spawning, and errors.
             //
+            g_fpPipePump = fpPipePump;
+            g_pQueue_In  = pQueue_In;
+            g_pQueue_Out = pQueue_Out;
         }
+        else
+        {
+            g_fpPipePump = NULL;
+            g_pQueue_In  = NULL;
+            g_pQueue_Out = NULL;
+        }
+#else
+        UNUSED_PARAMETER(fpPipePump);
+        UNUSED_PARAMETER(pQueue_In);
+        UNUSED_PARAMETER(pQueue_Out);
 #endif
         return MUX_S_OK;
     }
@@ -1101,18 +1159,549 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_FinalizeModuleLibrary(void)
     return MUX_S_OK;
 }
 
-/*! \brief Receive and parse data stream from stubslave
- *
- * Called from both the main shovechars() loop as well as the pipepump() loop,
- * this function parses data from the stubslave.  Some potential actions
- * include unblocking the return of a RPC to the other side as well as calls
- * from the other side which may ultimate cause other RPC calls to the
- * stubslave.
- *
- * \return         bool    An indication of whether to continue probably.
- */
+#ifdef STUB_SLAVE
 
-extern "C" bool DCL_EXPORT DCL_API mux_ReceiveData(size_t nBuffer, const void *pBuffer)
+#define CHANNELS_FIRST 100
+
+void Pipe_InitializeChannelZero(FCALL *pfCall0, FMSG *pfMsg0, FDISC *pfDisc0)
 {
+    try
+    {
+        aChannels = new CHANNEL_INFO[CHANNELS_FIRST];
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL != aChannels)
+    {
+        nChannelsAllocated      = CHANNELS_FIRST;
+        aChannels[0].nChannel   = 0;
+        aChannels[0].pfCall     = pfCall0;
+        aChannels[0].pfMsg      = pfMsg0;
+        aChannels[0].pfDisc     = pfDisc0;
+        aChannels[0].pInterface = NULL;
+
+        nChannels = 1;
+    }
+}
+
+// TODO: Hacky, buggy, and broken.
+//
+CHANNEL_INFO *Pipe_AllocateChannel(FCALL *pfCall, FMSG *pfMsg, FDISC *pfDisc)
+{
+    if (nChannelsAllocated <= nChannels)
+    {
+        return NULL;
+    }
+
+    aChannels[nChannels].nChannel   = nChannels;
+    aChannels[nChannels].pfCall     = pfCall;
+    aChannels[nChannels].pfMsg      = pfMsg;
+    aChannels[nChannels].pfDisc     = pfDisc;
+    aChannels[nChannels].pInterface = NULL;
+    nChannels++;
+
+    return &aChannels[nChannels-1];
+}
+
+void Pipe_InitializeQueueInfo(QUEUE_INFO *pqi)
+{
+    pqi->pHead = NULL;
+    pqi->pTail = NULL;
+    pqi->nBytes = 0;
+}
+
+void Pipe_AppendBytes(QUEUE_INFO *pqi, size_t n, const void *p)
+{
+    if (  0 != n
+       && NULL != p)
+    {
+        // Continue copying data to the end of the queue until it is all consumed.
+        //
+        QUEUE_BLOCK *pBlock = NULL;
+        while (0 < n)
+        {
+            // We need an empty or partially filled QUEUE_BLOCK.
+            //
+            if (  NULL == pqi->pTail
+               || pqi->pTail->aBuffer + QUEUE_BLOCK_SIZE <= pqi->pTail->pBuffer + pqi->pTail->nBuffer)
+            {
+                // The last block is full or not there, so allocate a new QUEUE_BLOCK.
+                //
+                try
+                {
+                    pBlock = new QUEUE_BLOCK;
+                }
+                catch (...)
+                {
+                    ; // Nothing.
+                }
+
+                if (NULL != pBlock)
+                {
+                    pBlock->pNext   = NULL;
+                    pBlock->pPrev   = NULL;
+                    pBlock->pBuffer = pBlock->aBuffer;
+                    pBlock->nBuffer = 0;
+                }
+                else
+                {
+                    // TODO: Out of memory.
+                    //
+                    return;
+                }
+
+                // Append the newly allocated block to the end of the queue.
+                //
+                if (NULL == pqi->pTail)
+                {
+                    pqi->pHead = pBlock;
+                    pqi->pTail = pBlock;
+                }
+                else
+                {
+                    pBlock->pPrev = pqi->pTail;
+                    pqi->pTail->pNext = pBlock;
+                    pqi->pTail = pBlock;
+                }
+            }
+            else
+            {
+                pBlock = pqi->pTail;
+            }
+
+            // Allocate space out of last QUEUE_BLOCK
+            //
+            char  *pFree = pBlock->pBuffer + pBlock->nBuffer;
+            size_t nFree = QUEUE_BLOCK_SIZE - pBlock->nBuffer - (pBlock->pBuffer - pBlock->aBuffer);
+            size_t nCopy = nFree;
+            if (n < nCopy)
+            {
+                nCopy = n;
+            }
+
+            memcpy(pFree, p, nCopy);
+            n -= nCopy;
+            pBlock->nBuffer += nCopy;
+            pqi->nBytes += nCopy;
+        }
+    }
+}
+
+void Pipe_AppendQueue(QUEUE_INFO *pqiOut, QUEUE_INFO *pqiIn)
+{
+    if (  NULL != pqiOut
+       && NULL != pqiIn)
+    {
+        QUEUE_BLOCK *pBlock = pqiIn->pHead;
+        while (NULL != pBlock)
+        {
+            Pipe_AppendBytes(pqiOut, pBlock->nBuffer, pBlock->pBuffer);
+
+            QUEUE_BLOCK *qBlock = pBlock->pNext;
+            delete pBlock;
+            pBlock = qBlock;
+        }
+
+        pqiIn->pHead = NULL;
+        pqiIn->pTail = NULL;
+        pqiIn->nBytes = 0;
+    }
+}
+
+void Pipe_EmptyQueue(QUEUE_INFO *pqi)
+{
+    if (NULL != pqi)
+    {
+        QUEUE_BLOCK *pBlock = pqi->pHead;
+
+        // Free all the QUEUE_BLOCKs finally the owning QUEUE_INFO structure.
+        //
+        while (NULL != pBlock)
+        {
+            QUEUE_BLOCK *qBlock = pBlock->pNext;
+            delete pBlock;
+            pBlock = qBlock;
+        }
+
+        pqi->pHead = NULL;
+        pqi->pTail = NULL;
+        pqi->nBytes = 0;
+    }
+}
+
+bool Pipe_GetByte(QUEUE_INFO *pqi, UINT8 ach[0])
+{
+    QUEUE_BLOCK *pBlock;
+
+    if (  NULL != pqi
+       && NULL != (pBlock = pqi->pHead))
+    {
+        // Advance over empty blocks.
+        //
+        while (  NULL != pBlock
+              && 0 == pBlock->nBuffer)
+        {
+            pqi->pHead = pBlock->pNext;
+            if (NULL == pqi->pHead)
+            {
+                pqi->pTail = NULL;
+            }
+            delete pBlock;
+            pBlock = pqi->pHead;
+        }
+
+        // If there is a block left on the list, it will have something.
+        //
+        if (NULL != pBlock)
+        {
+            ach[0] = pBlock->pBuffer[0];
+            pBlock->pBuffer++;
+            pBlock->nBuffer--;
+            pqi->nBytes--;
+
+            return true;
+        }
+    }
     return false;
 }
+
+bool Pipe_GetBytes(QUEUE_INFO *pqi, size_t *pn, void *pv)
+{
+    UINT8 *pch = (UINT8 *)pv;
+
+    size_t nCopied = 0;
+    QUEUE_BLOCK *pBlock;
+
+    if (  NULL != pqi
+       && NULL != pn)
+    {
+        size_t nWantedBytes = *pn;
+        pBlock = pqi->pHead;
+        while (  NULL != pBlock
+              && 0 < nWantedBytes)
+        {
+            // Advance over empty blocks.
+            //
+            while (  NULL != pBlock
+                  && 0 == pBlock->nBuffer)
+            {
+                pqi->pHead = pBlock->pNext;
+                if (NULL == pqi->pHead)
+                {
+                    pqi->pTail = NULL;
+                }
+                delete pBlock;
+                pBlock = pqi->pHead;
+            }
+
+            // If there is a block left on the list, it will have something.
+            //
+            if (NULL != pBlock)
+            {
+                size_t nCopy = pBlock->nBuffer;
+                if (nWantedBytes < nCopy)
+                {
+                    nCopy = nWantedBytes;
+                }
+                memcpy(pch, pBlock->pBuffer, nCopy);
+
+                pBlock->pBuffer += nCopy;
+                pBlock->nBuffer -= nCopy;
+                pqi->nBytes -= nCopy;
+                nWantedBytes -= nCopy;
+                pch += nCopy;
+                nCopied += nCopy;
+            }
+        }
+
+        *pn = nCopied;
+        return true;
+    }
+    return false;
+}
+
+size_t Pipe_QueueLength(QUEUE_INFO *pqi)
+{
+    size_t n = 0;
+    if (NULL != pqi)
+    {
+        n = pqi->nBytes;
+    }
+    return n;
+}
+
+typedef enum
+{
+    eUnknown = 0,
+    eCall,
+    eReturn,
+    eMessage,
+    eDisconnect
+} FrameType;
+
+// Decoder
+//
+int           iState = 0;
+FrameType     eType = eUnknown;
+union LENGTH
+{
+    UINT32 n;
+    UINT8 ch[4];
+} Length = { 0 };
+UINT32        nChannel = 0;
+size_t        nLengthRemaining = 0;
+
+// CallMagic   0xC39B71F9 - 17, 14,  9, 20
+// ReturnMagic 0x35972DD0 -  7, 13,  6, 18
+// MsgMagic    0xF69E1836 - 19, 15,  3,  8
+// DiscMagic   0x960AA381 - 12,  1, 16, 10
+// EndMagic    0x27118B26 -  5,  2, 11,  4
+//
+
+const UINT8 decoder_itt[256] =
+{
+//  0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+//
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  0,  0,  0,  // 0
+    0,  2,  0,  0,  0,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  // 1
+    0,  0,  0,  0,  0,  0,  4,  5,  0,  0,  0,  0,  0,  6,  0,  0,  // 2
+    0,  0,  0,  0,  0,  7,  8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // 3
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // 4
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // 5
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // 6
+    0,  9,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // 7
+
+    0, 10,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11,  0,  0,  0,  0,  // 8
+    0,  0,  0,  0,  0,  0, 12, 13,  0,  0,  0, 14,  0,  0, 15,  0,  // 9
+    0,  0,  0, 16,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // A
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // B
+    0,  0,  0, 17,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // C
+    18, 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // D
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  // E
+    0,  0,  0,  0,  0,  0, 19,  0,  0, 20,  0,  0,  0,  0,  0,  0   // F
+};
+
+const UINT8 decoder_stt[23][21] =
+{
+//     0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20
+//
+    {  0,  0,  0,  0,  0,  0,  0, 14,  0,  0,  0,  0, 20,  0,  0,  0,  0,  1,  0, 17,  0 }, //  0 Start
+    {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  0,  0,  0,  0,  0,  0 }, //  1 Call0
+    {  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, //  2 Call1
+    {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4 }, //  3 Call2
+    {  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5 }, //  4 Call3/Return3/Msg3/Disc3
+    {  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6 }, //  5 Length0
+    {  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7 }, //  6 Length1
+    {  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8 }, //  7 Length2
+    { 12, 12, 12, 12, 12,  9, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12 }, //  8 Length3
+    { 12, 12, 10, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12 }, //  9 End0
+    { 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12 }, // 10 End1
+    { 12, 12, 12, 12, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12 }, // 11 End2
+    {  0,  0,  0,  0,  0,  0,  0, 14,  0,  0,  0,  0, 20,  0,  0,  0,  0,  1,  0, 17,  0 }, // 12 Cleanup
+    {  0,  0,  0,  0,  0,  0,  0, 14,  0,  0,  0,  0, 20,  0,  0,  0,  0,  1,  0, 17,  0 }, // 13 Accept
+    {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 15,  0,  0,  0,  0,  0,  0,  0 }, // 14 Return0
+    {  0,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // 15 Return1
+    {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  0,  0 }, // 16 Return2
+    {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 18,  0,  0,  0,  0,  0 }, // 17 Msg0
+    {  0,  0,  0, 19,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // 18 Msg1
+    {  0,  0,  0,  0,  0,  0,  0,  0,  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // 19 Msg2
+    {  0, 21,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }, // 20 Disc0
+    {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 22,  0,  0,  0,  0 }, // 21 Disc1
+    {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  4,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 }  // 22 Disc2
+};
+
+// Decode bytes out of Queue_In to Queue_Frame.
+//
+bool Pipe_DecodeFrames(UINT32 nReturnChannel, QUEUE_INFO *pqiFrame)
+{
+    UINT8 buffer[QUEUE_BLOCK_SIZE];
+
+    if (8 == iState)
+    {
+        // We must remain in the Length3 state until we have consumed all of the expected data.
+        //
+        while (0 < nLengthRemaining)
+        {
+            size_t nWanted = nLengthRemaining;
+            if (QUEUE_BLOCK_SIZE < nWanted)
+            {
+                nWanted = QUEUE_BLOCK_SIZE;
+            }
+
+            if (  !Pipe_GetBytes(g_pQueue_In, &nWanted, buffer)
+               || 0 == nWanted)
+            {
+                return false;
+            }
+            Pipe_AppendBytes(pqiFrame, nWanted, buffer);
+            nLengthRemaining -= nWanted;
+        }
+    }
+
+    UINT8 ch;
+    while (Pipe_GetByte(g_pQueue_In, &ch))
+    {
+        iState = decoder_stt[iState][decoder_itt[ch]];
+        switch (iState)
+        {
+        case 3: // Call2
+            eType = eCall;
+            break;
+
+        case 16: // Return2
+            eType = eReturn;
+            break;
+
+        case 19: // Msg2
+            eType = eMessage;
+            break;
+
+        case 22: // Disc2
+            eType = eDisconnect;
+            break;
+
+        case 5: // Length0
+            Length.ch[0] = ch;
+            break;
+
+        case 6: // Length1
+            Length.ch[1] = ch;
+            break;
+
+        case 7: // Length2
+            Length.ch[2] = ch;
+            break;
+
+        case 8: // Length3
+            Length.ch[3] = ch;
+            nLengthRemaining = Length.n;
+
+            // We've been told how long to expect the packet to be.
+            //
+            while (0 < nLengthRemaining)
+            {
+                size_t nWanted = nLengthRemaining;
+                if (QUEUE_BLOCK_SIZE < nWanted)
+                {
+                    nWanted = QUEUE_BLOCK_SIZE;
+                }
+
+                if (  !Pipe_GetBytes(g_pQueue_In, &nWanted, buffer)
+                   || 0 == nWanted)
+                {
+                    // We'll leave the state machine and try to pick up again at the same place later.
+                    //
+                    return false;
+                }
+                Pipe_AppendBytes(pqiFrame, nWanted, buffer);
+                nLengthRemaining -= nWanted;
+            }
+            break;
+
+        case 12: // Cleanup
+
+            // Something went wrong. Re-initialize all the decoding variables.
+            //
+            eType   = eUnknown;
+            Length.n = 0;
+            nChannel = 0;
+            Pipe_EmptyQueue(pqiFrame);
+            break;
+
+        case 13: // Accept
+            if (4 <= Length.n)
+            {
+                size_t nWanted = sizeof(nChannel);
+                if (  Pipe_GetBytes(pqiFrame, &nWanted, &nChannel)
+                   && nWanted == sizeof(nChannel))
+                {
+                    if (eReturn == eType)
+                    {
+                        if (nChannel == nReturnChannel)
+                        {
+                            eType    = eUnknown;
+                            Length.n = 0;
+                            nChannel = 0;
+                            return true;
+                        }
+                        else
+                        {
+                            // TODO: Bad.
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (  0 <= nChannel
+                           && nChannel < nChannels)
+                        {
+                            switch (eType)
+                            {
+                            case eCall:
+                                aChannels[nChannel].pfCall(&aChannels[nChannel], pqiFrame);
+                                {
+                                    // Send Queue_Frame back to sender.
+                                    //
+                                    UINT32 nReturn = sizeof(nChannel) + Pipe_QueueLength(pqiFrame);
+    
+                                    Pipe_AppendBytes(g_pQueue_Out, sizeof(ReturnMagic), ReturnMagic);
+                                    Pipe_AppendBytes(g_pQueue_Out, sizeof(nReturn), &nReturn);
+                                    Pipe_AppendBytes(g_pQueue_Out, sizeof(nChannel), &nChannel);
+                                    Pipe_AppendQueue(g_pQueue_Out, pqiFrame);
+                                    Pipe_AppendBytes(g_pQueue_Out, sizeof(EndMagic), EndMagic);
+                                }
+                                break;
+    
+                            case eMessage:
+                                aChannels[nChannel].pfMsg(&aChannels[nChannel], pqiFrame);
+                                break;
+    
+                            case eDisconnect:
+                                aChannels[nChannel].pfDisc(&aChannels[nChannel], pqiFrame);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // The packet was too short to contain a channel number, the
+            // channel did not exist, or the call completed successfully.
+            //
+            eType    = eUnknown;
+            Length.n = 0;
+            nChannel = 0;
+            Pipe_EmptyQueue(pqiFrame);
+            break;
+        }
+    }
+}
+
+void Pipe_SendReceive(UINT32 nChannel, QUEUE_INFO *pqi)
+{
+    for (;;)
+    {
+        g_fpPipePump();
+        if (Pipe_DecodeFrames(nChannel, pqi))
+        {
+            break;
+        }
+    }
+}
+
+MUX_RESULT Pipe_SendCallPacketAndWait(UINT32 nChannel, QUEUE_INFO *pqiFrame)
+{
+    UINT32 nLength = sizeof(nChannel) + Pipe_QueueLength(pqiFrame);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(CallMagic), CallMagic);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(nLength), &nLength);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(nChannel), &nChannel);
+    Pipe_AppendQueue(g_pQueue_Out, pqiFrame);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(EndMagic), EndMagic);
+    Pipe_SendReceive(nChannel, pqiFrame);
+    return MUX_S_OK;
+}
+
+#endif // STUB_SLAVE
