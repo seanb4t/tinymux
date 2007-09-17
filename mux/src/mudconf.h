@@ -437,6 +437,7 @@ struct statedata
     CHashTable parent_htab;     /* Parent $-command exclusion */
     CHashTable player_htab;     /* Player name->number hashtable */
     CHashTable powers_htab;     /* Powers hashtable */
+    CHashTable reference_htab;  /* @reference hashtable */
 #ifdef PARSE_TREES
     CHashTable tree_htab;       /* Parse trees for evaluation */
 #endif // PARSE_TREES
