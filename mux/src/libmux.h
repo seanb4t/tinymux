@@ -3,15 +3,22 @@
  *
  * $Id$
  *
- * To support loadable modules, we implement a poor man's COM. There is no
- * support for appartments, remote servers, registry.  There is no RPC or
- * sockets, and most-likely, no opportunity to use any existing RPC tools for
- * building interfaces either.
+ * To support loadable modules, we implement a poor man's COM.  There is no
+ * support for appartments or remote servers.  The registry is constructed by
+ * libmux as each module is loaded, but it exists only for as long as a
+ * process with libmux is running.
  *
- * There is currently no support for out of process servers or marshalling.
+ * Most-likely, there is no opportunity to use any existing RPC or IDL tools
+ * for building these interfaces.
  *
- * There is no support for multiple threads, but methods are expected to be
- * re-entrant.
+ * There is support for spawning a stubslave process which can then load
+ * modules out-of-proc.  There is a primative poor man's RPC for communicating
+ * with stubslave across a pipe and marhshaling across interfaces and
+ * arguments.  Custom Marshaling works, and Standard Marshaling is planned.
+ *
+ * While there is no support for multiple threads, methods are expected to be
+ * re-entrant.  Don't be surprised if your call to another process results
+ * in your being called again and again.
  */
 
 #ifndef LIBMUX_H
@@ -72,6 +79,7 @@ const MUX_IID mux_IID_IRpcProxyBuffer   = 0x0000000100000013i64;
 const MUX_IID mux_IID_IRpcStubBuffer    = 0x0000000100000014i64;
 const MUX_IID mux_IID_IPSFactoryBuffer  = 0x0000000100000015i64;
 const MUX_IID mux_IID_IMarshal          = 0x0000000100000016i64;
+const UINT32  CHANNEL_INVALID           = 0xFFFFFFFFi64;
 #else
 const MUX_IID mux_IID_IUnknown          = 0x0000000100000010ull;
 const MUX_IID mux_IID_IClassFactory     = 0x0000000100000011ull;
@@ -80,6 +88,7 @@ const MUX_IID mux_IID_IRpcProxyBuffer   = 0x0000000100000013ull;
 const MUX_IID mux_IID_IRpcStubBuffer    = 0x0000000100000014ull;
 const MUX_IID mux_IID_IPSFactoryBuffer  = 0x0000000100000015ull;
 const MUX_IID mux_IID_IMarshal          = 0x0000000100000016ull;
+const UINT32  CHANNEL_INVALID           = 0xFFFFFFFFull;
 #endif
 
 #define interface class
@@ -166,25 +175,26 @@ typedef MUX_RESULT FDISC(struct channel_info *pci, QUEUE_INFO *pqi);
 
 typedef struct channel_info
 {
+     bool      bAllocated;
      UINT32    nChannel;
      FCALL    *pfCall;
      FMSG     *pfMsg;
      FDISC    *pfDisc;
      void     *pInterface;
-} CHANNEL_INFO;
+} CHANNEL_INFO, *PCHANNEL_INFO;
 
-CHANNEL_INFO *Pipe_AllocateChannel(FCALL *pfCall, FMSG *pfMsg, FDISC *pfDisc);
-void          Pipe_AppendBytes(QUEUE_INFO *pqi, size_t n, const void *p);
-void          Pipe_AppendQueue(QUEUE_INFO *pqiOut, QUEUE_INFO *pqiIn);
-bool          Pipe_DecodeFrames(UINT32 nReturnChannel, QUEUE_INFO *pqiFrame);
-void          Pipe_EmptyQueue(QUEUE_INFO *pqi);
-void          Pipe_FreeChannel(CHANNEL_INFO *pci);
-bool          Pipe_GetByte(QUEUE_INFO *pqi, UINT8 ach[0]);
-bool          Pipe_GetBytes(QUEUE_INFO *pqi, size_t *pn, void *pch);
-void          Pipe_InitializeChannelZero(FCALL *pfCall0, FMSG *pfMsg0, FDISC *pfDisc0);
-void          Pipe_InitializeQueueInfo(QUEUE_INFO *pqi);
-size_t        Pipe_QueueLength(QUEUE_INFO *pqi);
-MUX_RESULT    Pipe_SendCallPacketAndWait(UINT32 nChannel, QUEUE_INFO *pqi);
+extern "C" PCHANNEL_INFO DCL_EXPORT DCL_API Pipe_AllocateChannel(FCALL *pfCall, FMSG *pfMsg, FDISC *pfDisc);
+extern "C" void       DCL_EXPORT DCL_API Pipe_AppendBytes(QUEUE_INFO *pqi, size_t n, const void *p);
+extern "C" void       DCL_EXPORT DCL_API Pipe_AppendQueue(QUEUE_INFO *pqiOut, QUEUE_INFO *pqiIn);
+extern "C" bool       DCL_EXPORT DCL_API Pipe_DecodeFrames(UINT32 nReturnChannel, QUEUE_INFO *pqiFrame);
+extern "C" void       DCL_EXPORT DCL_API Pipe_EmptyQueue(QUEUE_INFO *pqi);
+extern "C" void       DCL_EXPORT DCL_API Pipe_FreeChannel(CHANNEL_INFO *pci);
+extern "C" bool       DCL_EXPORT DCL_API Pipe_GetByte(QUEUE_INFO *pqi, UINT8 ach[1]);
+extern "C" bool       DCL_EXPORT DCL_API Pipe_GetBytes(QUEUE_INFO *pqi, size_t *pn, void *pch);
+extern "C" void       DCL_EXPORT DCL_API Pipe_InitializeChannelZero(FCALL *pfCall0, FMSG *pfMsg0, FDISC *pfDisc0);
+extern "C" void       DCL_EXPORT DCL_API Pipe_InitializeQueueInfo(QUEUE_INFO *pqi);
+extern "C" size_t     DCL_EXPORT DCL_API Pipe_QueueLength(QUEUE_INFO *pqi);
+extern "C" MUX_RESULT DCL_EXPORT DCL_API Pipe_SendCallPacketAndWait(UINT32 nChannel, QUEUE_INFO *pqi);
 
 // The following is part of what is called 'Custom Marshaling'.
 //
