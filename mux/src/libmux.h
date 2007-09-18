@@ -28,12 +28,6 @@ typedef int MUX_RESULT;
 typedef UINT64 MUX_CID;
 typedef UINT64 MUX_IID;
 
-const UINT8 CallMagic[4]   = { 0xC3, 0x9B, 0x71, 0xF9 };
-const UINT8 ReturnMagic[4] = { 0x35, 0x97, 0x2D, 0xD0 };
-const UINT8 MsgMagic[4]    = { 0xF6, 0x9E, 0x18, 0x36 };
-const UINT8 DiscMagic[4]   = { 0x96, 0x0A, 0xA3, 0x81 };
-const UINT8 EndMagic[4]    = { 0x27, 0x11, 0x8B, 0x26 };
-
 #define MUX_S_OK                 (0)
 #define MUX_S_FALSE              (1)
 #define MUX_E_FAIL              (-1)
@@ -79,7 +73,6 @@ const MUX_IID mux_IID_IRpcProxyBuffer   = 0x0000000100000013i64;
 const MUX_IID mux_IID_IRpcStubBuffer    = 0x0000000100000014i64;
 const MUX_IID mux_IID_IPSFactoryBuffer  = 0x0000000100000015i64;
 const MUX_IID mux_IID_IMarshal          = 0x0000000100000016i64;
-const UINT32  CHANNEL_INVALID           = 0xFFFFFFFFi64;
 #else
 const MUX_IID mux_IID_IUnknown          = 0x0000000100000010ull;
 const MUX_IID mux_IID_IClassFactory     = 0x0000000100000011ull;
@@ -88,8 +81,9 @@ const MUX_IID mux_IID_IRpcProxyBuffer   = 0x0000000100000013ull;
 const MUX_IID mux_IID_IRpcStubBuffer    = 0x0000000100000014ull;
 const MUX_IID mux_IID_IPSFactoryBuffer  = 0x0000000100000015ull;
 const MUX_IID mux_IID_IMarshal          = 0x0000000100000016ull;
-const UINT32  CHANNEL_INVALID           = 0xFFFFFFFFull;
 #endif
+
+const UINT32  CHANNEL_INVALID           = 0xFFFFFFFFul;
 
 #define interface class
 
@@ -212,7 +206,7 @@ extern "C"
     typedef MUX_RESULT DCL_API FPGETCLASSOBJECT(MUX_CID cid, MUX_IID iid, void **ppv);
 }
 
-// All components must be registered.  Currently, only the id is required.
+// All components must be registered.  Currently, only the MUX_CID is required.
 //
 typedef struct
 {
@@ -220,8 +214,8 @@ typedef struct
 } CLASS_INFO;
 
 // It is not required that all interfaces be registered.  However, if an
-// interface needs to be marshalled, it must have an associated proxy-stub
-// component and therefore must be registered.
+// interface needs to be marshalled using Standard Marshaling, it must have an
+// associated proxy-stub component and therefore must be registered.
 //
 typedef struct
 {
