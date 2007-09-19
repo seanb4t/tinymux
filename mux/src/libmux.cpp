@@ -1105,6 +1105,8 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_ModuleMaintenance(void)
     return MUX_S_OK;
 }
 
+static bool GrowChannels(void);
+
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context ctx, PipePump *fpPipePump, QUEUE_INFO *pQueue_In, QUEUE_INFO *pQueue_Out)
 {
     if (IsUninitialized == g_ProcessContext)
@@ -1112,7 +1114,8 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_InitModuleLibrary(process_context c
         g_ProcessContext = ctx;
         if (  NULL != fpPipePump
            && NULL != pQueue_In
-           && NULL != pQueue_Out)
+           && NULL != pQueue_Out
+           && GrowChannels())
         {
             // Save pipepump callback and two queues.  Hosting process should
             // service queues when pipepump is called.
@@ -1143,6 +1146,42 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_FinalizeModuleLibrary(void)
 {
     g_ProcessContext = IsUninitialized;
     return MUX_S_OK;
+}
+
+static MUX_RESULT Channel0_Call(CHANNEL_INFO *pci, QUEUE_INFO *pqi)
+{
+    struct CF
+    {
+        MUX_CID cid;
+        MUX_IID iid;
+    } CallFrame;
+
+    MUX_RESULT mr = MUX_S_OK;
+
+    size_t nWanted = sizeof(CallFrame);
+    if (  Pipe_GetBytes(pqi, &nWanted, &CallFrame)
+       && nWanted == sizeof(CallFrame))
+    {
+        mux_IMarshal *pIMarshal = NULL;
+        mr = mux_CreateInstance(CallFrame.cid, NULL, UseSameProcess, mux_IID_IMarshal, (void **)&pIMarshal);
+        if (MUX_SUCCEEDED(mr))
+        {
+            MUX_CID cidProxy = 0;
+            mr = pIMarshal->GetUnmarshalClass(CallFrame.iid, CrossProcess, &cidProxy);
+            if (MUX_SUCCEEDED(mr))
+            {
+                Pipe_AppendBytes(pqi, sizeof(cidProxy), &cidProxy);
+                mr = pIMarshal->MarshalInterface(pqi, CallFrame.iid, CrossProcess);
+            }
+            pIMarshal->Release();
+        }
+    }
+    else
+    {
+       Pipe_EmptyQueue(pqi);
+       mr = MUX_E_INVALIDARG;
+    }
+    return mr;
 }
 
 extern "C" void DCL_EXPORT DCL_API Pipe_InitializeQueueInfo(QUEUE_INFO *pqi)
@@ -1193,7 +1232,7 @@ static bool GrowChannels(void)
             //
             pNew[0].bAllocated = true;
             pNew[0].nChannel   = 0;
-            pNew[0].pfCall     = NULL;
+            pNew[0].pfCall     = Channel0_Call;
             pNew[0].pfMsg      = NULL;
             pNew[0].pfDisc     = NULL;
             pNew[0].pInterface = NULL;
@@ -1238,18 +1277,6 @@ static UINT32 AllocateChannel(void)
         {
             return CHANNEL_INVALID;
         }
-    }
-}
-
-extern "C" void DCL_EXPORT DCL_API Pipe_InitializeChannelZero(FCALL *pfCall0, FMSG *pfMsg0, FDISC *pfDisc0)
-{
-    if (  NULL != aChannels
-       || GrowChannels())
-    {
-        aChannels[0].pfCall     = pfCall0;
-        aChannels[0].pfMsg      = pfMsg0;
-        aChannels[0].pfDisc     = pfDisc0;
-        aChannels[0].pInterface = NULL;
     }
 }
 
@@ -1518,12 +1545,11 @@ union LENGTH
 UINT32        nChannel = 0;
 size_t        nLengthRemaining = 0;
 
-// CallMagic   0xC39B71F9 - 17, 14,  9, 20
-// ReturnMagic 0x35972DD0 -  7, 13,  6, 18
-// MsgMagic    0xF69E1836 - 19, 15,  3,  8
-// DiscMagic   0x960AA381 - 12,  1, 16, 10
-// EndMagic    0x27118B26 -  5,  2, 11,  4
-//
+const UINT8 CallMagic[4]   = { 0xC3, 0x9B, 0x71, 0xF9 };  // 17, 14,  9, 20
+const UINT8 ReturnMagic[4] = { 0x35, 0x97, 0x2D, 0xD0 };  //  7, 13,  6, 18
+const UINT8 MsgMagic[4]    = { 0xF6, 0x9E, 0x18, 0x36 };  // 19, 15,  3,  8
+const UINT8 DiscMagic[4]   = { 0x96, 0x0A, 0xA3, 0x81 };  // 12,  1, 16, 10
+const UINT8 EndMagic[4]    = { 0x27, 0x11, 0x8B, 0x26 };  //  5,  2, 11,  4
 
 const UINT8 decoder_itt[256] =
 {
