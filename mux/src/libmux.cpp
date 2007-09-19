@@ -1484,6 +1484,20 @@ extern "C" void DCL_EXPORT DCL_API Pipe_FreeChannel(CHANNEL_INFO *pci)
     }
 }
 
+extern "C" PCHANNEL_INFO DCL_EXPORT DCL_API Pipe_FindChannel(UINT32 nChannel)
+{
+    CHANNEL_INFO *pChannel;
+    if (  nChannel < nChannels
+       && (pChannel = &aChannels[nChannel])->bAllocated)
+    {
+        return pChannel;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
 extern "C" void DCL_EXPORT DCL_API Pipe_AppendBytes(QUEUE_INFO *pqi, size_t n, const void *p)
 {
     if (  0 != n
@@ -1981,5 +1995,27 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API Pipe_SendCallPacketAndWait(UINT32 nChan
     Pipe_AppendQueue(g_pQueue_Out, pqiFrame);
     Pipe_AppendBytes(g_pQueue_Out, sizeof(EndMagic), EndMagic);
     Pipe_SendReceive(nChannel, pqiFrame);
+    return MUX_S_OK;
+}
+
+extern "C" MUX_RESULT DCL_EXPORT DCL_API Pipe_SendMsgPacket(UINT32 nChannel, QUEUE_INFO *pqiFrame)
+{
+    UINT32 nLength = sizeof(nChannel) + Pipe_QueueLength(pqiFrame);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(MsgMagic), MsgMagic);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(nLength), &nLength);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(nChannel), &nChannel);
+    Pipe_AppendQueue(g_pQueue_Out, pqiFrame);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(EndMagic), EndMagic);
+    return MUX_S_OK;
+}
+
+extern "C" MUX_RESULT DCL_EXPORT DCL_API Pipe_SendDiscPacket(UINT32 nChannel, QUEUE_INFO *pqiFrame)
+{
+    UINT32 nLength = sizeof(nChannel) + Pipe_QueueLength(pqiFrame);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(DiscMagic), DiscMagic);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(nLength), &nLength);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(nChannel), &nChannel);
+    Pipe_AppendQueue(g_pQueue_Out, pqiFrame);
+    Pipe_AppendBytes(g_pQueue_Out, sizeof(EndMagic), EndMagic);
     return MUX_S_OK;
 }
