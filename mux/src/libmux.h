@@ -43,6 +43,7 @@ typedef UINT64 MUX_IID;
 
 #define MUX_FAILED(x)    ((MUX_RESULT)(x) < 0)
 #define MUX_SUCCEEDED(x) (0 <= (MUX_RESULT)(x))
+#define MUX_RESULT_TO_EXIT_STATUS(x) (MUX_SUCCEEDED(x)?0:(((int)(x))<255?(-(int)(x)):255))
 
 typedef enum
 {
@@ -102,7 +103,8 @@ public:
     virtual MUX_RESULT LockServer(bool bLock) = 0;
 };
 
-// The following is part of what is called 'Standard Marshaling'.
+// The following is part of what is called 'Standard Marshaling'.  Since this
+// is only partially implemented, the related interfaces are subject to change.
 //
 typedef struct
 {
@@ -142,7 +144,7 @@ interface mux_IPSFactoryBuffer : public mux_IUnknown
 {
 public:
     virtual MUX_RESULT CreateProxy(mux_IUnknown *pUnknownOuter, MUX_IID riid, mux_IRpcProxyBuffer **ppProxy, void **ppv) = 0;
-    virtual MUX_RESULT CreateStub(MUX_IID riid, mux_IUnknown *pUnknownOuter, mux_IRpcStubBuffer *ppStub) = 0;
+    virtual MUX_RESULT CreateStub(MUX_IID riid, mux_IUnknown *pUnknownOuter, mux_IRpcStubBuffer **ppStub) = 0;
 };
 
 #define QUEUE_BLOCK_SIZE 32768
@@ -178,16 +180,19 @@ typedef struct channel_info
 } CHANNEL_INFO, *PCHANNEL_INFO;
 
 extern "C" PCHANNEL_INFO DCL_EXPORT DCL_API Pipe_AllocateChannel(FCALL *pfCall, FMSG *pfMsg, FDISC *pfDisc);
-extern "C" void       DCL_EXPORT DCL_API Pipe_AppendBytes(QUEUE_INFO *pqi, size_t n, const void *p);
-extern "C" void       DCL_EXPORT DCL_API Pipe_AppendQueue(QUEUE_INFO *pqiOut, QUEUE_INFO *pqiIn);
-extern "C" bool       DCL_EXPORT DCL_API Pipe_DecodeFrames(UINT32 nReturnChannel, QUEUE_INFO *pqiFrame);
-extern "C" void       DCL_EXPORT DCL_API Pipe_EmptyQueue(QUEUE_INFO *pqi);
-extern "C" void       DCL_EXPORT DCL_API Pipe_FreeChannel(CHANNEL_INFO *pci);
-extern "C" bool       DCL_EXPORT DCL_API Pipe_GetByte(QUEUE_INFO *pqi, UINT8 ach[1]);
-extern "C" bool       DCL_EXPORT DCL_API Pipe_GetBytes(QUEUE_INFO *pqi, size_t *pn, void *pch);
-extern "C" void       DCL_EXPORT DCL_API Pipe_InitializeQueueInfo(QUEUE_INFO *pqi);
-extern "C" size_t     DCL_EXPORT DCL_API Pipe_QueueLength(QUEUE_INFO *pqi);
-extern "C" MUX_RESULT DCL_EXPORT DCL_API Pipe_SendCallPacketAndWait(UINT32 nChannel, QUEUE_INFO *pqi);
+extern "C" void          DCL_EXPORT DCL_API Pipe_AppendBytes(QUEUE_INFO *pqi, size_t n, const void *p);
+extern "C" void          DCL_EXPORT DCL_API Pipe_AppendQueue(QUEUE_INFO *pqiOut, QUEUE_INFO *pqiIn);
+extern "C" bool          DCL_EXPORT DCL_API Pipe_DecodeFrames(UINT32 nReturnChannel, QUEUE_INFO *pqiFrame);
+extern "C" void          DCL_EXPORT DCL_API Pipe_EmptyQueue(QUEUE_INFO *pqi);
+extern "C" PCHANNEL_INFO DCL_EXPORT DCL_API Pipe_FindChannel(UINT32 nChannel);
+extern "C" void          DCL_EXPORT DCL_API Pipe_FreeChannel(CHANNEL_INFO *pci);
+extern "C" bool          DCL_EXPORT DCL_API Pipe_GetByte(QUEUE_INFO *pqi, UINT8 ach[1]);
+extern "C" bool          DCL_EXPORT DCL_API Pipe_GetBytes(QUEUE_INFO *pqi, size_t *pn, void *pch);
+extern "C" void          DCL_EXPORT DCL_API Pipe_InitializeQueueInfo(QUEUE_INFO *pqi);
+extern "C" size_t        DCL_EXPORT DCL_API Pipe_QueueLength(QUEUE_INFO *pqi);
+extern "C" MUX_RESULT    DCL_EXPORT DCL_API Pipe_SendCallPacketAndWait(UINT32 nChannel, QUEUE_INFO *pqi);
+extern "C" MUX_RESULT    DCL_EXPORT DCL_API Pipe_SendMsgPacket(UINT32 nChannel, QUEUE_INFO *pqi);
+extern "C" MUX_RESULT    DCL_EXPORT DCL_API Pipe_SendDiscPacket(UINT32 nChannel, QUEUE_INFO *pqi);
 
 // The following is part of what is called 'Custom Marshaling'.
 //
@@ -230,6 +235,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int nci, CLASS
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeClassObjects(int nci, CLASS_INFO aci[]);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterInterfaces(int nii, INTERFACE_INFO aii[]);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeInterfaces(int nii, INTERFACE_INFO aii[]);
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_MarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, mux_IUnknown *pIUnknown, marshal_context ctx);
 
 typedef struct
 {
