@@ -102,7 +102,8 @@ public:
     virtual MUX_RESULT LockServer(bool bLock) = 0;
 };
 
-// The following is part of what is called 'Standard Marshaling'.
+// The following is part of what is called 'Standard Marshaling'.  Since this
+// is only partially implemented, the related interfaces are subject to change.
 //
 typedef struct
 {
@@ -142,7 +143,7 @@ interface mux_IPSFactoryBuffer : public mux_IUnknown
 {
 public:
     virtual MUX_RESULT CreateProxy(mux_IUnknown *pUnknownOuter, MUX_IID riid, mux_IRpcProxyBuffer **ppProxy, void **ppv) = 0;
-    virtual MUX_RESULT CreateStub(MUX_IID riid, mux_IUnknown *pUnknownOuter, mux_IRpcStubBuffer *ppStub) = 0;
+    virtual MUX_RESULT CreateStub(MUX_IID riid, mux_IUnknown *pUnknownOuter, mux_IRpcStubBuffer **ppStub) = 0;
 };
 
 #define QUEUE_BLOCK_SIZE 32768
@@ -230,6 +231,7 @@ extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterClassObjects(int nci, CLASS
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeClassObjects(int nci, CLASS_INFO aci[]);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RegisterInterfaces(int nii, INTERFACE_INFO aii[]);
 extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_RevokeInterfaces(int nii, INTERFACE_INFO aii[]);
+extern "C" MUX_RESULT DCL_EXPORT DCL_API mux_MarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, mux_IUnknown *pIUnknown, marshal_context ctx);
 
 typedef struct
 {
