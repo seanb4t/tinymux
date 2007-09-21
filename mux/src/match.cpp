@@ -40,10 +40,10 @@ static void promote_match(dbref what, int confidence)
 #ifdef REALITY_LVLS
     // Check is the object is visible.
     //
-    if(  Good_obj(what)
-      && (confidence & CON_LOCAL)
-      && !IsReal(md.player, what)
-      && what != Location(md.player))
+    if (  Good_obj(what)
+       && (confidence & CON_LOCAL)
+       && !IsReal(md.player, what)
+       && what != Location(md.player))
     {
         return;
     }
@@ -182,6 +182,50 @@ void match_player(void)
     }
 }
 
+// Check for a matching named reference.
+//
+static dbref absolute_named_reference(UTF8* name)
+{
+    if (  NULL == name
+       || '\0' != name[0])
+    {
+        return NOTHING;
+    }
+
+    UTF8* reference_name = alloc_sbuf("absolute_named_reference");
+
+    mux_strncpy(reference_name, name, sizeof(SBUF_SIZE));
+
+    if ('_' != reference_name[0])
+    {
+        mux_string player_ref(name);
+        player_ref.append('.');
+        player_ref.append(md.player);
+        player_ref.export_TextPlain(reference_name);
+    }
+    else
+    {
+        mux_string global_ref(name);
+        global_ref.export_TextPlain(reference_name);
+    }
+
+    size_t len = 0;
+    utf8_strlen(reference_name, len);
+
+    struct reference_entry *result;
+    result = (reference_entry *) hashfindLEN(reference_name, len,
+            &mudstate.reference_htab);
+
+    dbref ref_target = NOTHING;
+    if (NULL != result)
+    {
+        ref_target = result->target;
+    }
+
+    free_sbuf(reference_name);
+    return ref_target;
+}
+
 /*
  * returns nnn if name = #nnn, else NOTHING
  */
@@ -194,7 +238,16 @@ static dbref absolute_name(bool bNeedPound)
         {
             return NOTHING;
         }
-        mname++;
+        else
+        {
+            mname++;
+        }
+
+        if (  '_'  == mname[0]
+           && '\0' != mname[1])
+        {
+            return absolute_named_reference(mname + 1);
+        }
     }
     if (*mname)
     {

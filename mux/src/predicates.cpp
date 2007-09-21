@@ -24,6 +24,8 @@
 #include "levels.h"
 #endif // REALITY_LVLS
 
+#include "table.h"
+
 UTF8 *DCL_CDECL tprintf(const char *fmt,...)
 {
     static UTF8 buff[LBUF_SIZE];
@@ -389,98 +391,79 @@ UTF8 *MakeCanonicalExitName(const UTF8 *pName, size_t *pnName, bool *pbValid)
         return NULL;
     }
 
-    // Build the non-ANSI version so that we can parse for semicolons
-    // safely.
+    mux_strncpy(Buf, pName, mux_strlen(pName));
+
+    // Sanitize the input before processing.
     //
-    UTF8 *pStripped = strip_color(pName);
-    UTF8 *pBuf = Buf;
-    safe_mb_str(pStripped, Buf, &pBuf);
-    *pBuf = '\0';
+    MUX_STRTOK_STATE tts;
+    mux_strtok_src(&tts, Buf);
+    mux_strtok_ctl(&tts, T(";"));
 
-    size_t nBuf = pBuf - Buf;
-    pBuf = Buf;
-
+    // Break the exitname down into semi-colon-separated segments.  The first
+    // segment can contain color as it is used for showing the exit, but the
+    // remaining segments are stripped of color.  A valid exitname requires
+    // at least one (display) segment.
+    //
+    UTF8 *ptr;
+    mux_string clean_names;
     bool bHaveDisplay = false;
-
-    UTF8 *pOut = Out;
-
-    for (; nBuf;)
+    for (ptr = mux_strtok_parse(&tts); ptr; ptr = mux_strtok_parse(&tts))
     {
-        // Build (q,n) as the next segment.  Leave the the remaining segments as
-        // (pBuf,nBuf).
-        //
-        UTF8 *q = (UTF8 *)strchr((char *)pBuf, ';');
-        size_t n;
-        if (q)
-        {
-            *q = '\0';
-            n = q - pBuf;
-            q = pBuf;
-            pBuf += n + 1;
-            nBuf -= n + 1;
-        }
-        else
-        {
-            n = nBuf;
-            q = pBuf;
-            pBuf += nBuf;
-            nBuf = 0;
-        }
+        bool valid = false;
+        size_t len = 0;
 
+        UTF8 *pTrimmedSegment = NULL;
         if (bHaveDisplay)
         {
-            // We already have the displayable name. We don't allow ANSI in
-            // any segment but the first, so we can pull them directly from
-            // the stripped buffer.
+            // No color allowed in segments after the first one.
             //
-            size_t nN;
-            bool   bN;
-            UTF8  *pN = MakeCanonicalObjectName(q, &nN, &bN);
-            if (  bN
-               && nN < static_cast<size_t>(MBUF_SIZE - (pOut - Out) - 1))
-            {
-                safe_mb_chr(';', Out, &pOut);
-                safe_mb_str(pN, Out, &pOut);
-            }
+            UTF8 *pNoColor = strip_color(ptr);
+            pTrimmedSegment = trim_spaces(pNoColor);
         }
         else
         {
-            // We don't have the displayable name, yet. We know where the next
-            // semicolon occurs, so we limit the visible width of the
-            // truncation to that.  We should be picking up all the visible
-            // characters leading up to the semicolon, but not including the
-            // semi-colon.
+            // Color allowed in first segment.
             //
-            mux_field fldLen = StripTabsAndTruncate( pName, Out, MBUF_SIZE-1,
-                                                     static_cast<LBUF_OFFSET>(n));
+            pTrimmedSegment = trim_spaces(ptr);
+        }
 
-            // vw should always be equal to n, but we'll just make sure.
-            //
-            if (fldLen.m_column == n)
+        // Ignore segments which contained nothing but spaces.
+        //
+        if ('\0' != pTrimmedSegment[0])
+        {
+            UTF8 *pValidSegment = MakeCanonicalObjectName(pTrimmedSegment, &len, &valid);
+            if (!valid)
             {
-                size_t nN;
-                bool   bN;
-                UTF8  *pN = MakeCanonicalObjectName(Out, &nN, &bN);
-                if (  bN
-                   && nN <= MBUF_SIZE - 1)
-                {
-                    safe_mb_str(pN, Out, &pOut);
-                    bHaveDisplay = true;
-                }
+                *pnName = 0;
+                *pbValid = true;
+                return Buf;
+            }
+
+            if (bHaveDisplay)
+            {
+                clean_names.append(T(";"));
+                clean_names.append(mux_string(pValidSegment));
+            }
+            else
+            {
+                clean_names.prepend(pValidSegment);
+                bHaveDisplay = true;
             }
         }
     }
-    if (bHaveDisplay)
+
+
+    *pbValid = bHaveDisplay;
+    if (!bHaveDisplay)
     {
-        *pnName = pOut - Out;
-        *pbValid = true;
-        *pOut = '\0';
-        return Out;
+        *pnName = 0;
+        return Buf;
     }
-    else
-    {
-        return NULL;
-    }
+
+    clean_names.export_TextColor(Buf);
+    *pnName = mux_strlen(Buf);
+
+    return Buf;
 }
 
 // The following function validates the player name. ANSI is not
@@ -2494,7 +2477,7 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
                 else
                 {
                     notify_except2_rlevel(loc, player, player, thing,
-                        tprintf("%s %s", Name(player), buff));
+                        tprintf("%s %s", Moniker(player), buff));
                 }
 #else
                 if (aflags & AF_NONAME)
@@ -2504,7 +2487,7 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
                 else
                 {
                     notify_except2(loc, player, player, thing,
-                        tprintf("%s %s", Name(player), buff));
+                        tprintf("%s %s", Moniker(player), buff));
                 }
 #endif // REALITY_LVLS
             }
@@ -2519,7 +2502,8 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
             }
             else
             {
-                notify_except2_rlevel(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
+                notify_except2_rlevel(loc, player, player, thing,
+                        tprintf("%s %s", Moniker(player), odef));
             }
 #else
             if (ctrl_flags & VERB_NONAME)
@@ -2528,7 +2512,8 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
             }
             else
             {
-                notify_except2(loc, player, player, thing, tprintf("%s %s", Name(player), odef));
+                notify_except2(loc, player, player, thing,
+                        tprintf("%s %s", Moniker(player), odef));
             }
 #endif // REALITY_LVLS
         }
@@ -2832,4 +2817,224 @@ bool AssertionFailed(const UTF8 *SourceFile, unsigned int LineNo)
         abort();
     }
     return false;
+}
+
+static void ListReferences(dbref executor, UTF8 *reference_name, UTF8 *object_name)
+{
+    dbref target = NOTHING;
+    bool global_only = false;
+    size_t len = 0;
+    CHashTable* htab = &mudstate.reference_htab;
+    mux_string refstr(reference_name);
+
+    if (  NULL == reference_name
+       || '\0' == reference_name[0])
+    {
+        global_only = true;
+        refstr.prepend('_');
+    }
+    else
+    {
+        global_only = false;
+
+        if (0 == mux_stricmp(reference_name, T("me")))
+        {
+            target = executor;
+        }
+        else
+        {
+            target = lookup_player(executor, reference_name, 1);
+            if (NOTHING == target)
+            {
+                raw_notify(executor, T("No such player."));
+                return;
+            }
+
+            if (!Controls(executor, target))
+            {
+                raw_notify(executor, NOPERM_MESSAGE);
+                return;
+            }
+        }
+    }
+
+    //  Listing:
+    //    - if global_only is true, list all references that begin with _
+    //    - Otherwise, list all references whose owner is target
+    //
+    reference_entry *htab_entry;
+    bool match_found = false;
+
+    for (  htab_entry = (struct reference_entry *) hash_firstentry(htab);
+           NULL != htab_entry;
+           htab_entry = (struct reference_entry *) hash_nextentry(htab))
+    {
+        if ( (  global_only
+             && '_' == htab_entry->name[0])
+           || target == htab_entry->owner)
+        {
+            if (!Good_obj(htab_entry->target))
+            {
+                continue;
+            }
+
+            if (!match_found)
+            {
+                match_found = true;
+                raw_notify(executor, tprintf("%-12s %-20s %-20s",
+                            T("Reference"), T("Target"), T("Owner")));
+                raw_notify(executor,
+                        T("-------------------------------------------------------"));
+            }
+
+            UTF8 *object_buf =
+                unparse_object(executor, htab_entry->target, false);
+
+            raw_notify(executor, tprintf("%-12s %-20s %-20s", htab_entry->name,
+                        object_buf, Moniker(htab_entry->owner)));
+
+            free_lbuf(object_buf);
+
+        }
+    }
+
+    if (!match_found)
+    {
+        raw_notify(executor, T("GAME: No references found."));
+    }
+    else
+    {
+        raw_notify(executor,
+                T("---------------- End of Reference List ----------------"));
+    }
+}
+
+void do_reference(dbref executor, dbref caller, dbref enactor, int eval,
+        int key, int nargs, UTF8 *reference_name, UTF8 *object_name,
+        const UTF8 *cargs[], int ncargs)
+{
+    dbref target = NOTHING;
+    CHashTable* htab = &mudstate.reference_htab;
+    dbref *np;
+    mux_string refstr(reference_name);
+    UTF8 tbuf[LBUF_SIZE];
+    size_t tbuf_len = 0;
+
+    if (key & REFERENCE_LIST)
+    {
+        ListReferences(executor, reference_name, object_name);
+        return;
+    }
+
+    /* References can only be set on objects the executor can examine */
+    if (  NULL !=object_name
+       && '\0' != object_name[0])
+    {
+        target = match_thing_quiet(executor, object_name);
+
+        if (!Good_obj(target))
+        {
+            notify(executor, NOMATCH_MESSAGE);
+            return;
+        }
+        if (!Examinable(executor, target))
+        {
+            notify(executor, NOPERM_MESSAGE);
+            return;
+        }
+
+    }
+    else
+    {
+        target = NOTHING;
+    }
+
+    if (reference_name[0] == '_')
+    {
+        if (!Wizard(executor))
+        {
+            notify(executor, NOPERM_MESSAGE);
+            return;
+        }
+    }
+    else
+    {
+        refstr.append('.');
+        refstr.append(executor);
+    }
+
+    refstr.export_TextPlain(tbuf);
+    utf8_strlen(tbuf, tbuf_len);
+
+    struct reference_entry *result;
+
+    result = (reference_entry *) hashfindLEN(tbuf,
+            tbuf_len, &mudstate.reference_htab);
+
+    if (NULL != result)
+    {
+        if (NOTHING == target)
+        {
+            MEMFREE(result);
+            hashdeleteLEN(tbuf, tbuf_len, &mudstate.reference_htab);
+            raw_notify(executor, T("Reference cleared."));
+        }
+        else if (result->target == target)
+        {
+            // Reference already exists
+            //
+            raw_notify(executor, T("That reference already exists."));
+        }
+        else
+        {
+            // Replace the existing reference
+            //
+            MEMFREE(result);
+            hashdeleteLEN(tbuf, tbuf_len, &mudstate.reference_htab);
+            try
+            {
+                result = (reference_entry *) MEMALLOC(sizeof(result));
+            }
+            catch(...)
+            {
+                ; // Nothing;
+            }
+
+            if (NULL != result)
+            {
+                result->target = target;
+                result->owner = executor;
+                mux_strncpy(result->name, reference_name, SBUF_SIZE - 1);
+                hashaddLEN(tbuf, tbuf_len, result, &mudstate.reference_htab);
+                raw_notify(executor, T("Reference updated."));
+            }
+        }
+        return;
+    }
+
+    // The reference was not found.  It may be new or may never have existed
+    //
+    if (NOTHING == target)
+    {
+        raw_notify(executor, T("No such reference to clear."));
+        return;
+    }
+
+    try
+    {
+        result = (reference_entry *) MEMALLOC(sizeof(reference_entry));
+    }
+    catch(...)
+    {
+        ; // Nothing
+    }
+
+    if (NULL != result)
+    {
+        result->target = target;
+        result->owner = executor;
+        mux_strncpy(result->name, reference_name, SBUF_SIZE - 1);
+        hashaddLEN(tbuf, tbuf_len, result, &mudstate.reference_htab);
+        raw_notify(executor, T("Reference added."));
+    }
 }
