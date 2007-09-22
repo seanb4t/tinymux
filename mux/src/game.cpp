@@ -23,10 +23,6 @@
 #include "muxcli.h"
 #include "pcre.h"
 #include "powers.h"
-#if defined(HAVE_DLOPEN) || defined(WIN32)
-#include "libmux.h"
-#include "modules.h"
-#endif
 #ifdef REALITY_LVLS
 #include "levels.h"
 #endif // REALITY_LVLS
@@ -3301,6 +3297,7 @@ int DCL_CDECL main(int argc, char *argv[])
     hashreset(&mudstate.player_htab);
     hashreset(&mudstate.fwdlist_htab);
     hashreset(&mudstate.desc_htab);
+    hashreset(&mudstate.reference_htab);
 
     ValidateConfigurationDbrefs();
     process_preload();

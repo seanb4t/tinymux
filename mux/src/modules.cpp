@@ -15,14 +15,12 @@
 
 #if defined(HAVE_DLOPEN) || defined(WIN32)
 
-#include "libmux.h"
-#include "modules.h"
-
-#define NUM_CLASSES 2
+#define NUM_CLASSES 3
 static CLASS_INFO netmux_classes[NUM_CLASSES] =
 {
     { CID_Log                },
-    { CID_ServerEventsSource }
+    { CID_ServerEventsSource },
+    { CID_StubSlaveProxy     }
 };
 
 extern "C" MUX_RESULT DCL_API netmux_GetClassObject(MUX_CID cid, MUX_IID iid, void **ppv)
@@ -69,18 +67,32 @@ extern "C" MUX_RESULT DCL_API netmux_GetClassObject(MUX_CID cid, MUX_IID iid, vo
         mr = pServerEventsSourceFactory->QueryInterface(iid, ppv);
         pServerEventsSourceFactory->Release();
     }
+    else if (CID_StubSlaveProxy == cid)
+    {
+        CStubSlaveProxyFactory *pStubSlaveProxyFactory = NULL;
+        try
+        {
+            pStubSlaveProxyFactory = new CStubSlaveProxyFactory;
+        }
+        catch (...)
+        {
+            ; // Nothing.
+        }
+
+        if (NULL == pStubSlaveProxyFactory)
+        {
+            return MUX_E_OUTOFMEMORY;
+        }
+
+        mr = pStubSlaveProxyFactory->QueryInterface(iid, ppv);
+        pStubSlaveProxyFactory->Release();
+    }
     return mr;
 }
 
 #ifdef STUB_SLAVE
 QUEUE_INFO Queue_In;
 QUEUE_INFO Queue_Out;
-
-MUX_RESULT Channel0_Call(CHANNEL_INFO *pci, QUEUE_INFO *pqi)
-{
-    Pipe_EmptyQueue(pqi);
-    return MUX_E_NOTIMPLEMENTED;
-}
 #endif
 
 void init_modules(void)
@@ -89,7 +101,6 @@ void init_modules(void)
     Pipe_InitializeQueueInfo(&Queue_In);
     Pipe_InitializeQueueInfo(&Queue_Out);
     MUX_RESULT mr = mux_InitModuleLibrary(IsMainProcess, pipepump, &Queue_In, &Queue_Out);
-    Pipe_InitializeChannelZero(Channel0_Call, NULL, NULL);
 #else
     MUX_RESULT mr = mux_InitModuleLibrary(IsMainProcess, NULL, NULL, NULL);
 #endif
@@ -98,22 +109,52 @@ void init_modules(void)
         mr = mux_RegisterClassObjects(NUM_CLASSES, netmux_classes, netmux_GetClassObject);
     }
 
-    if (MUX_FAILED(mr))
+    if (MUX_SUCCEEDED(mr))
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
-        log_printf("Failed to register netmux modules (%d).", mr);
+        log_printf("Registered netmux modules.");
         ENDLOG;
+
+#if defined(STUB_SLAVE)
+        if (NULL != mudstate.pISlaveControl)
+        {
+            mudstate.pISlaveControl->Release();
+            mudstate.pISlaveControl = NULL;
+        }
+
+        mr = mux_CreateInstance(CID_StubSlave, NULL, UseSlaveProcess, IID_ISlaveControl, (void **)&mudstate.pISlaveControl);
+        if (MUX_SUCCEEDED(mr))
+        {
+            STARTLOG(LOG_ALWAYS, "INI", "LOAD");
+            log_printf("Opened interface for StubSlave management.");
+            ENDLOG;
+        }
+        else
+        {
+            STARTLOG(LOG_ALWAYS, "INI", "LOAD");
+            log_printf("Failed to open interface for StubSlave management (%d).", mr);
+            ENDLOG;
+        }
+#endif // STUB_SLAVE
     }
     else
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
-        log_printf("Registered netmux modules.", mr);
+        log_printf("Failed to register netmux modules (%d).", mr);
         ENDLOG;
     }
 }
 
 void final_modules(void)
 {
+#if defined(STUB_SLAVE)
+    if (NULL != mudstate.pISlaveControl)
+    {
+        mudstate.pISlaveControl->Release();
+        mudstate.pISlaveControl = NULL;
+    }
+#endif // STUB_SLAVE
+
     MUX_RESULT mr = mux_RevokeClassObjects(NUM_CLASSES, netmux_classes);
     if (MUX_FAILED(mr))
     {
@@ -519,6 +560,430 @@ MUX_RESULT CServerEventsSourceFactory::CreateInstance(mux_IUnknown *pUnknownOute
 }
 
 MUX_RESULT CServerEventsSourceFactory::LockServer(bool bLock)
+{
+    UNUSED_PARAMETER(bLock);
+    return MUX_S_OK;
+}
+
+// StubSlaveProxy component which is not directly accessible.
+//
+CStubSlaveProxy::CStubSlaveProxy(void) : m_cRef(1), m_nChannel(CHANNEL_INVALID), m_pModuleName(NULL)
+{
+}
+
+MUX_RESULT CStubSlaveProxy::FinalConstruct(void)
+{
+    return MUX_S_OK;
+}
+
+CStubSlaveProxy::~CStubSlaveProxy()
+{
+}
+
+MUX_RESULT CStubSlaveProxy::QueryInterface(MUX_IID iid, void **ppv)
+{
+    if (mux_IID_IUnknown == iid)
+    {
+        *ppv = static_cast<mux_ISlaveControl *>(this);
+    }
+    else if (IID_ISlaveControl == iid)
+    {
+        *ppv = static_cast<mux_ISlaveControl *>(this);
+    }
+    else if (mux_IID_IMarshal == iid)
+    {
+        *ppv = static_cast<mux_IMarshal *>(this);
+    }
+    else
+    {
+        *ppv = NULL;
+        return MUX_E_NOINTERFACE;
+    }
+    reinterpret_cast<mux_IUnknown *>(*ppv)->AddRef();
+    return MUX_S_OK;
+}
+
+UINT32 CStubSlaveProxy::AddRef(void)
+{
+    m_cRef++;
+    return m_cRef;
+}
+
+UINT32 CStubSlaveProxy::Release(void)
+{
+    m_cRef--;
+    if (0 == m_cRef)
+    {
+        // The last reference to the proxy was released, we need to clean up
+        // the connection as well.
+        //
+        QUEUE_INFO qiFrame;
+        Pipe_InitializeQueueInfo(&qiFrame);
+        (void)Pipe_SendDiscPacket(m_nChannel, &qiFrame);
+        m_nChannel = CHANNEL_INVALID;
+        Pipe_EmptyQueue(&qiFrame);
+
+        delete this;
+        return 0;
+    }
+    return m_cRef;
+}
+
+MUX_RESULT CStubSlaveProxy::GetUnmarshalClass(MUX_IID riid, marshal_context ctx, MUX_CID *pcid)
+{
+    // This should only be called on the component side.
+    //
+    return MUX_E_NOTIMPLEMENTED;
+}
+
+MUX_RESULT CStubSlaveProxy::MarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, marshal_context ctx)
+{
+    // This should only be called on the component side.
+    //
+    return MUX_E_NOTIMPLEMENTED;
+}
+
+MUX_RESULT CStubSlaveProxy::UnmarshalInterface(QUEUE_INFO *pqi, MUX_IID riid, void **ppv)
+{
+    // Use the channel number in the marshal packet from the remote component
+    // to support a proxy mux_ISlaveControl.
+    //
+    size_t nWanted = sizeof(m_nChannel);
+    if (  Pipe_GetBytes(pqi, &nWanted, &m_nChannel)
+       && nWanted == sizeof(m_nChannel))
+    {
+        return QueryInterface(riid, ppv);
+    }
+    return MUX_E_NOINTERFACE;
+}
+
+MUX_RESULT CStubSlaveProxy::ReleaseMarshalData(QUEUE_INFO *pqi)
+{
+    // This should only be called on the component side.
+    //
+    return MUX_E_NOTIMPLEMENTED;
+}
+
+MUX_RESULT CStubSlaveProxy::DisconnectObject(void)
+{
+    // This should only be called on the component side.
+    //
+    return MUX_E_NOTIMPLEMENTED;
+}
+
+#ifdef WIN32
+MUX_RESULT CStubSlaveProxy::AddModule(const UTF8 aModuleName[], const UTF16 aFileName[])
+#else
+MUX_RESULT CStubSlaveProxy::AddModule(const UTF8 aModuleName[], const UTF8 aFileName[])
+#endif // WIN32
+{
+    // Communicate with the remote component to service this request.
+    //
+    MUX_RESULT mr = MUX_S_OK;
+
+    QUEUE_INFO qiFrame;
+    Pipe_InitializeQueueInfo(&qiFrame);
+
+    UINT32 iMethod = 3;
+    struct FRAME
+    {
+        size_t nModuleName;
+        size_t nFileName;
+    } CallFrame;
+
+    CallFrame.nModuleName = strlen((const char *)aModuleName)+1;
+#ifdef WIN32
+    CallFrame.nFileName   = (wcslen(aFileName)+1)*sizeof(UTF16);
+#else
+    CallFrame.nFileName   = (strlen((const char *)aFileName)+1)*sizeof(UTF8);
+#endif
+
+    Pipe_AppendBytes(&qiFrame, sizeof(iMethod), &iMethod);
+    Pipe_AppendBytes(&qiFrame, sizeof(CallFrame), &CallFrame);
+    Pipe_AppendBytes(&qiFrame, CallFrame.nModuleName, aModuleName);
+    Pipe_AppendBytes(&qiFrame, CallFrame.nFileName, aFileName);
+
+    mr = Pipe_SendCallPacketAndWait(m_nChannel, &qiFrame);
+
+    if (MUX_SUCCEEDED(mr))
+    {
+        struct RETURN
+        {
+            MUX_RESULT mr;
+        } ReturnFrame;
+        size_t nWanted = sizeof(ReturnFrame);
+        if (  Pipe_GetBytes(&qiFrame, &nWanted, &ReturnFrame)
+           && nWanted == sizeof(ReturnFrame))
+        {
+            mr = ReturnFrame.mr;
+        }
+        else
+        {
+            mr = MUX_E_FAIL;
+        }
+    }
+
+    Pipe_EmptyQueue(&qiFrame);
+    return mr;
+}
+
+MUX_RESULT CStubSlaveProxy::RemoveModule(const UTF8 aModuleName[])
+{
+    // Communicate with the remote component to service this request.
+    //
+    MUX_RESULT mr = MUX_S_OK;
+
+    QUEUE_INFO qiFrame;
+    Pipe_InitializeQueueInfo(&qiFrame);
+
+    UINT32 iMethod = 4;
+    struct FRAME
+    {
+        size_t nModuleName;
+    } CallFrame;
+
+    CallFrame.nModuleName = strlen((const char *)aModuleName)+1;
+
+    Pipe_AppendBytes(&qiFrame, sizeof(iMethod), &iMethod);
+    Pipe_AppendBytes(&qiFrame, sizeof(CallFrame), &CallFrame);
+    Pipe_AppendBytes(&qiFrame, CallFrame.nModuleName, aModuleName);
+
+    mr = Pipe_SendCallPacketAndWait(m_nChannel, &qiFrame);
+
+    if (MUX_SUCCEEDED(mr))
+    {
+        struct RETURN
+        {
+            MUX_RESULT mr;
+        } ReturnFrame;
+        size_t nWanted = sizeof(ReturnFrame);
+        if (  Pipe_GetBytes(&qiFrame, &nWanted, &ReturnFrame)
+           && nWanted == sizeof(ReturnFrame))
+        {
+            mr = ReturnFrame.mr;
+        }
+        else
+        {
+            mr = MUX_E_FAIL;
+        }
+    }
+
+    Pipe_EmptyQueue(&qiFrame);
+    return mr;
+}
+
+MUX_RESULT CStubSlaveProxy::ModuleInfo(int iModule, MUX_MODULE_INFO *pModuleInfo)
+{
+    // Communicate with the remote component to service this request.
+    //
+    MUX_RESULT mr = MUX_S_OK;
+
+    QUEUE_INFO qiFrame;
+    Pipe_InitializeQueueInfo(&qiFrame);
+
+    UINT32 iMethod = 5;
+    struct FRAME
+    {
+        int    iModule;
+    } CallFrame;
+
+    CallFrame.iModule = iModule;
+
+    Pipe_AppendBytes(&qiFrame, sizeof(iMethod), &iMethod);
+    Pipe_AppendBytes(&qiFrame, sizeof(CallFrame), &CallFrame);
+
+    mr = Pipe_SendCallPacketAndWait(m_nChannel, &qiFrame);
+
+    if (MUX_SUCCEEDED(mr))
+    {
+        struct RETURN
+        {
+            size_t     nName;
+            bool       bLoaded;
+            MUX_RESULT mr;
+        } ReturnFrame;
+
+        size_t nWanted = sizeof(ReturnFrame);
+        if (  Pipe_GetBytes(&qiFrame, &nWanted, &ReturnFrame)
+           && nWanted == sizeof(ReturnFrame))
+        {
+            if (NULL != m_pModuleName)
+            {
+                delete m_pModuleName;
+                m_pModuleName = NULL;
+            }
+
+            if (0 < ReturnFrame.nName)
+            {
+                try
+                {
+                    m_pModuleName = new UTF8[ReturnFrame.nName];
+                }
+                catch (...)
+                {
+                    ; // Nothing.
+                }
+    
+                if (NULL != m_pModuleName)
+                {
+                    size_t nWanted = ReturnFrame.nName;
+                    if (  Pipe_GetBytes(&qiFrame, &nWanted, m_pModuleName)
+                       && nWanted == ReturnFrame.nName)
+                    {
+                        pModuleInfo->bLoaded = ReturnFrame.bLoaded;
+                        pModuleInfo->pName   = m_pModuleName;
+                        mr = ReturnFrame.mr;
+                    }
+                    else
+                    {
+                        mr = MUX_E_FAIL;
+                    }
+                }
+                else
+                {
+                    mr = MUX_E_OUTOFMEMORY;
+                }
+            }
+            else
+            {
+                pModuleInfo->bLoaded = ReturnFrame.bLoaded;
+                pModuleInfo->pName   = NULL;
+                mr = ReturnFrame.mr;
+            }
+        }
+        else
+        {
+            mr = MUX_E_FAIL;
+        }
+    }
+
+    Pipe_EmptyQueue(&qiFrame);
+    return mr;
+}
+
+MUX_RESULT CStubSlaveProxy::ModuleMaintenance(void)
+{
+    // Communicate with the remote component to service this request.
+    //
+    MUX_RESULT mr = MUX_S_OK;
+
+    QUEUE_INFO qiFrame;
+    Pipe_InitializeQueueInfo(&qiFrame);
+
+    UINT32 iMethod = 6;
+
+    Pipe_AppendBytes(&qiFrame, sizeof(iMethod), &iMethod);
+
+    mr = Pipe_SendCallPacketAndWait(m_nChannel, &qiFrame);
+
+    if (MUX_SUCCEEDED(mr))
+    {
+        struct RETURN
+        {
+            MUX_RESULT mr;
+        } ReturnFrame;
+        size_t nWanted = sizeof(ReturnFrame);
+        if (  Pipe_GetBytes(&qiFrame, &nWanted, &ReturnFrame)
+           && nWanted == sizeof(ReturnFrame))
+        {
+            mr = ReturnFrame.mr;
+        }
+        else
+        {
+            mr = MUX_E_FAIL;
+        }
+    }
+
+    Pipe_EmptyQueue(&qiFrame);
+    return mr;
+}
+
+// Factory for StubSlaveProxy component which is not directly accessible.
+//
+CStubSlaveProxyFactory::CStubSlaveProxyFactory(void) : m_cRef(1)
+{
+}
+
+CStubSlaveProxyFactory::~CStubSlaveProxyFactory()
+{
+}
+
+MUX_RESULT CStubSlaveProxyFactory::QueryInterface(MUX_IID iid, void **ppv)
+{
+    if (mux_IID_IUnknown == iid)
+    {
+        *ppv = static_cast<mux_IClassFactory *>(this);
+    }
+    else if (mux_IID_IClassFactory == iid)
+    {
+        *ppv = static_cast<mux_IClassFactory *>(this);
+    }
+    else
+    {
+        *ppv = NULL;
+        return MUX_E_NOINTERFACE;
+    }
+    reinterpret_cast<mux_IUnknown *>(*ppv)->AddRef();
+    return MUX_S_OK;
+}
+
+UINT32 CStubSlaveProxyFactory::AddRef(void)
+{
+    m_cRef++;
+    return m_cRef;
+}
+
+UINT32 CStubSlaveProxyFactory::Release(void)
+{
+    m_cRef--;
+    if (0 == m_cRef)
+    {
+        delete this;
+        return 0;
+    }
+    return m_cRef;
+}
+
+MUX_RESULT CStubSlaveProxyFactory::CreateInstance(mux_IUnknown *pUnknownOuter, MUX_IID iid, void **ppv)
+{
+    // Disallow attempts to aggregate this component.
+    //
+    if (NULL != pUnknownOuter)
+    {
+        return MUX_E_NOAGGREGATION;
+    }
+
+    CStubSlaveProxy *pStubSlaveProxy = NULL;
+    try
+    {
+        pStubSlaveProxy = new CStubSlaveProxy;
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    MUX_RESULT mr;
+    if (NULL == pStubSlaveProxy)
+    {
+        return MUX_E_OUTOFMEMORY;
+    }
+    else
+    {
+        mr = pStubSlaveProxy->FinalConstruct();
+        if (MUX_FAILED(mr))
+        {
+            pStubSlaveProxy->Release();
+            return mr;
+        }
+    }
+
+    mr = pStubSlaveProxy->QueryInterface(iid, ppv);
+    pStubSlaveProxy->Release();
+    return mr;
+}
+
+MUX_RESULT CStubSlaveProxyFactory::LockServer(bool bLock)
 {
     UNUSED_PARAMETER(bLock);
     return MUX_S_OK;

@@ -10,6 +10,10 @@
 
 #include "db.h"
 #include "match.h"
+#if defined(HAVE_DLOPEN) || defined(WIN32)
+#include "libmux.h"
+#include "modules.h"
+#endif
 #include "mudconf.h"
 #include "svdrand.h"
 
@@ -365,6 +369,14 @@ bool bCanReadAttr(dbref executor, dbref target, ATTR *tattr, bool bParentCheck);
 bool bCanSetAttr(dbref executor, dbref target, ATTR *tattr);
 bool bCanLockAttr(dbref executor, dbref target, ATTR *tattr);
 
+struct reference_entry
+{
+    dbref owner;
+    dbref target;
+    UTF8 name[SBUF_SIZE];
+};
+
+
 /* From set.cpp */
 bool parse_attrib(dbref, const UTF8 *, dbref *, ATTR **);
 bool parse_attrib_wild(dbref, const UTF8 *, dbref *, bool, bool, bool);
@@ -685,6 +697,7 @@ extern int anum_alc_top;
 //#define QUOTA_EXIT      64  /* Exit quota set */
 //#define QUOTA_THING     128 /* Thing quota set */
 //#define QUOTA_PLAYER    256 /* Player quota set */
+#define REFERENCE_LIST  1   /* List @references */
 #define SAY_SAY         1   /* say in current room */
 #define SAY_NOSPACE     1   /* OR with xx_EMIT to get nospace form */
 #define SAY_POSE        2   /* pose in current room */
