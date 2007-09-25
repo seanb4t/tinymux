@@ -25,7 +25,7 @@ void CleanUpSlaveSocket(void);
 void CleanUpSlaveProcess(void);
 #ifdef STUB_SLAVE
 void CleanUpStubSlaveSocket(void);
-void CleanUpStubSlaveProcess(void);
+void WaitOnStubSlaveProcess(void);
 #endif // STUB_SLAVE
 #ifdef SSL_ENABLED
 void CleanUpSSLConnections(void);
@@ -36,7 +36,7 @@ extern CRITICAL_SECTION csDescriptorList;
 
 #ifdef STUB_SLAVE
 void boot_stubslave(dbref executor, dbref caller, dbref enactor, int key);
-extern "C" void DCL_API pipepump(void);
+extern "C" MUX_RESULT DCL_API pipepump(void);
 #endif // STUB_SLAVE
 
 extern NAMETAB sigactions_nametab[];
