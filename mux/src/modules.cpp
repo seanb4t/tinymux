@@ -147,15 +147,25 @@ void init_modules(void)
 
 void final_modules(void)
 {
+    MUX_RESULT mr = MUX_S_OK;
+
 #if defined(STUB_SLAVE)
     if (NULL != mudstate.pISlaveControl)
     {
+        mr = mudstate.pISlaveControl->ShutdownSlave();
+        if (MUX_FAILED(mr))
+        {
+            STARTLOG(LOG_ALWAYS, "INI", "LOAD");
+            log_printf("Failed to request stubslave to shutdown (%d).", mr);
+            ENDLOG;
+        }
+
         mudstate.pISlaveControl->Release();
         mudstate.pISlaveControl = NULL;
     }
 #endif // STUB_SLAVE
 
-    MUX_RESULT mr = mux_RevokeClassObjects(NUM_CLASSES, netmux_classes);
+    mr = mux_RevokeClassObjects(NUM_CLASSES, netmux_classes);
     if (MUX_FAILED(mr))
     {
         STARTLOG(LOG_ALWAYS, "INI", "LOAD");
@@ -477,8 +487,10 @@ MUX_RESULT CServerEventsSource::Advise(mux_IServerEventsSink *pIServerEventsSink
     // Add the pointer to the list.
     //
     p->pNext = g_pServerEventsSinkListHead;
+    pIServerEventsSink->AddRef();
     p->pSink = pIServerEventsSink;
-    p->pSink->AddRef();
+    pIServerEventsSink->AddRef();
+    m_pSink = pIServerEventsSink;
     g_pServerEventsSinkListHead = p;
 
     return MUX_S_OK;
@@ -871,6 +883,43 @@ MUX_RESULT CStubSlaveProxy::ModuleMaintenance(void)
     Pipe_InitializeQueueInfo(&qiFrame);
 
     UINT32 iMethod = 6;
+
+    Pipe_AppendBytes(&qiFrame, sizeof(iMethod), &iMethod);
+
+    mr = Pipe_SendCallPacketAndWait(m_nChannel, &qiFrame);
+
+    if (MUX_SUCCEEDED(mr))
+    {
+        struct RETURN
+        {
+            MUX_RESULT mr;
+        } ReturnFrame;
+        size_t nWanted = sizeof(ReturnFrame);
+        if (  Pipe_GetBytes(&qiFrame, &nWanted, &ReturnFrame)
+           && nWanted == sizeof(ReturnFrame))
+        {
+            mr = ReturnFrame.mr;
+        }
+        else
+        {
+            mr = MUX_E_FAIL;
+        }
+    }
+
+    Pipe_EmptyQueue(&qiFrame);
+    return mr;
+}
+
+MUX_RESULT CStubSlaveProxy::ShutdownSlave(void)
+{
+    // Communicate with the remote component to service this request.
+    //
+    MUX_RESULT mr = MUX_S_OK;
+
+    QUEUE_INFO qiFrame;
+    Pipe_InitializeQueueInfo(&qiFrame);
+
+    UINT32 iMethod = 7;
 
     Pipe_AppendBytes(&qiFrame, sizeof(iMethod), &iMethod);
 
