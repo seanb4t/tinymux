@@ -527,11 +527,10 @@ void CleanUpStubSlaveSocket(void)
     }
 }
 
-void CleanUpStubSlaveProcess(void)
+void WaitOnStubSlaveProcess(void)
 {
     if (stubslave_pid > 0)
     {
-        kill(stubslave_pid, SIGKILL);
         waitpid(stubslave_pid, NULL, 0);
     }
     stubslave_pid = 0;
@@ -563,7 +562,7 @@ void boot_stubslave(dbref executor, dbref caller, dbref enactor, int)
 #endif // HAVE_GETDTABLESIZE
 
     CleanUpStubSlaveSocket();
-    CleanUpStubSlaveProcess();
+    WaitOnStubSlaveProcess();
 
     if (socketpair(AF_UNIX, SOCK_DGRAM, 0, sv) < 0)
     {
@@ -649,15 +648,11 @@ void boot_stubslave(dbref executor, dbref caller, dbref enactor, int)
     log_text(T("Stub slave started on fd "));
     log_number(stubslave_socket);
     ENDLOG;
-
-    // TODO: Send instructions to stubslave to add the existing list of
-    // modules.
-    //
     return;
 
 failure:
 
-    CleanUpStubSlaveProcess();
+    WaitOnStubSlaveProcess();
     STARTLOG(LOG_ALWAYS, "NET", "STUB");
     log_text(T(pFailedFunc));
     log_number(errno);
@@ -832,7 +827,7 @@ static int StubSlaveRead(void)
             return -1;
         }
         CleanUpStubSlaveSocket();
-        CleanUpStubSlaveProcess();
+        WaitOnStubSlaveProcess();
 
         STARTLOG(LOG_ALWAYS, "NET", "STUB");
         log_text(T("read() of stubslave failed. Stubslave stopped."));
@@ -867,7 +862,7 @@ static int StubSlaveWrite(void)
                 return -1;
             }
             CleanUpStubSlaveSocket();
-            CleanUpStubSlaveProcess();
+            WaitOnStubSlaveProcess();
 
             STARTLOG(LOG_ALWAYS, "NET", "STUB");
             log_text(T("write() of stubslave failed. Stubslave stopped."));
@@ -1964,9 +1959,12 @@ void shovechars(int nPorts, PortInfo aPorts[])
                 }
             }
 
-            if (CheckOutput(stubslave_socket))
+            if (!IS_INVALID_SOCKET(stubslave_socket))
             {
-                StubSlaveWrite();
+                if (CheckOutput(stubslave_socket))
+                {
+                    StubSlaveWrite();
+                }
             }
         }
 #endif // STUB_SLAVE
@@ -2037,71 +2035,77 @@ void shovechars(int nPorts, PortInfo aPorts[])
 }
 
 #ifdef STUB_SLAVE
-extern "C" void DCL_API pipepump(void)
+extern "C" MUX_RESULT DCL_API pipepump(void)
 {
-    fd_set input_set, output_set;
+    fd_set input_set;
+    fd_set output_set;
     int found;
     DESC *d, *dnext, *newd;
     int i;
 
     mudstate.debug_cmd = T("< pipepump >");
 
-    if (  !mudstate.shutdown_flag
-          && !IS_INVALID_SOCKET(stubslave_socket))
+    if (IS_INVALID_SOCKET(stubslave_socket))
     {
-        FD_ZERO(&input_set);
-        FD_ZERO(&output_set);
+        return MUX_E_FAIL;
+    }
 
-        // Listen for replies from the stubslave socket.
-        //
-        FD_SET(stubslave_socket, &input_set);
-        if (0 < Pipe_QueueLength(&Queue_Out))
+    FD_ZERO(&input_set);
+    FD_ZERO(&output_set);
+
+    // Listen for replies from the stubslave socket.
+    //
+    FD_SET(stubslave_socket, &input_set);
+    if (0 < Pipe_QueueLength(&Queue_Out))
+    {
+        FD_SET(stubslave_socket, &output_set);
+    }
+
+    // Wait for something to happen.
+    //
+    found = select(maxd, &input_set, &output_set, (fd_set *) NULL, NULL);
+
+    if (IS_SOCKET_ERROR(found))
+    {
+        int iSocketError = SOCKET_LAST_ERROR;
+        if (SOCKET_EBADF == iSocketError)
         {
-            FD_SET(stubslave_socket, &output_set);
-        }
+            // The socket became invalid.
+            //
+            log_perror(T("NET"), T("FAIL"), T("checking for activity"), T("select"));
 
-        // Wait for something to happen.
-        //
-        found = select(maxd, &input_set, &output_set, (fd_set *) NULL, NULL);
-
-        if (IS_SOCKET_ERROR(found))
-        {
-            int iSocketError = SOCKET_LAST_ERROR;
-            if (SOCKET_EBADF == iSocketError)
+            if (  !IS_INVALID_SOCKET(stubslave_socket)
+               && !ValidSocket(stubslave_socket))
             {
-                // The socket became invalid.
-                //
-                log_perror(T("NET"), T("FAIL"), T("checking for activity"), T("select"));
-
-                if (  !IS_INVALID_SOCKET(stubslave_socket)
-                   && !ValidSocket(stubslave_socket))
-                {
-                    CleanUpStubSlaveSocket();
-                    return;
-                }
-            }
-            else if (iSocketError != SOCKET_EINTR)
-            {
-                log_perror(T("NET"), T("FAIL"), T("checking for activity"), T("select"));
-            }
-            return;
-        }
-
-        // Get data from from stubslave.
-        //
-        if (CheckInput(stubslave_socket))
-        {
-            while (0 == StubSlaveRead())
-            {
-                ; // Nothing.
+                CleanUpStubSlaveSocket();
+                return MUX_E_FAIL;
             }
         }
+        else if (iSocketError != SOCKET_EINTR)
+        {
+            log_perror(T("NET"), T("FAIL"), T("checking for activity"), T("select"));
+        }
+        return MUX_S_OK;
+    }
 
+    // Get data from from stubslave.
+    //
+    if (CheckInput(stubslave_socket))
+    {
+        while (0 == StubSlaveRead())
+        {
+            ; // Nothing.
+        }
+    }
+    
+    if (!IS_INVALID_SOCKET(stubslave_socket))
+    {
         if (CheckOutput(stubslave_socket))
         {
             StubSlaveWrite();
         }
     }
+    return MUX_S_OK;
 }
 #endif // STUB_SLAVE
 
@@ -4644,7 +4648,6 @@ static RETSIGTYPE DCL_CDECL sighandler(int sig)
                 {
                     // The Stub slave process ended unexpectedly.
                     //
-                    CleanUpStubSlaveSocket();
                     stubslave_pid = 0;
 
                     LogStatBuf(stat_buf, "STUB");
@@ -4783,6 +4786,7 @@ static RETSIGTYPE DCL_CDECL sighandler(int sig)
                 p = p->pNext;
             }
         }
+        final_modules();
 #endif
 #ifndef MEMORY_BASED
         al_store();
