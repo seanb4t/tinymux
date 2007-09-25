@@ -114,7 +114,7 @@ void cf_init(void)
 #if defined(FIRANMUX)
     mux_strncpy(mudconf.immobile_msg, T("You have been set immobile."), sizeof(mudconf.immobile_msg)-1);
 #endif // FIRANMUX
-#if defined(INLINESQL)
+#if defined(INLINESQL) || defined(HAVE_DLOPEN) || defined(WIN32)
     mudconf.sql_server[0]   = '\0';
     mudconf.sql_user[0]     = '\0';
     mudconf.sql_password[0] = '\0';
@@ -375,6 +375,8 @@ void cf_init(void)
 #if defined(STUB_SLAVE)
     mudstate.pISlaveControl = NULL;
 #endif // STUB_SLAVE
+    mudstate.pIQueryControl = NULL;
+    mudstate.next_handle = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1798,7 +1800,7 @@ static CF_HAND(cf_module)
     {
         eInProc = 0,
         eLocal
-    } eType;
+    } eType = eInProc;
 
     if (NULL == modname)
     {
@@ -1814,9 +1816,15 @@ static CF_HAND(cf_module)
     {
         eType = eInProc;
     }
-    else if (strcmp((char *)modtype, "local") == 0)
+    else if (  strcmp((char *)modtype, "local") == 0
+            || strcmp((char *)modtype, "slave") == 0)
     {
         eType = eLocal;
+    }
+    else
+    {
+        cf_log_syntax(player, cmd, "load type is invalid.");
+        return -1;
     }
 
 #if defined(STUB_SLAVE)
@@ -1834,7 +1842,7 @@ static CF_HAND(cf_module)
     }
 #endif // STUB_SLAVE
 
-    MUX_RESULT mr;
+    MUX_RESULT mr = MUX_S_OK;
     if ('!' == str[0])
     {
         if (eInProc == eType)
@@ -1874,6 +1882,7 @@ static CF_HAND(cf_module)
 
     if (MUX_FAILED(mr))
     {
+        cf_log_notfound(player, cmd, T("Module"), str);
         return -1;
     }
     else
