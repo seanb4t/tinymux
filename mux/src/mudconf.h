@@ -90,6 +90,7 @@ struct confdata
     dbref   global_error_obj;   // Object that is used to generate error messages.
     dbref   guest_char;         // player num of prototype GUEST character.
     dbref   guest_nuker;        // Wiz who nukes the GUEST characters.
+    dbref   help_executor;      // Dbref of exec object for eval'd helpfiles
     dbref   hook_obj;           // Object with @hook data.
     dbref   master_room;        // Room containing default cmds/exits/etc.
     dbref   player_parent;      // Default parent for new player objects
@@ -212,7 +213,7 @@ struct confdata
 #ifdef FIRANMUX
     UTF8    immobile_msg[128];  /* Message displayed to immobile players */
 #endif // FIRANMUX
-#ifdef INLINESQL
+#if defined(INLINESQL) || defined(HAVE_DLOPEN) || defined(WIN32)
     UTF8    sql_server[128];
     UTF8    sql_user[128];
     UTF8    sql_password[128];
@@ -392,6 +393,7 @@ struct statedata
     size_t  mod_alist_len;      /* Length of mod_alist */
     size_t  mod_size;           /* Length of modified buffer */
     unsigned int restart_count; // Number of @restarts since initial startup
+    int     next_handle;        // Next opaque handle to pointer.
 
     UTF8    short_ver[64];      /* Short version number (for INFO) */
     UTF8    doing_hdr[SIZEOF_DOING_STRING];  /* Doing column header in the WHO display */
@@ -416,6 +418,7 @@ struct statedata
 #if defined(STUB_SLAVE)
     mux_ISlaveControl *pISlaveControl;  // Management interface for StubSlave process.
 #endif // STUB_SLAVE
+    mux_IQueryControl *pIQueryControl;
 
     CLinearTimeAbsolute check_counter;  /* Countdown to next db check */
     CLinearTimeAbsolute cpu_count_from; /* When did we last reset CPU counters? */
@@ -444,6 +447,7 @@ struct statedata
     CHashTable reference_htab;  /* @reference hashtable */
     CHashTable ufunc_htab;      /* Local functions hashtable */
     CHashTable vattr_name_htab; /* User attribute names hashtable */
+    CHashTable pointers_htab;   /* Provides opaque handles for pointer */
 
     CBitField bfNoListens;      // Cache knowledge that there are no ^-Commands.
     CBitField bfNoCommands;     // Cache knowledge that there are no $-Commands.
