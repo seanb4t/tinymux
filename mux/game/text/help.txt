@@ -3844,8 +3844,8 @@ Related Topics: @name.
      /quiet - Teleports without setting off success or failure messages.
      /list  - Interpret <object> as a space-delimited list of objects.
 
-  Related Topics: JUMP_OK, @lock (tport and telout), @tfail, @otfail, @atfail,
-      @tofail, @otofail, @atofail.
+  Related Topics: JUMP_OK, @lock (TportLock and TeloutLock), @tfail, @otfail,
+      @atfail, @tofail, @otofail, @atofail.
 
 & @TFAIL
 @TFAIL
@@ -6749,7 +6749,7 @@ FDEPTH()
   FUNCTION: fdepth()
 
   This function returns the current state of the function recursion
-  counter.  Softcode can use this result to guage its distance from the
+  counter.  Softcode can use this result to gauge its distance from the
   configured function recursion limit.
 
   Related Topics: fcount(), function_recursion_limit in wizhelp
@@ -7211,20 +7211,19 @@ FUNCTION LIST (continued)
     HEIGHT()    HOME()      HOST()      IABS()      IADD()      IDIV()
     IDLE()      IF()        IFELSE()    ILEV()      IMUL()      INC()
     INDEX()     INSERT()    INZONE()    ISDBREF()   ISIGN()     ISINT()
-    ISNUM()     ISRAT()     ISUB()      ISWORD()    ITEMIZE()   ITEMS()
-    ITER()      LADD()      LAND()      LAST()      LASTCREATE()
-    LATTR()     LATTRCMDS() LATTRP()    LCMDS()     LCON()      LCSTR()
-    LDELETE()   LEXITS()    LFLAGS()    LINK()      LIST()      LISTRLEVELS()
-    LIT()       LJUST()     LN()        LNUM()      LOC()       LOCALIZE()
-    LOCATE()    LOCK()      LOG()       LOR()       LPAD()      LPARENT()
-    LPORTS()    LPOS()      LRAND()     LROOMS()    LT()        LTE()
-    LWHO()      MAIL()      MAILFROM()  MAILSIZE()  MAILJ()     MAILSUBJ()
-    MAP()       MATCH()     MATCHALL()  MAX()       MEMBER()    MERGE()
-    MID()       MIN()       MIX()       MOD()       MONEY()     MONIKER()
-    MOTD()      MTIME()     MUDNAME()   MUL()       MUNGE()     NAME()
-    NEARBY()    NEQ()       NEXT()      NOT()       NULL()      NUM()
-    OBJ()       OBJEVAL()   OBJMEM()    OEMIT()     OR()        ORBOOL()
-    ORD()       ORFLAGS()
+    ISNUM()     ISRAT()     ISUB()      ISWORD()    ITEMIZE()   ITER()
+    LADD()      LAND()      LAST()      LASTCREATE()LATTR()     LATTRCMDS()
+    LATTRP()    LCMDS()     LCON()      LCSTR()     LDELETE()   LEXITS()
+    LFLAGS()    LINK()      LIST()      LISTRLEVELS() LIT()     LJUST()
+    LN()        LNUM()      LOC()       LOCALIZE()  LOCATE()    LOCK()
+    LOG()       LOR()       LPAD()      LPARENT()   LPORTS()    LPOS()
+    LRAND()     LROOMS()    LT()        LTE()       LWHO()      MAIL()
+    MAILFROM()  MAILSIZE()  MAILJ()     MAILSUBJ()  MAP()       MATCH()
+    MATCHALL()  MAX()       MEMBER()    MERGE()     MID()       MIN()
+    MIX()       MOD()       MONEY()     MONIKER()   MOTD()      MTIME()
+    MUDNAME()   MUL()       MUNGE()     NAME()      NEARBY()    NEQ()
+    NEXT()      NOT()       NULL()      NUM()       OBJ()       OBJEVAL()
+    OBJMEM()    OEMIT()     OR()        ORBOOL()    ORD()       ORFLAGS()
 
 ("help function list3" for more)
 
@@ -7455,7 +7454,7 @@ GRABALL()
   FUNCTION: graball(<list>, <pattern>[, <idelim>[, <odelim>]])
 
   This function matches <pattern> against each word in <list>, returning
-  the all words that match.  If no words match, then an empty string is
+  all the words that match.  If no words match, then an empty string is
   returned.  The match is not case-sensitive, and wildcard characters
   are permitted in <pattern>.  <idelim> may be used to specify the <list>
   delimiter other than a space.  <odelim> is the output delimiter.
@@ -7902,11 +7901,13 @@ IDLE()
 
   Related Topics: WHO, conn(), lwho().
 
+& IF()
 & IFELSE()
+IF()
 IFELSE()
 
-  FUNCTION: ifelse(<expression>,<true string>,<false string>)
-                if(<expression>,<true string>[,<false string>])
+  FUNCTION:     if(<expression>,<true string>[,<false string>])
+            ifelse(<expression>,<true string>,<false string>)
 
   This function returns <true string> if BOOLEAN <expression> is TRUE,
   <false string> otherwise. Much more efficient than an equivalent switch().
