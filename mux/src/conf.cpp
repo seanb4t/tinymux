@@ -114,7 +114,7 @@ void cf_init(void)
 #if defined(FIRANMUX)
     mux_strncpy(mudconf.immobile_msg, T("You have been set immobile."), sizeof(mudconf.immobile_msg)-1);
 #endif // FIRANMUX
-#if defined(INLINESQL)
+#if defined(INLINESQL) || defined(HAVE_DLOPEN) || defined(WIN32)
     mudconf.sql_server[0]   = '\0';
     mudconf.sql_user[0]     = '\0';
     mudconf.sql_password[0] = '\0';
@@ -298,6 +298,7 @@ void cf_init(void)
     mudconf.destroy_going_now = false;
     mudconf.nStackLimit = 10000;
     mudconf.hook_obj = NOTHING;
+    mudconf.help_executor = NOTHING;
     mudconf.global_error_obj = NOTHING;
     mudconf.cache_pages = 40;
     mudconf.mail_per_hour = 50;
@@ -374,6 +375,8 @@ void cf_init(void)
 #if defined(STUB_SLAVE)
     mudstate.pISlaveControl = NULL;
 #endif // STUB_SLAVE
+    mudstate.pIQueryControl = NULL;
+    mudstate.next_handle = 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -1559,7 +1562,7 @@ static CF_HAND(cf_site)
 // cf_helpfile, cf_raw_helpfile: Add help files and their corresponding
 // command.
 //
-static int add_helpfile(dbref player, UTF8 *cmd, UTF8 *str, bool bRaw)
+static int add_helpfile(dbref player, UTF8 *cmd, UTF8 *str, bool bEval)
 {
     // Parse the two arguments.
     //
@@ -1641,7 +1644,7 @@ static int add_helpfile(dbref player, UTF8 *cmd, UTF8 *str, bool bRaw)
     pDesc->CommandName = StringClone(pCmdName);
     pDesc->ht = NULL;
     pDesc->pBaseFilename = StringClone(pBase);
-    pDesc->bEval = !bRaw;
+    pDesc->bEval = bEval;
 
     // Build up Command Entry.
     //
@@ -1694,7 +1697,7 @@ static CF_HAND(cf_helpfile)
     UNUSED_PARAMETER(pExtra);
     UNUSED_PARAMETER(nExtra);
 
-    return add_helpfile(player, cmd, str, false);
+    return add_helpfile(player, cmd, str, true);
 }
 
 static CF_HAND(cf_raw_helpfile)
@@ -1703,7 +1706,7 @@ static CF_HAND(cf_raw_helpfile)
     UNUSED_PARAMETER(pExtra);
     UNUSED_PARAMETER(nExtra);
 
-    return add_helpfile(player, cmd, str, true);
+    return add_helpfile(player, cmd, str, false);
 }
 
 // @hook: run softcode before or after running a hardcode command, or softcode access.
@@ -1797,7 +1800,7 @@ static CF_HAND(cf_module)
     {
         eInProc = 0,
         eLocal
-    } eType;
+    } eType = eInProc;
 
     if (NULL == modname)
     {
@@ -1813,9 +1816,15 @@ static CF_HAND(cf_module)
     {
         eType = eInProc;
     }
-    else if (strcmp((char *)modtype, "local") == 0)
+    else if (  strcmp((char *)modtype, "local") == 0
+            || strcmp((char *)modtype, "slave") == 0)
     {
         eType = eLocal;
+    }
+    else
+    {
+        cf_log_syntax(player, cmd, "load type is invalid.");
+        return -1;
     }
 
 #if defined(STUB_SLAVE)
@@ -1833,7 +1842,7 @@ static CF_HAND(cf_module)
     }
 #endif // STUB_SLAVE
 
-    MUX_RESULT mr;
+    MUX_RESULT mr = MUX_S_OK;
     if ('!' == str[0])
     {
         if (eInProc == eType)
@@ -1873,6 +1882,7 @@ static CF_HAND(cf_module)
 
     if (MUX_FAILED(mr))
     {
+        cf_log_notfound(player, cmd, T("Module"), str);
         return -1;
     }
     else
@@ -2075,6 +2085,7 @@ static CONFPARM conftable[] =
     {T("have_comsys"),               cf_bool,        CA_STATIC, CA_PUBLIC,   (int *)&mudconf.have_comsys,     NULL,               0},
     {T("have_mailer"),               cf_bool,        CA_STATIC, CA_PUBLIC,   (int *)&mudconf.have_mailer,     NULL,               0},
     {T("have_zones"),                cf_bool,        CA_STATIC, CA_PUBLIC,   (int *)&mudconf.have_zones,      NULL,               0},
+    {T("help_executor"),             cf_dbref,       CA_GOD,    CA_WIZARD,   &mudconf.help_executor,          NULL,               0},
     {T("helpfile"),                  cf_helpfile,    CA_STATIC, CA_DISABLED, NULL,                            NULL,               0},
     {T("hook_cmd"),                  cf_hook,        CA_GOD,    CA_GOD,      &mudconf.hook_cmd,               NULL,               0},
     {T("hook_obj"),                  cf_dbref,       CA_GOD,    CA_GOD,      &mudconf.hook_obj,               NULL,               0},
