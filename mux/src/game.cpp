@@ -3205,6 +3205,60 @@ int DCL_CDECL main(int argc, char *argv[])
     mudconf.log_dir = StringClone(pErrorBasename);
     cf_read();
 
+#if defined(HAVE_DLOPEN) || defined(WIN32)
+    MUX_RESULT mr = mux_CreateInstance(CID_QueryServer, NULL, UseSlaveProcess, IID_IQueryControl, (void **)&mudstate.pIQueryControl);
+    if (MUX_SUCCEEDED(mr))
+    {
+        mr = mudstate.pIQueryControl->Connect(mudconf.sql_server, mudconf.sql_database, mudconf.sql_user, mudconf.sql_password);
+        if (MUX_SUCCEEDED(mr))
+        {
+            mux_IQuerySink *pIQuerySink = NULL;
+            mr = mux_CreateInstance(CID_QueryClient, NULL, UseSameProcess, IID_IQuerySink, (void **)&pIQuerySink);
+            if (MUX_SUCCEEDED(mr))
+            {
+                mr = mudstate.pIQueryControl->Advise(pIQuerySink);
+                if (MUX_SUCCEEDED(mr))
+                {
+                    pIQuerySink->Release();
+                    pIQuerySink = NULL;
+                }
+                else
+                {
+                    mudstate.pIQueryControl->Release();
+                    mudstate.pIQueryControl = NULL;
+
+                    STARTLOG(LOG_ALWAYS, "INI", "LOAD");
+                    log_printf("Couldn't connect sink to server (%d).", mr);
+                    ENDLOG;
+                }
+            }
+            else
+            {
+                mudstate.pIQueryControl->Release();
+                mudstate.pIQueryControl = NULL;
+
+                STARTLOG(LOG_ALWAYS, "INI", "LOAD");
+                log_printf("Couldn't create Query Sink (%d).", mr);
+                ENDLOG;
+            }
+        }
+        else
+        {
+            mudstate.pIQueryControl->Release();
+            mudstate.pIQueryControl = NULL;
+
+            STARTLOG(LOG_ALWAYS, "INI", "LOAD");
+            log_printf("Couldn't connect to Query Server (%d).", mr);
+            ENDLOG;
+        }
+    }
+    else
+    {
+        STARTLOG(LOG_ALWAYS, "INI", "LOAD");
+        log_text(T("Couldn't create interface to Query Server."));
+        ENDLOG;
+    }
+#endif
 #if defined(INLINESQL)
     init_sql();
 #endif // INLINESQL
@@ -3299,6 +3353,7 @@ int DCL_CDECL main(int argc, char *argv[])
     hashreset(&mudstate.fwdlist_htab);
     hashreset(&mudstate.desc_htab);
     hashreset(&mudstate.reference_htab);
+    hashreset(&mudstate.pointers_htab);
 
     ValidateConfigurationDbrefs();
     process_preload();
