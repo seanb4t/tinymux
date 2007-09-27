@@ -2,7 +2,7 @@
  * \brief In-game help system.
  *
  * $Id$
- *
+ *
  */
 
 #include "copyright.h"
@@ -377,8 +377,13 @@ static bool ReportTopic(dbref executor, struct help_entry *htab_entry, int iHelp
         bool bEval = mudstate.aHelpDesc[iHelpfile].bEval;
         if (bEval)
         {
-            mux_exec(line, len, result, &bp, executor, executor, executor,
-                EV_NO_COMPRESS | EV_FIGNORE | EV_EVAL, NULL, 0);
+            dbref executor_for_help = executor;
+            if (Good_obj(mudconf.help_executor))
+            {
+                executor_for_help = mudconf.help_executor;
+            }
+            mux_exec(line, len, result, &bp, executor_for_help, executor, executor,
+                    EV_NO_COMPRESS | EV_FIGNORE | EV_EVAL, NULL, 0);
         }
         else
         {
