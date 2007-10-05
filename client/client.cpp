@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <wchar.h>
+#include <wctype.h>
 #include <ncursesw/ncurses.h>
 #include <locale.h>
 
@@ -9,19 +11,33 @@
 // Add conversions to and from wint_t to UTF-8.
 // Add SSL
 // Add configure.in
+// Add scrollback in output window.
 //
 
 WINDOW *g_scrOutput  = NULL;
 WINDOW *g_scrStatus  = NULL;
 WINDOW *g_scrInput   = NULL;
 
-cchar_t chLine;
+void UpdateStatusWindow(void)
+{
+    wchar_t wchSpace[2] = { L' ', L'\0' };
+    cchar_t cchSpace;
+    (void)setcchar(&cchSpace, wchSpace, A_UNDERLINE, 0, NULL);
+    wmove(g_scrStatus, 0, 0);
+    int n = COLS;
+    while (n--)
+    {
+        (void)wadd_wch(g_scrStatus, &cchSpace);
+    }
+}
 
 int main(int argc, char *argv[])
 {
     setlocale(LC_ALL, "");
 
     initscr();
+    keypad(stdscr, TRUE);
+
     if (  COLS < 10
        || LINES < 10)
     {
@@ -33,15 +49,17 @@ int main(int argc, char *argv[])
     }
 
     raw();
-    cbreak();
     noecho();
     nonl();
+    idlok(stdscr, TRUE);
+    scrollok(stdscr, TRUE);
     intrflush(stdscr, FALSE);
+    timeout(50);
     refresh();
 
-    WINDOW *g_scrOutput  = newwin(LINES - 3, COLS, 0, 0);
-    WINDOW *g_scrStatus  = newwin(1, COLS, LINES-3, 0);
-    WINDOW *g_scrInput   = newwin(2, COLS, LINES-2, 0);
+    g_scrOutput  = newwin(LINES - 3, COLS, 0, 0);
+    g_scrStatus  = newwin(1, COLS, LINES-3, 0);
+    g_scrInput   = newwin(2, COLS, LINES-2, 0);
     if (  NULL == g_scrOutput
        || NULL == g_scrStatus
        || NULL == g_scrInput)
@@ -50,20 +68,20 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Could not create a window.\r\n");
         return 1;
     }
-
-    keypad(g_scrInput, TRUE);
+    idlok(g_scrOutput, TRUE);
+    scrollok(g_scrOutput, TRUE);
+    idlok(g_scrInput, TRUE);
+    scrollok(g_scrInput, TRUE);
 
     wchar_t chtemp[2] = { L'\0', L'\0' };
-    chtemp[0] = ' ';
-    (void)setcchar(&chLine, chtemp, A_UNDERLINE, 0, NULL);
 
     waddstr(g_scrOutput, "Hello World !!!");
+    wmove(g_scrOutput, 1, 0);
 
-    int n = COLS;
-    while (n--)
-    {
-        (void)wadd_wch(g_scrStatus, &chLine);
-    }
+    UpdateStatusWindow();
+
+    wchar_t aBuffer[8000];
+    size_t  nBuffer = 0;
 
     for (;;)
     {
@@ -88,22 +106,74 @@ int main(int argc, char *argv[])
         {
             // Normal character.
             //
-            wprintw(g_scrOutput, "(0x%08X)", chin);
+            if (iswcntrl(chin))
+            {
+                // Control character.
+                //
+                if (L'\r' == chin)
+                {
+                    aBuffer[nBuffer] = L'\0';
+                    if (wcscasecmp(L"/quit", aBuffer) == 0)
+                    {
+                        break;
+                    }
+
+                    // Send line to output window.
+                    //
+                    for (int i = 0; i < nBuffer; i++)
+                    {
+                        chtemp[0] = aBuffer[i];
+                        if (OK == setcchar(&chout, chtemp, A_NORMAL, 0, NULL))
+                        {
+                            (void)wadd_wch(g_scrOutput, &chout);
+                        }
+                    }
+                    int y, x;
+                    getyx(g_scrOutput, y, x);
+                    if (LINES-3 == y)
+                    {
+                        scroll(g_scrOutput);
+                        wmove(g_scrOutput, LINES-3, 0);
+                    }
+                    else
+                    {
+                        wmove(g_scrOutput, y+1, 0);
+                    }
+
+                    nBuffer = 0;
+
+                    getyx(g_scrInput, y, x);
+                    if (1 == y)
+                    {
+                        scroll(g_scrInput);
+                        wmove(g_scrInput, 1, 0);
+                    }
+                    else
+                    {
+                        wmove(g_scrInput, y+1, 0);
+                    }
+                }
+            }
+            else if (iswprint(chin))
+            {
+                // Printable character.
+                //
+                if (nBuffer < sizeof(aBuffer))
+                {
+                    aBuffer[nBuffer++] = chin;
+
+                    chtemp[0] = chin;
+                    if (OK == setcchar(&chout, chtemp, A_NORMAL, 0, NULL))
+                    {
+                        (void)wadd_wch(g_scrInput, &chout);
+                    }
+                }
+            }
+
             if ('n' == chin)
             {
                 break;
             }
-          
-            chtemp[0] = chin;
-            if (OK == setcchar(&chout, chtemp, A_NORMAL, 0, NULL))
-            {
-                (void)wadd_wch(g_scrOutput, &chout);
-                (void)wadd_wch(g_scrInput, &chout);
-            }
-        }
-        else
-        {
-            break;
         }
     }
     endwin();
