@@ -442,14 +442,11 @@ void do_parent
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    dbref thing, parent, curr;
-    int lev;
-
     // Get victim.
     //
     init_match(executor, tname, NOTYPE);
     match_everything(0);
-    thing = noisy_match_result();
+    dbref thing = noisy_match_result();
     if (!Good_obj(thing))
     {
         return;
@@ -464,9 +461,14 @@ void do_parent
         return;
     }
 
+    // Save the previous parent for @aparent handling.
+    //
+    dbref previous_parent = db[thing].parent;
+
     // Find out what the new parent is.
     //
-    if (*pname)
+    dbref parent = NOTHING;
+    if ('\0' != pname[0])
     {
         init_match(executor, pname, Typeof(thing));
         match_everything(0);
@@ -486,6 +488,8 @@ void do_parent
 
         // Verify no recursive reference
         //
+        int lev;
+        int curr;
         ITER_PARENTS(parent, curr, lev)
         {
             if (curr == thing)
@@ -495,18 +499,81 @@ void do_parent
             }
         }
     }
-    else
-    {
-        parent = NOTHING;
-    }
 
     s_Parent(thing, parent);
-    if (!Quiet(thing) && !Quiet(executor))
+
+    // Now that parent is set, handle zero, one, or two @aparent notifications
+    // as necessary.
+    //
+    if (parent != previous_parent)
     {
-        if (parent == NOTHING)
+        // Setup the appropriate stack arguments.
+        //
+        UTF8 child[SBUF_SIZE];
+        UTF8 removal[]  = "1";
+        UTF8 addition[] = "0";
+        UTF8 original_executor[SBUF_SIZE];
+        const UTF8 *xargs[3];
+
+        int xnargs = 3;
+        xargs[0] = child;
+        xargs[2] = original_executor;
+
+        dbref aowner;
+        int   aflags;
+
+        // Notify previous parent of the removal.
+        //
+        if (Good_obj(previous_parent))
+        {
+            UTF8* action = atr_get("do_parent.529", previous_parent, A_APARENT,
+                &aowner, &aflags);
+
+            if (  NULL != action
+               && '\0' != action[0])
+            {
+                mux_sprintf(child, SBUF_SIZE, "#%d", thing);
+                mux_sprintf(original_executor, SBUF_SIZE, "#%d", executor);
+                xargs[1] = removal;
+
+                did_it(previous_parent, previous_parent, 0, NULL, 0, NULL,
+                        A_APARENT, 0, xargs, xnargs);
+            }
+            free_lbuf(action);
+        }
+
+        // Notify new parent of addition.
+        //
+        if (Good_obj(parent))
+        {
+            UTF8* action = atr_get("do_parent.550", parent, A_APARENT,
+                &aowner, &aflags);
+
+            if (  NULL != action
+               && '\0' != action[0])
+            {
+                mux_sprintf(child, SBUF_SIZE, "#%d", thing);
+                mux_sprintf(original_executor, SBUF_SIZE, "#%d", executor);
+                xargs[1] = addition;
+
+                did_it(parent, parent, 0, NULL, 0, NULL, A_APARENT, 0,
+                    xargs, xnargs);
+            }
+            free_lbuf(action);
+        }
+    }
+
+    if (  !Quiet(thing)
+       && !Quiet(executor))
+    {
+        if (NOTHING == parent)
+        {
             notify_quiet(executor, T("Parent cleared."));
+        }
         else
+        {
             notify_quiet(executor, T("Parent set."));
+        }
     }
 }
 
@@ -967,7 +1034,7 @@ static bool can_destroy_player(dbref player, dbref victim)
     return true;
 }
 
-static void ProcessMasterRoomADestroy(dbref thing)
+static void ProcessMasterRoomADestroy(dbref destroyer, dbref thing)
 {
     int nxargs = 2;
     const UTF8 *xargs[2];
@@ -1013,7 +1080,7 @@ static void ProcessMasterRoomADestroy(dbref thing)
                 UTF8 buf[SBUF_SIZE];
                 mux_sprintf(buf, SBUF_SIZE, "#%d", thing);
                 xargs[0] = buf;
-                wait_que(master_room_obj, master_room_obj, master_room_obj,
+                wait_que(master_room_obj, destroyer, destroyer,
                         AttrTrace(aflags, 0), false, lta, NOTHING, 0, act, nxargs,
                         (const UTF8 **) xargs, mudstate.global_regs);
 
@@ -1185,7 +1252,7 @@ void do_destroy(dbref executor, dbref caller, dbref enactor, int eval, int key, 
         }
     }
 
-    ProcessMasterRoomADestroy(thing);
+    ProcessMasterRoomADestroy(executor, thing);
 
     if (bInstant)
     {
