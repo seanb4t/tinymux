@@ -10,6 +10,7 @@ docs/CREDITS
 docs/DISTRIBUTIONS
 docs/GUESTS
 docs/LIMITS
+docs/MODULES
 docs/MEMORY
 docs/PATCHES
 docs/REALMS
@@ -94,6 +95,17 @@ src/modules/sum.dep
 src/modules/sum.dsp
 src/modules/sum.h
 src/modules/sum.mak
+src/modules/sql.h
+src/modules/sqlproxy.cpp
+src/modules/sqlproxy.def
+src/modules/sqlproxy.dep
+src/modules/sqlproxy.dsp
+src/modules/sqlproxy.mak
+src/modules/sqlslave.cpp
+src/modules/sqlslave.def
+src/modules/sqlslave.dep
+src/modules/sqlslave.dsp
+src/modules/sqlslave.mak
 src/modules.cpp
 src/modules.h
 src/move.cpp
