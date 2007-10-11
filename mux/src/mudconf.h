@@ -393,7 +393,6 @@ struct statedata
     size_t  mod_alist_len;      /* Length of mod_alist */
     size_t  mod_size;           /* Length of modified buffer */
     unsigned int restart_count; // Number of @restarts since initial startup
-    int     next_handle;        // Next opaque handle to pointer.
 
     UTF8    short_ver[64];      /* Short version number (for INFO) */
     UTF8    doing_hdr[SIZEOF_DOING_STRING];  /* Doing column header in the WHO display */
@@ -432,7 +431,6 @@ struct statedata
 #if !defined(MEMORY_BASED)
     CHashTable acache_htab;     // Attribute Cache
 #endif // MEMORY_BASED
-    CHashTable scratch_htab;    /* Multi-purpose scratch hash table */
     CHashTable attr_name_htab;  /* Attribute names hashtable */
     CHashTable channel_htab;    /* Channels hashtable */
     CHashTable command_htab;    /* Commands hashtable */
@@ -448,7 +446,7 @@ struct statedata
     CHashTable reference_htab;  /* @reference hashtable */
     CHashTable ufunc_htab;      /* Local functions hashtable */
     CHashTable vattr_name_htab; /* User attribute names hashtable */
-    CHashTable pointers_htab;   /* Provides opaque handles for pointer */
+    CHashTable scratch_htab;    /* Multi-purpose scratch hash table */
 
     CBitField bfNoListens;      // Cache knowledge that there are no ^-Commands.
     CBitField bfNoCommands;     // Cache knowledge that there are no $-Commands.
