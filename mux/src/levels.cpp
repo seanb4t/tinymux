@@ -202,11 +202,11 @@ UTF8 *rxlevel_description(dbref player, dbref target)
     RLEVEL rl = RxLevel(target);
     for (i = 0; i < mudconf.no_levels; ++i)
     {
-        if (  (rl & mudconf.reality_level[i].value)
-           == mudconf.reality_level[i].value)
+        confdata::rlevel_def *rldef = &mudconf.reality_level[i];
+        if ((rl & rldef->value) == rldef->value)
         {
             safe_mb_chr(' ', buff, &bp);
-            safe_mb_str(mudconf.reality_level[i].name, buff, &bp);
+            safe_mb_str(rldef->name, buff, &bp);
         }
     }
 
@@ -233,11 +233,11 @@ UTF8 *txlevel_description(dbref player, dbref target)
     RLEVEL tl = TxLevel(target);
     for (i = 0; i < mudconf.no_levels; ++i)
     {
-        if (  (tl & mudconf.reality_level[i].value)
-           == mudconf.reality_level[i].value)
+        confdata::rlevel_def *rldef = &mudconf.reality_level[i];
+        if ((tl & rldef->value) == rldef->value)
         {
             safe_mb_chr(' ', buff, &bp);
-            safe_mb_str(mudconf.reality_level[i].name, buff, &bp);
+            safe_mb_str(rldef->name, buff, &bp);
         }
     }
 
@@ -251,9 +251,10 @@ RLEVEL find_rlevel(UTF8 *name)
 {
     for (int i = 0; i < mudconf.no_levels; i++)
     {
-        if (mux_stricmp(name, mudconf.reality_level[i].name) == 0)
+        confdata::rlevel_def *rldef = &mudconf.reality_level[i];
+        if (mux_stricmp(name, rldef->name) == 0)
         {
-            return mudconf.reality_level[i].value;
+            return rldef->value;
         }
     }
     return 0;
@@ -478,36 +479,131 @@ void decompile_rlevels(dbref player, dbref thing, UTF8 *thingname)
     free_mbuf(buf);
 }
 
-int *desclist_match(dbref player, dbref thing)
+#define NUM_DESC 33
+typedef struct DESC_INFO
 {
-    static int descbuffer[33];
+    int n;
+    int descs[NUM_DESC];
+} DESC_INFO;
 
-    descbuffer[0] = 1;
+DESC_INFO *desclist_match(dbref player, dbref thing)
+{
+    static DESC_INFO descbuffer;
+
+    descbuffer.n = 0;
     RLEVEL match = RxLevel(player) & TxLevel(thing);
     for (int i = 0; i < mudconf.no_levels; i++)
     {
-        if (  (match & mudconf.reality_level[i].value)
-           == mudconf.reality_level[i].value)
+        confdata::rlevel_def *rldef = &mudconf.reality_level[i];
+        if ((match & rldef->value) == rldef->value)
         {
-            ATTR *at = atr_str(mudconf.reality_level[i].attr);
-            if (at)
+            ATTR *at = atr_str(rldef->attr);
+            if (NULL != at)
             {
-                int j;
-                for (j = 1; j < descbuffer[0]; j++)
+                bool bFound = false;
+                for (int j = 0; j < descbuffer.n; j++)
                 {
-                    if (at->number == descbuffer[j])
+                    if (at->number == descbuffer.descs[j])
                     {
+                        bFound = true;
                         break;
                     }
                 }
-                if (j == descbuffer[0])
+
+                if (  !bFound
+                   && descbuffer.n < NUM_DESC-1)
                 {
-                    descbuffer[descbuffer[0]++] = at->number;
+                    descbuffer.descs[descbuffer.n] = at->number;
+                    descbuffer.n++;
                 }
             }
         }
     }
-    return descbuffer;
+    return &descbuffer;
+}
+
+UTF8 *get_rlevel_desc
+(
+    dbref player,
+    dbref thing,
+    int  *piDescUsed
+)
+{
+    dbref aowner;
+    int aflags;
+    UTF8 *buff = alloc_lbuf("get_rlevel_desc.");
+    UTF8 *bp = buff;;
+    reg_ref **preserve = NULL;
+    bool need_pres = false;
+    bool bFirst = true;
+
+    // Get description list.
+    //
+    DESC_INFO *desclist = desclist_match(player, thing);
+    bool found_a_desc = false;
+    for (int i = 0; i < desclist->n; i++)
+    {
+        UTF8 *d = atr_pget(thing, desclist->descs[i], &aowner, &aflags);
+        if ('\0' != d[0])
+        {
+            found_a_desc = true;
+            if (!need_pres)
+            {
+                need_pres = true;
+                preserve = PushRegisters(MAX_GLOBAL_REGS);
+                save_global_regs(preserve);
+            }
+
+            mux_exec(d, LBUF_SIZE-1, buff, &bp, thing, thing, player,
+                AttrTrace(aflags, EV_EVAL|EV_FIGNORE|EV_TOP),
+                NULL, 0);
+
+            if (!bFirst)
+            {
+                safe_str(T("\r\n"), buff, &bp);
+            }
+            else
+            {
+                bFirst = false;
+                *piDescUsed = desclist->descs[i];
+            }
+        }
+        free_lbuf(d);
+    }
+
+    if (!found_a_desc)
+    {
+        UTF8 *d = atr_pget(thing, A_DESC, &aowner, &aflags);
+        if ('\0' != d[0])
+        {
+            found_a_desc = true;
+            if (!need_pres)
+            {
+                need_pres = true;
+                preserve = PushRegisters(MAX_GLOBAL_REGS);
+                save_global_regs(preserve);
+            }
+
+            mux_exec(d, LBUF_SIZE-1, buff, &bp, thing, thing, player,
+                AttrTrace(aflags, EV_EVAL|EV_FIGNORE|EV_TOP),
+                NULL, 0);
+            *bp = '\0';
+
+            *piDescUsed = A_DESC;
+        }
+        free_lbuf(d);
+    }
+
+    // If we preserved the state of the global registers, restore them.
+    //
+    if (need_pres)
+    {
+        restore_global_regs(preserve);
+        PopRegisters(preserve, MAX_GLOBAL_REGS);
+    }
+
+    *bp = '\0';
+    return buff;
 }
 
 /* ---------------------------------------------------------------------------
@@ -529,41 +625,47 @@ void did_it_rlevel
     int   nargs
 )
 {
-    UTF8 *d, *buff, *act, *charges, *bp, *str;
-    dbref loc, aowner;
+    if (MuxAlarm.bAlarmed)
+    {
+        return;
+    }
+
+    UTF8 *d, *buff, *act, *charges, *bp;
+    dbref aowner;
     int num, aflags;
-    int i, *desclist, found_a_desc;
+    int i;
+    bool found_a_desc;
 
     reg_ref **preserve = NULL;
     bool need_pres = false;
 
     // Message to player.
     //
-    if (what > 0)
+    if (0 < what)
     {
         // Get description list.
         //
-        desclist = desclist_match(player, thing);
-        found_a_desc = 0;
-        for (i = 1; i < desclist[0]; i++)
+        DESC_INFO *desclist = desclist_match(player, thing);
+        found_a_desc = false;
+        for (i = 0; i < desclist->n; i++)
         {
             // Ok, if it's A_DESC, we need to check against A_IDESC.
             //
             if (  A_IDESC == what
-               && A_DESC == desclist[i])
+               && A_DESC == desclist->descs[i])
             {
                 d = atr_pget(thing, A_IDESC, &aowner, &aflags);
             }
             else
             {
-                d = atr_pget(thing, desclist[i], &aowner, &aflags);
+                d = atr_pget(thing, desclist->descs[i], &aowner, &aflags);
             }
 
-            if (*d)
+            if ('\0' != d[0])
             {
                 // No need for the 'def' message.
                 //
-                found_a_desc = 1;
+                found_a_desc = true;
                 if (!need_pres)
                 {
                     need_pres = true;
@@ -576,7 +678,7 @@ void did_it_rlevel
                     args, nargs);
                 *bp = '\0';
 
-                if (  A_HTDESC == desclist[i]
+                if (  A_HTDESC == desclist->descs[i]
                    && Html(player))
                 {
                     safe_str(T("\r\n"), buff, &bp);
@@ -598,11 +700,11 @@ void did_it_rlevel
             // A_DESC or A_HTDESC... the worst case we look for it twice.
             //
             d = atr_pget(thing, what, &aowner, &aflags);
-            if (*d)
+            if ('\0' != d[0])
             {
                 // No need for the 'def' message
                 //
-                found_a_desc = 1;
+                found_a_desc = true;
                 if (!need_pres)
                 {
                     need_pres = true;
@@ -663,9 +765,9 @@ void did_it_rlevel
        free_lbuf(d);
     }
 
-
     // Message to neighbors.
     //
+    dbref loc;
     if (  0 < owhat
        && Has_location(player)
        && Good_obj(loc = Location(player)))

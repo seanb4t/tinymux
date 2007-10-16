@@ -806,7 +806,7 @@ void do_addcommand
     {
         mux_string *sName = new mux_string(name);
         sName->strip(T("\r\n\t "));
-        sName->transform_Ascii(mux_tolower_ascii);
+        sName->LowerCase();
         sName->export_TextPlain(pName);
         delete sName;
     }
@@ -2441,7 +2441,7 @@ void did_it(dbref player, dbref thing, int what, const UTF8 *def, int owhat,
         }
         free_lbuf(d);
     }
-    if (what < 0 && def)
+    else if (what < 0 && def)
     {
         notify(player, def);
     }

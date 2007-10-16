@@ -788,7 +788,16 @@ public:
     mux_string(const mux_string &sStr);
     mux_string(const UTF8 *pStr);
     ~mux_string(void);
+
     void Validate(void) const;
+
+    inline bool isAscii(void)
+    {
+        // If every byte corresponds to a point, then all the bytes must be ASCII.
+        //
+        return (m_iLast.m_byte == m_iLast.m_point);
+    }
+
     void append(dbref num);
     void append(INT64 iInt);
     void append(long lLong);
@@ -837,8 +846,17 @@ public:
     void import(const mux_string &sStr, mux_cursor iStart = CursorMin);
     void import(const UTF8 *pStr);
     void import(const UTF8 *pStr, size_t nLen);
-    mux_cursor length_cursor(void) const;
-    size_t length(void) const;
+
+    inline mux_cursor length_cursor(void) const
+    {
+        return m_iLast;
+    }
+
+    inline size_t length(void) const
+    {
+        return m_iLast.m_byte;
+    }
+
     void prepend(dbref num);
     void prepend(INT64 iInt);
     void prepend(long lLong);
@@ -846,6 +864,7 @@ public:
     void prepend(const UTF8 *pStr);
     void prepend(const UTF8 *pStr, size_t nLen);
     void replace_Chars(const mux_string &pTo, mux_cursor iStart, mux_cursor nLen);
+    bool replace_Point(const UTF8 *p, mux_cursor &i);
     void reverse(void);
     bool search
     (
