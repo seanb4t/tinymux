@@ -6144,17 +6144,6 @@ void mux_string::import(const UTF8 *pStr, size_t nLen)
     }
 }
 
-mux_cursor mux_string::length_cursor(void) const
-{
-    return m_iLast;
-}
-
-size_t mux_string::length(void) const
-{
-    return m_iLast.m_byte;
-}
-
-
 void mux_string::prepend(dbref num)
 {
     mux_string *sStore = new mux_string(*this);
@@ -6334,6 +6323,11 @@ void mux_string::replace_Chars
     }
 
     m_autf[m_iLast.m_byte] = '\0';
+}
+
+bool mux_string::replace_Point(const UTF8 *p, mux_cursor &i)
+{
+    return false;
 }
 
 /*! \brief Reverses the string.
@@ -6604,85 +6598,93 @@ void mux_string::transform
     size_t nLen
 )
 {
-    static unsigned char asciiTable[SCHAR_MAX+1];
-
-    if (m_iLast.m_byte <= nStart)
+    if (m_iLast.m_point <= nStart)
     {
         return;
     }
-    else if (m_iLast.m_byte < nStart + nLen)
-    {
-        nLen = m_iLast.m_byte - nStart;
-    }
 
-    // Set up table.
-    //
-    for (unsigned char c = 0; c <= SCHAR_MAX; c++)
+    if (  sFromSet.isAscii()
+       && sToSet.isAscii())
     {
-        asciiTable[c] = c;
-    }
-
-    unsigned char cFrom, cTo;
-    mux_cursor iSetEnd = sFromSet.m_iLast;
-    if (sToSet.m_iLast < iSetEnd)
-    {
-        iSetEnd = sToSet.m_iLast;
-    }
-    size_t nUTF = 0;
-
-    mux_cursor iFromSet, iToSet;
-    sFromSet.cursor_start(iFromSet);
-    sToSet.cursor_start(iToSet);
-    do
-    {
-        cFrom = sFromSet.m_autf[iFromSet.m_byte];
-        cTo = sToSet.m_autf[iToSet.m_byte];
-        if (  mux_isprint_ascii(cFrom)
-           && mux_isprint_ascii(cTo))
+        // Since both sets use only ASCII characters, we can special case this
+        // request.  First, we build a table that maps all possible ASCII
+        // characters to their requested replacement, and then we use it.
+        //
+        UTF8 asciiTable[SCHAR_MAX+1];
+        for (unsigned char c = 0; c <= SCHAR_MAX; c++)
         {
+            asciiTable[c] = c;
+        }
+    
+        mux_cursor iFromSet, iToSet;
+        sFromSet.cursor_start(iFromSet);
+        sToSet.cursor_start(iToSet);
+        do
+        {
+            UTF8 cFrom = sFromSet.m_autf[iFromSet.m_byte];
+            UTF8 cTo = sToSet.m_autf[iToSet.m_byte];
             asciiTable[cFrom] = cTo;
-        }
-        else
-        {
-            nUTF++;
-        }
-    } while (  sFromSet.cursor_next(iFromSet)
-            && sToSet.cursor_next(iToSet));
+        } while (  sFromSet.cursor_next(iFromSet)
+                && sToSet.cursor_next(iToSet));
 
-    // TODO: transform_UTF8
-    //
-    //if (0 == nUTF)
-    //{
         transform_Ascii(asciiTable, nStart, nLen);
-    //}
-    //else
-    //{
-    //    transform_UTF8(sFromSet, sToSet, asciiTable, nUTF, nStart, nLen);
-    //}
+    }
+    else
+    {
+        // This is the more general case.  We use a hash table for mapping.
+        //
+        hashreset(&mudstate.scratch_htab);
+
+        mux_cursor iFromSet, iToSet;
+        sFromSet.cursor_start(iFromSet);
+        sToSet.cursor_start(iToSet);
+        do
+        {
+            size_t nFrom = utf8_FirstByte[sFromSet.m_autf[iFromSet.m_byte]];
+            hashdeleteLEN(&sFromSet.m_autf[iFromSet.m_byte], nFrom, &mudstate.scratch_htab);
+            hashaddLEN(&sFromSet.m_autf[iFromSet.m_byte], nFrom, &sToSet.m_autf[iToSet.m_byte], &mudstate.scratch_htab);
+
+        } while (  sFromSet.cursor_next(iFromSet)
+                && sToSet.cursor_next(iToSet));
+
+        mux_cursor i;
+        if (cursor_from_point(i, nStart))
+        {
+            do
+            {
+                size_t n = utf8_FirstByte[m_autf[i.m_byte]];
+                UTF8 *p = static_cast<UTF8*>(hashfindLEN(&m_autf[i.m_byte], n, &mudstate.scratch_htab));
+                if (  NULL != p
+                   && !replace_Point(p, i))
+                {
+                    break;
+                }
+            } while (  cursor_next(i)
+                    && i.m_point < nStart+nLen);
+        }
+
+        hashreset(&mudstate.scratch_htab);
+    }
 }
 
 void mux_string::transform_Ascii
 (
-    const unsigned char asciiTable[SCHAR_MAX+1],
+    const UTF8 asciiTable[SCHAR_MAX+1],
     size_t nStart,
     size_t nLen
 )
 {
-    if (m_iLast.m_byte <= nStart)
+    mux_cursor i;
+    if (cursor_from_point(i, nStart))
     {
-        return;
-    }
-    else if (m_iLast.m_byte - nStart < nLen)
-    {
-        nLen = m_iLast.m_byte - nStart;
-    }
-
-    for (size_t i = nStart; i < nStart + nLen; i++)
-    {
-        if (mux_isprint_ascii(m_autf[i]))
+        do
         {
-            m_autf[i] = asciiTable[m_autf[i]];
-        }
+            if (mux_isprint_ascii(m_autf[i.m_byte]))
+            {
+                m_autf[i.m_byte] = asciiTable[m_autf[i.m_byte]];
+            }
+        } while (  cursor_next(i)
+                && i.m_point < nStart+nLen);
     }
 }
 
