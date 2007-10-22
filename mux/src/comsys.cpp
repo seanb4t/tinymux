@@ -98,7 +98,7 @@ void save_comsys(UTF8 *filename)
     ReplaceFile(buffer, filename);
 }
 
-// Aliases must be between 1 and 5 characters. No spaces. No ANSI.
+// Aliases must be between 1 and ALIAS_SIZE characters. No spaces. No ANSI.
 //
 UTF8 *MakeCanonicalComAlias
 (
@@ -1542,8 +1542,8 @@ void SendChannelMessage
     if (Good_obj(obj))
     {
         dbref aowner;
-        int aflags;
-        int logmax = DFLT_MAX_LOG;
+        int   aflags;
+        int   logmax = DFLT_MAX_LOG;
         UTF8 *maxbuf;
         ATTR *pattr = atr_str(T("MAX_LOG"));
         if (  pattr
@@ -1566,9 +1566,7 @@ void SendChannelMessage
             int atr = mkattr(GOD, p);
             if (0 < atr)
             {
-                dbref aowner;
-                int aflags;
-                ATTR *pattr = atr_str(T("LOG_TIMESTAMPS"));
+                pattr = atr_str(T("LOG_TIMESTAMPS"));
                 if (  pattr
                    && atr_get_info(obj, pattr->number, &aowner, &aflags))
                 {
@@ -4015,3 +4013,29 @@ FUNCTION(fun_channels)
         }
     }
 }
+
+FUNCTION(fun_chanobj)
+{
+    if (!mudconf.have_comsys)
+    {
+        safe_str(T("#-1 COMSYS DISABLED"), buff, bufc);
+        return;
+    }
+
+    struct channel *ch = select_channel(fargs[0]);
+    if (NULL == ch)
+    {
+        safe_str(T("#-1 CHANNEL NOT FOUND"), buff, bufc);
+        return;
+    }
+
+    dbref obj = ch->chan_obj;
+    if (Good_obj(obj))
+    {
+        safe_str(tprintf("#%d", obj), buff, bufc);
+    }
+    else
+    {
+        safe_str(T("#-1"), buff, bufc);
+    }
+ }
