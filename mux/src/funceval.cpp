@@ -2959,6 +2959,9 @@ FUNCTION(fun_lastcreate)
 {
     UNUSED_PARAMETER(caller);
     UNUSED_PARAMETER(enactor);
+    UNUSED_PARAMETER(eval);
+    UNUSED_PARAMETER(ncargs);
+    UNUSED_PARAMETER(cargs);
 
     // Determine the target by name, or use the executor if no name is given.
     //
@@ -3315,7 +3318,9 @@ FUNCTION(fun_foreach)
     size_t nStr = sStr->length();
     LBUF_OFFSET i = 0, nBytes = 0;
 
-    if (nfargs == 4)
+    if (  4 == nfargs
+       && '\0' != fargs[2]
+       && '\0' != fargs[3])
     {
         bool flag = false;
         UTF8 prev = '\0';
@@ -3325,6 +3330,7 @@ FUNCTION(fun_foreach)
               && !MuxAlarm.bAlarmed)
         {
             nBytes = sStr->export_Char_UTF8(i, cbuf);
+            i = i + nBytes;
 
             if (flag)
             {
@@ -3355,7 +3361,6 @@ FUNCTION(fun_foreach)
             mux_exec(atext, LBUF_SIZE-1, buff, bufc, thing, executor, enactor,
                 AttrTrace(aflags, EV_STRIP_CURLY|EV_FCHECK|EV_EVAL), &bp, 1);
             prev = cbuf[0];
-            i = i + nBytes;
         }
     }
     else
