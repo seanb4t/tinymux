@@ -829,6 +829,49 @@ static CF_HAND(cf_alias)
 }
 
 // ---------------------------------------------------------------------------
+// cf_name: rename a generic hash table entry
+//
+static CF_HAND(cf_name)
+{
+    UNUSED_PARAMETER(pExtra);
+    UNUSED_PARAMETER(nExtra);
+
+    MUX_STRTOK_STATE tts;
+    mux_strtok_src(&tts, str);
+    mux_strtok_ctl(&tts, T(" \t=,"));
+    UTF8 *oldname = mux_strtok_parse(&tts);
+    UTF8 *newname = mux_strtok_parse(&tts);
+
+    if (  NULL != oldname
+       && '\0' != oldname[0]
+       && NULL != newname
+       && '\0' != newname[0])
+    {
+        size_t nCased;
+        UTF8 *pCased = mux_strupr(oldname, nCased);
+        void *cp = hashfindLEN(pCased, nCased, (CHashTable *) vp);
+        if (NULL == cp)
+        {
+            cf_log_notfound(player, cmd, T("Entry"), oldname);
+            return -1;
+        }
+
+        size_t bCased = nCased;
+        UTF8 Buffer[LBUF_SIZE];
+        mux_strncpy(Buffer, pCased, LBUF_SIZE-1);
+        pCased = mux_strupr(newname, nCased);
+        if (!hashfindLEN(pCased, nCased, (CHashTable *) vp))
+        {
+            hashaddLEN(pCased, nCased, cp, (CHashTable *) vp);
+            hashdeleteLEN(Buffer, bCased, (CHashTable *) vp);
+            return 0;
+        }
+    }
+    return -1;
+}
+
+
+// ---------------------------------------------------------------------------
 // cf_flagalias: define a flag alias.
 //
 static CF_HAND(cf_flagalias)
@@ -1721,6 +1764,7 @@ static NAMETAB hook_names[] =
     {T("ignore"),     3, 0, HOOK_IGNORE},
     {T("igswitch"),   3, 0, HOOK_IGSWITCH},
     {T("permit"),     3, 0, HOOK_PERMIT},
+    {T("args"),       3, 0, HOOK_ARGS},
     {(UTF8 *)NULL,         0, 0, 0}
 };
 
@@ -2069,6 +2113,8 @@ static CONFPARM conftable[] =
     {T("function_access"),           cf_func_access, CA_GOD,    CA_DISABLED, NULL,                            access_nametab,     0},
     {T("function_alias"),            cf_alias,       CA_GOD,    CA_DISABLED, (int *)&mudstate.func_htab,      NULL,               0},
     {T("function_invocation_limit"), cf_int,         CA_GOD,    CA_PUBLIC,   &mudconf.func_invk_lim,          NULL,               0},
+    {T("function_name"),             cf_name,        CA_GOD,    CA_DISABLED, (int *)&mudstate.func_htab,      NULL,
+     0},
     {T("function_recursion_limit"),  cf_int,         CA_GOD,    CA_PUBLIC,   &mudconf.func_nest_lim,          NULL,               0},
     {T("game_dir_file"),             cf_string_dyn,  CA_STATIC, CA_GOD,      (int *)&mudconf.game_dir,        NULL, SIZEOF_PATHNAME},
     {T("game_pag_file"),             cf_string_dyn,  CA_STATIC, CA_GOD,      (int *)&mudconf.game_pag,        NULL, SIZEOF_PATHNAME},
