@@ -1,6 +1,9 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT
-AC_CONFIG_HEADER(autoconf.h)
+
+AC_PREREQ(2.61)
+AC_INIT(TinyMUX, 2.7, tinymux@googlegroups.com)
+AC_CONFIG_SRCDIR([game.cpp])
+AC_CONFIG_HEADER([autoconf.h])
 
 AC_MSG_CHECKING(whether to enable Reality Levels)
 AC_ARG_ENABLE(
@@ -218,10 +221,10 @@ AC_MINIX
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_TIME
-AC_CHECK_HEADERS(unistd.h memory.h string.h errno.h malloc.h sys/select.h)
-AC_CHECK_HEADERS(fcntl.h limits.h sys/file.h sys/ioctl.h sys/time.h sys/stat.h)
-AC_CHECK_HEADERS(fpu_control.h ieeefp.h fenv.h)
-AC_CHECK_HEADERS([netinet/in.h])
+AC_CHECK_HEADERS(unistd.h stddef.h memory.h string.h errno.h malloc.h sys/select.h)
+AC_CHECK_HEADERS(fcntl.h limits.h sys/file.h sys/ioctl.h sys/time.h sys/stat.h sys/param.h sys/fcntl.h)
+AC_CHECK_HEADERS(fpu_control.h ieeefp.h fenv.h float.h)
+AC_CHECK_HEADERS(netinet/in.h arpa/inet.h netdb.h sys/socket.h)
 AC_MSG_CHECKING(for dlopen)
 AC_CHECK_LIB(dl,dlopen)
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
@@ -279,9 +282,12 @@ if test $ac_cv_header_fenv_h = yes; then
 	AC_EGREP_HEADER(fesetprec,fenv.h,AC_DEFINE([HAVE_FESETPREC], [], [Define if fesetprec is available.]))
 	AC_EGREP_HEADER(fegetprec,fenv.h,AC_DEFINE([HAVE_FEGETPREC], [], [Define if fegetprec is available.]))
 fi
+
 AC_TYPE_OFF_T
 AC_TYPE_PID_T
 AC_TYPE_SIGNAL
+AC_TYPE_SIZE_T
+
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <signal.h>]],[[struct sigcontext scp;]])],[AC_DEFINE([HAVE_STRUCT_SIGCONTEXT], [], [Define if signal handlers have a struct sigcontext as their third arg.])],[])
 AC_HEADER_SYS_WAIT
 AC_STRUCT_TM
