@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(TinyMUX, 2.7, tinymux@googlegroups.com)
+AC_INIT([TinyMUX],[2.7],[tinymux@googlegroups.com])
 AC_CONFIG_SRCDIR([game.cpp])
 AC_CONFIG_HEADER([autoconf.h])
 
@@ -376,6 +376,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <sys/types.h>
 # Checks for library functions.
 #
 AC_FUNC_VPRINTF
+AC_FUNC_FORK
 AC_CHECK_FUNCS(crypt getdtablesize gethostbyaddr gethostbyname getpagesize getrusage gettimeofday)
 AC_CHECK_FUNCS(localtime_r nanosleep select setitimer setrlimit socket srandom tzset usleep)
 AS_MESSAGE([checking for pread and pwrite...])
@@ -533,4 +534,5 @@ if test -c /dev/urandom; then
 fi
 
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_SUBDIRS([modules])
 AC_OUTPUT
