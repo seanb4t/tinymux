@@ -13,14 +13,27 @@
 #include "autoconf.h"
 #include "config.h"
 
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif // HAVE_NETDB_H
+
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
-#include <sys/wait.h>
+#endif // HAVE_NETINET_IN_H
+
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
+#endif // HAVE_SYS_FILE_H
+
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif // HAVE_SYS_IOCTL_H
+
 #include <signal.h>
 #include "slave.h"
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif // HAVE_ARPA_INET_H
 
 #ifdef _SGI_SOURCE
 #define CAST_SIGNAL_FUNC (SIG_PF)
@@ -88,12 +101,16 @@ int query(char *ip, char *orig_arg)
         return -1;
     }
     const char *pHName = ip;
+
+#ifdef HAVE_GETHOSTBYADDR
     hp = gethostbyaddr((char *)&addr, sizeof(addr), AF_INET);
     if (  hp
        && strlen(hp->h_name) < MAX_STRING)
     {
         pHName = hp->h_name;
     }
+#endif // HAVE_GETHOSTBYADDR
+
     p = stpcpy(buf, ip);
     *p++ = ' ';
     p = stpcpy(p, pHName);
@@ -116,8 +133,10 @@ int query(char *ip, char *orig_arg)
     *port_pair++ = 0;
     *comma = ',';
 
+#ifdef HAVE_GETHOSTBYNAME
     hp = gethostbyname(arg);
     if (hp == NULL)
+#endif // HAVE_GETHOSTBYNAME
     {
         static struct hostent def;
         static struct in_addr defaddr;
