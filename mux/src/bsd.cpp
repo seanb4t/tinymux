@@ -12,12 +12,9 @@
 #include "config.h"
 #include "externs.h"
 
-#ifndef WIN32
-#include <sys/file.h>
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#endif // !WIN32
+#endif // HAVE_SYS_IOCTL_H
 
 #ifdef SSL_ENABLED
 #include <openssl/ssl.h>
@@ -208,6 +205,7 @@ static DWORD WINAPI SlaveProc(LPVOID lpParameter)
             // do the host/ident thing.
             //
 
+#ifdef HAVE_GETHOSTBYADDR
             // Take note of what time it is.
             //
 #define IDENT_PROTOCOL_TIMEOUT 5*60 // 5 minutes expressed in seconds.
@@ -221,8 +219,7 @@ static DWORD WINAPI SlaveProc(LPVOID lpParameter)
 
             addr = req.sa_in.sin_addr.S_un.S_addr;
             hp = gethostbyaddr((char *)&addr, sizeof(addr), AF_INET);
-
-            if (  hp
+            if (  NULL != hp
                && strlen(hp->h_name) < MAX_STRING)
             {
                 SlaveThreadInfo[iSlave].iDoing = __LINE__;
@@ -367,6 +364,7 @@ static DWORD WINAPI SlaveProc(LPVOID lpParameter)
                     return 1;
                 }
             }
+#endif // HAVE_GETHOSTBYADDR
         }
     }
     //SlaveThreadInfo[iSlave].iDoing = __LINE__;
