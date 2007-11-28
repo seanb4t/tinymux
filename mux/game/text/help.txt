@@ -7276,7 +7276,7 @@ FUNCTION LIST (continued)
     U()         UCSTR()     UDEFAULT()  ULOCAL()    UNPACK()    V()
     VADD()      VALID()     VCROSS()    VDIM()      VDOT()      VERSION()
     VISIBLE()   VMAG()      VMUL()      VSUB()      VUNIT()     WHERE()
-    WIDTH()     WIPE()      WORDPOS()   WORDS()     WRAP()      WRITETIME() 
+    WIDTH()     WIPE()      WORDPOS()   WORDS()     WRAP()      WRITETIME()
     XGET()      XOR()       ZFUN()      ZONE()      ZWHO()
 
 & FUNCTIONS
@@ -14064,8 +14064,7 @@ WIPE()
   The wipe() function will remove all matching attributes specified by
   a wildcard, or, if no attribute is specified, remove all attributes of
   the specified object.  This function works like @wipe and follows all
-  permissions and restrictions of the matching command. This is a side
-  effect function and may not be enabled by default.
+  permissions and restrictions of the matching command.
 
   See Also: @wipe, @set, &, set()
 

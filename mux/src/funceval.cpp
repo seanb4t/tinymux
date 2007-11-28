@@ -349,7 +349,6 @@ FUNCTION(fun_wipe)
     do_wipe(executor, caller, enactor, eval, 0, fargs[0], NULL, 0);
 }
 
-
 FUNCTION(fun_tel)
 {
     UNUSED_PARAMETER(cargs);
