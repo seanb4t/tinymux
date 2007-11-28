@@ -2341,13 +2341,13 @@ static FUNCTION(fun_parent)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if(nfargs > 1)
+    if (1 < nfargs)
     {
         if (check_command(executor, T("@parent"), buff, bufc))
         {
             return;
         }
-        do_parent(executor, caller, enactor, eval, 0, 2, fargs[0], fargs[1], 
+        do_parent(executor, caller, enactor, eval, 0, 2, fargs[0], fargs[1],
                 NULL, 0);
     }
     else
@@ -2359,7 +2359,7 @@ static FUNCTION(fun_parent)
             return;
         }
         if (  Examinable(executor, it)
-                || it == enactor)
+           || it == enactor)
         {
             safe_tprintf_str(buff, bufc, "#%d", Parent(it));
         }
@@ -3019,15 +3019,15 @@ static FUNCTION(fun_name)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if(nfargs > 1)
+    if (1 < nfargs)
     {
         if (  !fargs[0]
-                || !fargs[1]
-                || check_command(executor, T("@name"), buff, bufc))
+           || !fargs[1]
+           || check_command(executor, T("@name"), buff, bufc))
         {
             return;
         }
-        do_name(executor, caller, enactor, eval, 0, 2, fargs[0], fargs[1], 
+        do_name(executor, caller, enactor, eval, 0, 2, fargs[0], fargs[1],
                 NULL, 0);
     }
     else
@@ -3041,8 +3041,8 @@ static FUNCTION(fun_name)
         if (!mudconf.read_rem_name)
         {
             if (  !nearby_or_control(executor, it)
-                    && !isPlayer(it)
-                    && !Long_Fingers(executor))
+               && !isPlayer(it)
+               && !Long_Fingers(executor))
             {
                 safe_str(T("#-1 TOO FAR AWAY TO SEE"), buff, bufc);
                 return;
@@ -4282,7 +4282,7 @@ static FUNCTION(fun_replace)
     {
         ; // Nothing.
     }
-    
+
     // Replace a word at position X of a list.
     //
     if (  NULL != sList
