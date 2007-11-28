@@ -87,6 +87,8 @@ UTF8 *next_token(UTF8 *str, SEP *psep);
 UTF8 *split_token(UTF8 **sp, SEP *psep);
 int countwords(UTF8 *str, SEP *psep);
 
+bool check_command(dbref player, const UTF8 *name, UTF8 *buff, UTF8 **bufc);
+
 // This is the prototype for functions
 //
 #define FUNCTION(x) \
@@ -206,7 +208,6 @@ XFUNCTION(fun_pop);
 XFUNCTION(fun_push);
 #endif // DEPRECATED
 
-#ifdef SIDE_EFFECT_FUNCTIONS
 XFUNCTION(fun_create);
 XFUNCTION(fun_destroy);
 XFUNCTION(fun_emit);
@@ -218,12 +219,12 @@ XFUNCTION(fun_cemit);
 XFUNCTION(fun_set);
 XFUNCTION(fun_tel);
 XFUNCTION(fun_textfile);
+XFUNCTION(fun_trigger);
+XFUNCTION(fun_wipe);
 #if defined(FIRANMUX)
 XFUNCTION(fun_setparent);
 XFUNCTION(fun_setname);
-XFUNCTION(fun_trigger);
 #endif // FIRANMUX
-#endif
 
 // In netcommon.cpp
 XFUNCTION(fun_doing);

@@ -256,9 +256,8 @@ FUNCTION(fun_zone)
     }
 }
 
-#ifdef SIDE_EFFECT_FUNCTIONS
 
-static bool check_command(dbref player, const UTF8 *name, UTF8 *buff, UTF8 **bufc)
+bool check_command(dbref player, const UTF8 *name, UTF8 *buff, UTF8 **bufc)
 {
     CMDENT *cmdp = (CMDENT *)hashfindLEN(name, strlen((const char *)name), &mudstate.command_htab);
     if (cmdp)
@@ -322,6 +321,8 @@ FUNCTION(fun_setname)
     do_name(executor, caller, enactor, eval, 0, 2, fargs[0], fargs[1], NULL, 0);
 }
 
+#endif // FIRANMUX
+
 FUNCTION(fun_trigger)
 {
     UNUSED_PARAMETER(nfargs);
@@ -334,7 +335,19 @@ FUNCTION(fun_trigger)
     }
     do_trigger(executor, caller, enactor, eval, 0, fargs[0], fargs+1, nfargs-1, NULL, 0);
 }
-#endif // FIRANMUX
+
+FUNCTION(fun_wipe)
+{
+    UNUSED_PARAMETER(nfargs);
+    UNUSED_PARAMETER(cargs);
+    UNUSED_PARAMETER(ncargs);
+
+    if (check_command(executor, T("@wipe"), buff, bufc))
+    {
+        return;
+    }
+    do_wipe(executor, caller, enactor, eval, 0, fargs[0], NULL, 0);
+}
 
 FUNCTION(fun_tel)
 {
@@ -803,7 +816,6 @@ FUNCTION(fun_set)
     //
     flag_set(thing, executor, fargs[1], 0);
 }
-#endif
 
 // Generate a substitution array.
 //
