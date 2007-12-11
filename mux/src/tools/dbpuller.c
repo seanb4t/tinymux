@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     f_muxflat = fopen(argv[1], "r");
     if (NULL == f_muxflat)
     {
-        fprintf(stderr, "ERROR: Unable to open %s for reading.", argv[1]);
+        fprintf(stderr, "ERROR: Unable to open %s for reading.\n", argv[1]);
         exit(1);
     }
 
@@ -248,6 +248,7 @@ int main(int argc, char **argv)
             i_pullname = 0;
             fprintf(f_muxout, "@@ %s\n", g_line);
         }
+
         if (  '<' == g_line[0]
            && i_chk)
         {
