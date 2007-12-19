@@ -383,7 +383,7 @@ private:
 interface mux_IQuerySink : public mux_IUnknown
 {
 public:
-    virtual MUX_RESULT Result(UINT32 iQueryHandle, const UTF8 *pResultSet) = 0;
+    virtual MUX_RESULT Result(UINT32 iQueryHandle, UINT32 iError, QUEUE_INFO *pqiResultsSet) = 0;
 };
 
 interface mux_IQueryControl : public mux_IUnknown
@@ -413,7 +413,7 @@ public:
 
     // mux_IQuerySink
     //
-    virtual MUX_RESULT Result(UINT32 iQueryHandle, const UTF8 *pResultSet);
+    virtual MUX_RESULT Result(UINT32 iQueryHandle, UINT32 iError, QUEUE_INFO *pqiResultsSet);
 
     CQueryClient(void);
     MUX_RESULT FinalConstruct(void);
@@ -499,6 +499,18 @@ private:
 
 extern void init_modules(void);
 extern void final_modules(void);
+
+class CResultsSet
+{
+public:
+    CResultsSet(QUEUE_INFO *pqi);
+    ~CResultsSet(void);
+    UINT32 Release(void);
+    UINT32 AddRef(void);
+
+private:
+    UINT32 m_cRef;
+};
 
 #endif
 #endif // MODULES_H
