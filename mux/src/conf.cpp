@@ -365,7 +365,7 @@ void cf_init(void)
         mudstate.global_regs[i] = NULL;
     }
 #if defined(STUB_SLAVE)
-    mudstate.ResultsSet = NULL;
+    mudstate.pResultsSet = NULL;
 #endif // STUB_SLAVE
     mudstate.nObjEvalNest = 0;
     mudstate.in_loop = 0;
@@ -2284,12 +2284,12 @@ static CONFPARM conftable[] =
 #ifdef FIRANMUX
     {T("immobile_message"),          cf_string,      CA_WIZARD, CA_PUBLIC,   (int *)mudconf.immobile_msg,     NULL,             128},
 #endif // FIRANMUX
-#if defined(INLINESQL)
+#if defined(INLINESQL) || defined(HAVE_DLOPEN) || defined(WIN32)
     {T("sql_server"),                cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.sql_server,       NULL,             128},
     {T("sql_user"),                  cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.sql_user,         NULL,             128},
     {T("sql_password"),              cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.sql_password,     NULL,             128},
     {T("sql_database"),              cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.sql_database,     NULL,             128},
-#endif // INLINESQL
+#endif
     {T("mail_server"),               cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.mail_server,      NULL,             128},
     {T("mail_ehlo"),                 cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.mail_ehlo,        NULL,             128},
     {T("mail_sendaddr"),             cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.mail_sendaddr,    NULL,             128},

@@ -1166,7 +1166,7 @@ MUX_RESULT CQueryClient_Call(CHANNEL_INFO *pci, QUEUE_INFO *pqi)
             struct FRAME
             {
                 UINT32 iQueryHandle;
-                size_t nResultSet;
+                UINT32 iError;
             } CallFrame;
 
             struct RETURN
@@ -1182,33 +1182,7 @@ MUX_RESULT CQueryClient_Call(CHANNEL_INFO *pci, QUEUE_INFO *pqi)
             }
             else
             {
-                UTF8 *pResultSet = NULL;
-                try
-                {
-                    pResultSet = new UTF8[CallFrame.nResultSet];
-                }
-                catch (...)
-                {
-                    ; // Nothing.
-                }
-
-                if (NULL == pResultSet)
-                {
-                    ReturnFrame.mr = MUX_E_OUTOFMEMORY;
-                }
-                else
-                {
-                    nWanted = CallFrame.nResultSet;
-                    if (  Pipe_GetBytes(pqi, &nWanted, pResultSet)
-                       && nWanted == CallFrame.nResultSet)
-                    {
-                        ReturnFrame.mr = pIQuerySink->Result(CallFrame.iQueryHandle, pResultSet);
-                    }
-                    else
-                    {
-                        ReturnFrame.mr = MUX_E_INVALIDARG;
-                    }
-                }
+                ReturnFrame.mr = pIQuerySink->Result(CallFrame.iQueryHandle, CallFrame.iError, pqi);
             }
 
             Pipe_EmptyQueue(pqi);
@@ -1337,10 +1311,24 @@ MUX_RESULT CQueryClient::DisconnectObject(void)
     return MUX_S_OK;
 }
 
-MUX_RESULT CQueryClient::Result(UINT32 hQuery, const UTF8 *pResult)
+MUX_RESULT CQueryClient::Result(UINT32 hQuery, UINT32 iError, QUEUE_INFO *pqiResultsSet)
 {
 #if defined(STUB_SLAVE)
-    query_complete(hQuery, pResult);
+    CResultsSet *prs = NULL;
+    try
+    {
+        prs = new CResultsSet(pqiResultsSet);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+    query_complete(hQuery, iError, prs);
+    prs->Release();
+#else
+    UNUSED_PARAMETER(hQuery);
+    UNUSED_PARAMETER(iError);
+    UNUSED_PARAMETER(pqiResultsSet);
 #endif // STUB_SLAVE
     return MUX_S_OK;
 }
@@ -1424,6 +1412,73 @@ MUX_RESULT CQueryClientFactory::LockServer(bool bLock)
 {
     UNUSED_PARAMETER(bLock);
     return MUX_S_OK;
+}
+
+CResultsSet::CResultsSet(QUEUE_INFO *pqi) : m_cRef(1), m_nFields(0), m_nBlob(0), m_bLoaded(false), m_iError(QS_SUCCESS)
+{
+    m_pBlob = NULL;
+    size_t nWanted = sizeof(m_nFields);
+    if (  Pipe_GetBytes(pqi, &nWanted, &m_nFields)
+       && nWanted == sizeof(m_nFields))
+    {
+        m_nBlob = Pipe_QueueLength(pqi);
+        try
+        {
+            m_pBlob = new UTF8[m_nBlob];
+        }
+        catch (...)
+        {
+            ; // Nothing.
+        }
+
+        nWanted = m_nBlob;
+        if (  Pipe_GetBytes(pqi, &nWanted, m_pBlob)
+           && nWanted == m_nBlob)
+        {
+            m_bLoaded = true;
+        }
+    }
+}
+
+bool CResultsSet::isLoaded(void)
+{
+    return m_bLoaded;
+}
+
+void CResultsSet::SetError(UINT32 iError)
+{
+    m_iError = iError;
+}
+
+UINT32 CResultsSet::GetError(void)
+{
+    return m_iError;
+}
+
+CResultsSet::~CResultsSet(void)
+{
+    if (NULL != m_pBlob)
+    {
+        delete [] m_pBlob;
+        m_pBlob = NULL;
+    }
+}
+
+UINT32 CResultsSet::Release(void)
+{
+    m_cRef--;
+    if (0 == m_cRef)
+    {
+        delete this;
+        return 0;
+    }
+    return m_cRef;
+}
+
+UINT32 CResultsSet::AddRef(void)
+{
+    m_cRef++;
+    return m_cRef;
 }
 
 #endif

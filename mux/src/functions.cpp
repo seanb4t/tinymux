@@ -8579,10 +8579,18 @@ static FUNCTION(fun_rstest)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    if (mudstate.ResultsSet)
+    if (mudstate.pResultsSet)
     {
-        safe_copy_buf(mudstate.ResultsSet->reg_ptr,
-            mudstate.ResultsSet->reg_len, buff, bufc);
+        safe_str(T("It's here"), buff, bufc);
+        if (mudstate.pResultsSet->isLoaded())
+        {
+            safe_str(T(", and it's loaded."), buff, bufc);
+        }
+        else
+        {
+            safe_str(T(", but it isn't loaded."), buff, bufc);
+        }
+        safe_str(mux_ltoa_t(mudstate.pResultsSet->GetError()), buff, bufc);
     }
 }
 #endif // STUB_SLAVE

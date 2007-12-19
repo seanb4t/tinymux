@@ -8,6 +8,7 @@
 #ifndef SQL_H
 #define SQL_H
 
+#ifdef _SQLSLAVE
 class CQueryServer : public mux_IQueryControl, public mux_IMarshal
 {
 public:
@@ -38,7 +39,9 @@ public:
 private:
     UINT32          m_cRef;
     mux_IQuerySink *m_pIQuerySink;
+    MYSQL          *m_database;
 };
+#endif // _SQLSLAVE
 
 class CQueryServerFactory : public mux_IClassFactory
 {
@@ -80,7 +83,7 @@ public:
 
     // mux_IQuerySink
     //
-    virtual MUX_RESULT Result(UINT32 iQueryHandle, const UTF8 *pResultSet);
+    virtual MUX_RESULT Result(UINT32 iQueryHandle, UINT32 iError, QUEUE_INFO *pqiResultsSet);
 
     CQuerySinkProxy(void);
     MUX_RESULT FinalConstruct(void);
