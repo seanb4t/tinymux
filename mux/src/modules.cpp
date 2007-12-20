@@ -1414,28 +1414,79 @@ MUX_RESULT CQueryClientFactory::LockServer(bool bLock)
     return MUX_S_OK;
 }
 
-CResultsSet::CResultsSet(QUEUE_INFO *pqi) : m_cRef(1), m_nFields(0), m_nBlob(0), m_bLoaded(false), m_iError(QS_SUCCESS)
+CResultsSet::CResultsSet(QUEUE_INFO *pqi) : m_cRef(1), m_nFields(0),
+     m_nBlob(0), m_bLoaded(false), m_iError(QS_SUCCESS), m_nRows(0)
 {
     m_pBlob = NULL;
+    m_pRows = NULL;
     size_t nWanted = sizeof(m_nFields);
     if (  Pipe_GetBytes(pqi, &nWanted, &m_nFields)
        && nWanted == sizeof(m_nFields))
     {
+        size_t nRows;
         m_nBlob = Pipe_QueueLength(pqi);
-        try
+        if (sizeof(nRows) < m_nBlob)
         {
-            m_pBlob = new UTF8[m_nBlob];
-        }
-        catch (...)
-        {
-            ; // Nothing.
-        }
+            bool bError = false;
+            m_nBlob -= sizeof(nRows);
+            if (0 < m_nBlob)
+            {
+                try
+                {
+                    m_pBlob = new UTF8[m_nBlob];
+                }
+                catch (...)
+                {
+                    ; // Nothing.
+                }
 
-        nWanted = m_nBlob;
-        if (  Pipe_GetBytes(pqi, &nWanted, m_pBlob)
-           && nWanted == m_nBlob)
-        {
-            m_bLoaded = true;
+                nWanted = m_nBlob;
+                if (  NULL == m_pBlob
+                   || !Pipe_GetBytes(pqi, &nWanted, m_pBlob)
+                   || nWanted != m_nBlob)
+                {
+                    bError = true;
+                }
+            }
+
+            if (!bError)
+            {
+                nWanted = sizeof(nRows);
+                if (  Pipe_GetBytes(pqi, &nWanted, &nRows)
+                   && nWanted == sizeof(nRows))
+                {
+                    m_nRows = static_cast<int>(nRows);
+                    try
+                    {
+                        m_pRows = new PUTF8[m_nRows];
+                    }
+                    catch (...)
+                    {
+                        ; // Nothing.
+                    }
+
+                    if (NULL != m_pRows)
+                    {
+                        int i, j;
+                        UTF8 *p = m_pBlob;
+                        for (i = 0; i < m_nRows && p < m_pBlob + m_nBlob; i++)
+                        {
+                            m_pRows[i] = p;
+                            for (j = 0; j < m_nFields && p < m_pBlob + m_nBlob; j++)
+                            {
+                                size_t n;
+                                memcpy(&n, p, sizeof(size_t));
+                                p += sizeof(size_t) + n;
+                            }
+                        }
+
+                        if (p == m_pBlob + m_nBlob)
+                        {
+                            m_bLoaded = true;
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -1455,12 +1506,58 @@ UINT32 CResultsSet::GetError(void)
     return m_iError;
 }
 
+int CResultsSet::GetRowCount(void)
+{
+    return m_nRows;
+}
+
+const UTF8 *CResultsSet::FirstField(int iRow)
+{
+    if (  0 <= iRow
+       && iRow < m_nRows
+       && NULL != m_pRows
+       && 0 < m_nFields)
+    {
+        m_pCurrentField = m_pRows[iRow];
+        m_iCurrentField = 1;
+    }
+    else
+    {
+        m_pCurrentField = NULL;
+        m_iCurrentField = 1;
+    }
+    return m_pCurrentField;
+}
+
+const UTF8 *CResultsSet::NextField(void)
+{
+    const UTF8 *pField = NULL;
+    if (  NULL != m_pCurrentField
+       && 0 < m_nFields
+       && m_iCurrentField < m_nFields)
+    {
+        size_t n;
+
+        m_iCurrentField++;
+        memcpy(&n, m_pCurrentField, sizeof(size_t));
+        m_pCurrentField += sizeof(size_t) + n;
+        pField = m_pCurrentField;
+    }
+    return pField;
+}
+
 CResultsSet::~CResultsSet(void)
 {
     if (NULL != m_pBlob)
     {
         delete [] m_pBlob;
         m_pBlob = NULL;
+    }
+
+    if (NULL != m_pRows)
+    {
+        delete [] m_pRows;
+        m_pRows = NULL;
     }
 }
 
