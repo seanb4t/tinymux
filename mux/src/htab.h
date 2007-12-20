@@ -46,7 +46,8 @@ struct bque
     UTF8    *env[NUM_ENV_VARS];     // environment vars
     reg_ref *scr[MAX_GLOBAL_REGS];  // temp vars
 #if defined(STUB_SLAVE)
-    reg_ref *ResultsSet;            // Results Set
+    CResultsSet *pResultsSet;       // Results Set
+    int     iRow;                   // Current Row
 #endif // STUB_SLAVE
     bool    IsTimed;                // Is there a waittime time on this entry?
 };
