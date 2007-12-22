@@ -13,7 +13,9 @@ Feature Additions:
 
 Bug Fixes:
 ~~~~~~~~~
- -- Placeholder.
+ -- Improve ValidateConfigurationDbrefs() to prevent
+    player_starting_room and similar dbref configuration options from
+    refering to NOTHING (Issue 441).
 
 
 Performance Enhancements:
