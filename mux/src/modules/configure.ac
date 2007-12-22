@@ -49,6 +49,11 @@ AC_MINIX
 
 # Checks for libraries.
 #
+AC_CHECK_LIB(mysqlclient, main)
+if test "x$ac_cv_lib_mysqlclient_main" = "xyes"; then
+  SQL_LIBS="-lmysqlclient -lz"
+  AC_DEFINE([HAVE_MYSQL], [], [Define if mysql exists.])
+fi
 AC_MSG_CHECKING(for dlopen)
 AC_CHECK_LIB(dl,dlopen)
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
@@ -69,7 +74,6 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
               ;;
     esac
     MUX_LIBS="-lmux"
-    SQL_LIBS="-lmysqlclient -lz"
     ],[])
 AC_SUBST(MODULE_EXT)
 AC_SUBST(MODULE_CPPFLAGS)
@@ -81,6 +85,10 @@ AC_SUBST(SQL_LIBS)
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_TIME
+save_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$save_CPPFLAGS $SQL_INCLUDE"
+AC_TRY_COMPILE([#include <mysql.h>], [int x = 1;], AC_DEFINE([HAVE_MYSQL_H], [], [Define if mysql.h exists.]))
+CPPFLAGS="$save_CPPFLAGS"
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
