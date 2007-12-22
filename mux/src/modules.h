@@ -383,7 +383,7 @@ private:
 interface mux_IQuerySink : public mux_IUnknown
 {
 public:
-    virtual MUX_RESULT Result(UINT32 iQueryHandle, const UTF8 *pResultSet) = 0;
+    virtual MUX_RESULT Result(UINT32 iQueryHandle, UINT32 iError, QUEUE_INFO *pqiResultsSet) = 0;
 };
 
 interface mux_IQueryControl : public mux_IUnknown
@@ -413,7 +413,7 @@ public:
 
     // mux_IQuerySink
     //
-    virtual MUX_RESULT Result(UINT32 iQueryHandle, const UTF8 *pResultSet);
+    virtual MUX_RESULT Result(UINT32 iQueryHandle, UINT32 iError, QUEUE_INFO *pqiResultsSet);
 
     CQueryClient(void);
     MUX_RESULT FinalConstruct(void);
@@ -499,6 +499,41 @@ private:
 
 extern void init_modules(void);
 extern void final_modules(void);
+
+class CResultsSet
+{
+public:
+    CResultsSet(QUEUE_INFO *pqi);
+    ~CResultsSet(void);
+    UINT32 Release(void);
+    UINT32 AddRef(void);
+    bool   isLoaded(void);
+    void   SetError(UINT32 iError);
+    UINT32 GetError(void);
+    int    GetRowCount(void);
+    const UTF8 *FirstField(int iRow);
+    const UTF8 *NextField(void);
+
+private:
+    UINT32 m_cRef;
+    UINT32 m_nFields;
+    size_t m_nBlob;
+    UTF8  *m_pBlob;
+    bool   m_bLoaded;
+    UINT32 m_iError;
+    int    m_nRows;
+    PUTF8 *m_pRows;
+
+    const UTF8 *m_pCurrentField;
+    int         m_iCurrentField;
+};
+
+#define QS_SUCCESS         (0)
+#define QS_NO_SESSION      (1)
+#define QS_SQL_UNAVAILABLE (2)
+#define QS_QUERY_ERROR     (3)
+
+#define RS_TOP             (0)
 
 #endif
 #endif // MODULES_H

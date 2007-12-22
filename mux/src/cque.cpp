@@ -115,12 +115,14 @@ static void Task_RunQueueEntry(void *pEntry, int iUnused)
             }
 
 #if defined(STUB_SLAVE)
-            if (NULL != mudstate.ResultsSet)
+            if (NULL != mudstate.pResultsSet)
             {
-                RegRelease(mudstate.ResultsSet);
-                mudstate.ResultsSet = NULL;
+                mudstate.pResultsSet->Release();
+                mudstate.pResultsSet = NULL;
             }
-            mudstate.ResultsSet = point->ResultsSet;
+            mudstate.pResultsSet = point->pResultsSet;
+            point->pResultsSet = NULL;
+            mudstate.iRow = point->iRow;
 #endif // STUB_SLAVE
 
             UTF8 *command = point->comm;
@@ -247,10 +249,11 @@ static void Task_RunQueueEntry(void *pEntry, int iUnused)
     }
 
 #if defined(STUB_SLAVE)
-    if (NULL != mudstate.ResultsSet)
+    mudstate.iRow = RS_TOP;
+    if (NULL != mudstate.pResultsSet)
     {
-        RegRelease(mudstate.ResultsSet);
-        mudstate.ResultsSet = NULL;
+        mudstate.pResultsSet->Release();
+        mudstate.pResultsSet = NULL;
     }
 #endif // STUB_SLAVE
 
@@ -841,10 +844,11 @@ static BQUE *setup_que
     }
 
 #if defined(STUB_SLAVE)
-    tmp->ResultsSet = mudstate.ResultsSet;
-    if (NULL != mudstate.ResultsSet)
+    tmp->iRow = mudstate.iRow;
+    tmp->pResultsSet = mudstate.pResultsSet;
+    if (NULL != mudstate.pResultsSet)
     {
-        RegAddRef(mudstate.ResultsSet);
+        mudstate.pResultsSet->AddRef();
     }
 #endif // STUB_SLAVE
 
@@ -939,9 +943,9 @@ void wait_que
 }
 
 #if defined(STUB_SLAVE)
-      bool   QueryComplete_bDone   = false;
-      UINT32 QueryComplete_hQuery  = 0;
-const UTF8  *QueryComplete_pResult = NULL;
+bool   QueryComplete_bDone   = false;
+UINT32 QueryComplete_hQuery  = 0;
+CResultsSet *QueryComplete_prsResultsSet = NULL;
 
 static int CallBack_QueryComplete(PTASK_RECORD p)
 {
@@ -961,9 +965,11 @@ static int CallBack_QueryComplete(PTASK_RECORD p)
             p->ltaWhen.GetUTC();
             p->fpTask    = Task_RunQueueEntry;
 
-            point->u.s.sem   = NOTHING;
-            point->u.s.attr  = 0;
-            RegAssign(&point->ResultsSet, strlen((char *)QueryComplete_pResult), QueryComplete_pResult);
+            point->u.s.sem    = NOTHING;
+            point->u.s.attr   = 0;
+            QueryComplete_prsResultsSet->AddRef();
+            point->pResultsSet = QueryComplete_prsResultsSet;
+            point->iRow = RS_TOP;
 
             QueryComplete_bDone = true;
             return IU_UPDATE_TASK;
@@ -976,12 +982,18 @@ static int CallBack_QueryComplete(PTASK_RECORD p)
 // Therefore, we only want to raise the priority of the corresponding take
 // from SUSPENDED to OBJECT.
 //
-void query_complete(UINT32 hQuery, const UTF8 *pResult)
+void query_complete(UINT32 hQuery, UINT32 iError, CResultsSet *prsResultsSet)
 {
+    if (NULL != prsResultsSet)
+    {
+        prsResultsSet->SetError(iError);
+    }
+
     QueryComplete_bDone   = false;
     QueryComplete_hQuery  = hQuery;
-    QueryComplete_pResult = pResult;
+    QueryComplete_prsResultsSet = prsResultsSet;
     scheduler.TraverseUnordered(CallBack_QueryComplete);
+    QueryComplete_prsResultsSet = NULL;
 }
 #endif // STUB_SLAVE
 
@@ -1215,10 +1227,6 @@ void do_query
             notify(executor, T("QUERY: No Query."));
             return;
         }
-
-        STARTLOG(LOG_ALWAYS, "CMD", "QUERY");
-        Log.tinyprintf("Thing=#%d, Attr=%s, dbname=%s, query=%s", thing, pattr->name, pDBName, pQuery);
-        ENDLOG;
 
         sql_que(executor, caller, enactor, eval, thing, pattr->number,
             pDBName, pQuery, ncargs, cargs, mudstate.global_regs);

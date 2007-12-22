@@ -5,6 +5,34 @@ AC_INIT([TinyMUX],[2.7],[tinymux@googlegroups.com])
 AC_CONFIG_SRCDIR([sample.cpp])
 AC_CONFIG_HEADER([autoconf.h])
 
+AC_MSG_CHECKING(for location of SQL header files)
+AC_ARG_WITH(
+  [mysql-include],
+  AS_HELP_STRING([--with-mysql-include=PATH],[set the include path for SQL header files]),
+  [
+      SQL_INCLUDE="-I$withval"
+      AC_MSG_RESULT($withval)
+  ],
+  [
+      SQL_INCLUDE="-I/usr/include/mysql"
+      AC_MSG_RESULT(/usr/include/mysql)
+  ])
+AC_SUBST(SQL_INCLUDE)
+
+AC_MSG_CHECKING(for location of SQL library files)
+AC_ARG_WITH(
+  [mysql-libs],
+  AS_HELP_STRING([--with-mysql-libs=PATH],[set the library path for SQL library files]),
+  [
+      SQL_LIBPATH="-L$withval"
+      AC_MSG_RESULT($withval)
+  ],
+  [
+      SQL_LIBPATH="-L/usr/lib/mysql"
+      AC_MSG_RESULT(/usr/lib/mysql)
+  ])
+AC_SUBST(SQL_LIBPATH)
+
 # Checks for programs.
 #
 AC_PROG_CXX
@@ -21,6 +49,11 @@ AC_MINIX
 
 # Checks for libraries.
 #
+AC_CHECK_LIB(mysqlclient, main)
+if test "x$ac_cv_lib_mysqlclient_main" = "xyes"; then
+  SQL_LIBS="-lmysqlclient -lz"
+  AC_DEFINE([HAVE_MYSQL], [], [Define if mysql exists.])
+fi
 AC_MSG_CHECKING(for dlopen)
 AC_CHECK_LIB(dl,dlopen)
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
@@ -45,12 +78,14 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 AC_SUBST(MODULE_EXT)
 AC_SUBST(MODULE_CPPFLAGS)
 AC_SUBST(MUX_LIBS)
+AC_SUBST(SQL_LIBS)
 
 # Checks for header files.
 #
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_TIME
+AC_CHECK_HEADERS(mysql.h)
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

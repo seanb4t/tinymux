@@ -1166,7 +1166,7 @@ MUX_RESULT CQueryClient_Call(CHANNEL_INFO *pci, QUEUE_INFO *pqi)
             struct FRAME
             {
                 UINT32 iQueryHandle;
-                size_t nResultSet;
+                UINT32 iError;
             } CallFrame;
 
             struct RETURN
@@ -1182,33 +1182,7 @@ MUX_RESULT CQueryClient_Call(CHANNEL_INFO *pci, QUEUE_INFO *pqi)
             }
             else
             {
-                UTF8 *pResultSet = NULL;
-                try
-                {
-                    pResultSet = new UTF8[CallFrame.nResultSet];
-                }
-                catch (...)
-                {
-                    ; // Nothing.
-                }
-
-                if (NULL == pResultSet)
-                {
-                    ReturnFrame.mr = MUX_E_OUTOFMEMORY;
-                }
-                else
-                {
-                    nWanted = CallFrame.nResultSet;
-                    if (  Pipe_GetBytes(pqi, &nWanted, pResultSet)
-                       && nWanted == CallFrame.nResultSet)
-                    {
-                        ReturnFrame.mr = pIQuerySink->Result(CallFrame.iQueryHandle, pResultSet);
-                    }
-                    else
-                    {
-                        ReturnFrame.mr = MUX_E_INVALIDARG;
-                    }
-                }
+                ReturnFrame.mr = pIQuerySink->Result(CallFrame.iQueryHandle, CallFrame.iError, pqi);
             }
 
             Pipe_EmptyQueue(pqi);
@@ -1337,10 +1311,24 @@ MUX_RESULT CQueryClient::DisconnectObject(void)
     return MUX_S_OK;
 }
 
-MUX_RESULT CQueryClient::Result(UINT32 hQuery, const UTF8 *pResult)
+MUX_RESULT CQueryClient::Result(UINT32 hQuery, UINT32 iError, QUEUE_INFO *pqiResultsSet)
 {
 #if defined(STUB_SLAVE)
-    query_complete(hQuery, pResult);
+    CResultsSet *prs = NULL;
+    try
+    {
+        prs = new CResultsSet(pqiResultsSet);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+    query_complete(hQuery, iError, prs);
+    prs->Release();
+#else
+    UNUSED_PARAMETER(hQuery);
+    UNUSED_PARAMETER(iError);
+    UNUSED_PARAMETER(pqiResultsSet);
 #endif // STUB_SLAVE
     return MUX_S_OK;
 }
@@ -1424,6 +1412,170 @@ MUX_RESULT CQueryClientFactory::LockServer(bool bLock)
 {
     UNUSED_PARAMETER(bLock);
     return MUX_S_OK;
+}
+
+CResultsSet::CResultsSet(QUEUE_INFO *pqi) : m_cRef(1), m_nFields(0),
+     m_nBlob(0), m_bLoaded(false), m_iError(QS_SUCCESS), m_nRows(0)
+{
+    m_pBlob = NULL;
+    m_pRows = NULL;
+    size_t nWanted = sizeof(m_nFields);
+    if (  Pipe_GetBytes(pqi, &nWanted, &m_nFields)
+       && nWanted == sizeof(m_nFields))
+    {
+        size_t nRows;
+        m_nBlob = Pipe_QueueLength(pqi);
+        if (sizeof(nRows) < m_nBlob)
+        {
+            bool bError = false;
+            m_nBlob -= sizeof(nRows);
+            if (0 < m_nBlob)
+            {
+                try
+                {
+                    m_pBlob = new UTF8[m_nBlob];
+                }
+                catch (...)
+                {
+                    ; // Nothing.
+                }
+
+                nWanted = m_nBlob;
+                if (  NULL == m_pBlob
+                   || !Pipe_GetBytes(pqi, &nWanted, m_pBlob)
+                   || nWanted != m_nBlob)
+                {
+                    bError = true;
+                }
+            }
+
+            if (!bError)
+            {
+                nWanted = sizeof(nRows);
+                if (  Pipe_GetBytes(pqi, &nWanted, &nRows)
+                   && nWanted == sizeof(nRows))
+                {
+                    m_nRows = static_cast<int>(nRows);
+                    try
+                    {
+                        m_pRows = new PUTF8[m_nRows];
+                    }
+                    catch (...)
+                    {
+                        ; // Nothing.
+                    }
+
+                    if (NULL != m_pRows)
+                    {
+                        int i, j;
+                        UTF8 *p = m_pBlob;
+                        for (i = 0; i < m_nRows && p < m_pBlob + m_nBlob; i++)
+                        {
+                            m_pRows[i] = p;
+                            for (j = 0; j < m_nFields && p < m_pBlob + m_nBlob; j++)
+                            {
+                                size_t n;
+                                memcpy(&n, p, sizeof(size_t));
+                                p += sizeof(size_t) + n;
+                            }
+                        }
+
+                        if (p == m_pBlob + m_nBlob)
+                        {
+                            m_bLoaded = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+bool CResultsSet::isLoaded(void)
+{
+    return m_bLoaded;
+}
+
+void CResultsSet::SetError(UINT32 iError)
+{
+    m_iError = iError;
+}
+
+UINT32 CResultsSet::GetError(void)
+{
+    return m_iError;
+}
+
+int CResultsSet::GetRowCount(void)
+{
+    return m_nRows;
+}
+
+const UTF8 *CResultsSet::FirstField(int iRow)
+{
+    if (  0 <= iRow
+       && iRow < m_nRows
+       && NULL != m_pRows
+       && 0 < m_nFields)
+    {
+        m_pCurrentField = m_pRows[iRow];
+        m_iCurrentField = 1;
+    }
+    else
+    {
+        m_pCurrentField = NULL;
+        m_iCurrentField = 1;
+    }
+    return m_pCurrentField;
+}
+
+const UTF8 *CResultsSet::NextField(void)
+{
+    const UTF8 *pField = NULL;
+    if (  NULL != m_pCurrentField
+       && 0 < m_nFields
+       && m_iCurrentField < m_nFields)
+    {
+        size_t n;
+
+        m_iCurrentField++;
+        memcpy(&n, m_pCurrentField, sizeof(size_t));
+        m_pCurrentField += sizeof(size_t) + n;
+        pField = m_pCurrentField;
+    }
+    return pField;
+}
+
+CResultsSet::~CResultsSet(void)
+{
+    if (NULL != m_pBlob)
+    {
+        delete [] m_pBlob;
+        m_pBlob = NULL;
+    }
+
+    if (NULL != m_pRows)
+    {
+        delete [] m_pRows;
+        m_pRows = NULL;
+    }
+}
+
+UINT32 CResultsSet::Release(void)
+{
+    m_cRef--;
+    if (0 == m_cRef)
+    {
+        delete this;
+        return 0;
+    }
+    return m_cRef;
+}
+
+UINT32 CResultsSet::AddRef(void)
+{
+    m_cRef++;
+    return m_cRef;
 }
 
 #endif
