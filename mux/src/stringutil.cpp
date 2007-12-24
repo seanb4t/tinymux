@@ -796,6 +796,40 @@ const unsigned char cl_playername_stt[5][10] =
     {   5,   5,   5,   6,   5,   5,   5,   5,   5,   5}
 };
 
+// utf/cl_8859_1.txt
+//
+// 191 included, 1113921 excluded, 0 errors.
+// 3 states, 6 columns, 274 bytes
+//
+const unsigned char cl_8859_1_itt[256] =
+{
+       0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
+       0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
+       1,   1,   1,   1,   1,   1,   1,   1,    1,   1,   1,   1,   1,   1,   1,   1,
+       1,   1,   1,   1,   1,   1,   1,   1,    1,   1,   1,   1,   1,   1,   1,   1,
+       1,   1,   1,   1,   1,   1,   1,   1,    1,   1,   1,   1,   1,   1,   1,   1,
+       1,   1,   1,   1,   1,   1,   1,   1,    1,   1,   1,   1,   1,   1,   1,   1,
+       1,   1,   1,   1,   1,   1,   1,   1,    1,   1,   1,   1,   1,   1,   1,   1,
+       1,   1,   1,   1,   1,   1,   1,   1,    1,   1,   1,   1,   1,   1,   1,   0,
+
+       2,   2,   2,   2,   2,   2,   2,   2,    2,   2,   2,   2,   2,   2,   2,   2,
+       2,   2,   2,   2,   2,   2,   2,   2,    2,   2,   2,   2,   2,   2,   2,   2,
+       3,   3,   3,   3,   3,   3,   3,   3,    3,   3,   3,   3,   3,   3,   3,   3,
+       3,   3,   3,   3,   3,   3,   3,   3,    3,   3,   3,   3,   3,   3,   3,   3,
+       0,   0,   4,   5,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
+       0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
+       0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,
+       0,   0,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0
+
+};
+
+const unsigned char cl_8859_1_stt[3][6] =
+{
+    {   3,   4,   3,   3,   1,   2},
+    {   3,   3,   3,   4,   3,   3},
+    {   3,   3,   4,   4,   3,   3}
+};
+
 // utf/tr_utf8_latin1.txt
 //
 // 1596 code points.
@@ -1635,7 +1669,7 @@ static int trimoffset[4][4] =
 // This function trims the string back to the first valid UTF-8 sequence it
 // finds, but it does not validate the entire string.
 //
-size_t TrimPartialSequence(size_t n, const UTF8 *p)
+inline size_t TrimPartialSequence(size_t n, const UTF8 *p)
 {
     for (int i = 0; i < n; i++)
     {
@@ -2740,7 +2774,7 @@ void safe_copy_str(const UTF8 *src, UTF8 *buff, UTF8 **bufp, size_t nSizeOfBuffe
     {
         *tp++ = *src++;
     }
-    *bufp = tp;
+    *bufp = buff + TrimPartialSequence(tp - buff, buff);
 }
 
 void safe_copy_str_lbuf(const UTF8 *src, UTF8 *buff, UTF8 **bufp)
@@ -2756,7 +2790,7 @@ void safe_copy_str_lbuf(const UTF8 *src, UTF8 *buff, UTF8 **bufp)
     {
         *tp++ = *src++;
     }
-    *bufp = tp;
+    *bufp = buff + TrimPartialSequence(tp - buff, buff);
 }
 
 size_t safe_copy_buf(const UTF8 *src, size_t nLen, UTF8 *buff, UTF8 **bufc)
@@ -2764,8 +2798,7 @@ size_t safe_copy_buf(const UTF8 *src, size_t nLen, UTF8 *buff, UTF8 **bufc)
     size_t left = LBUF_SIZE - (*bufc - buff) - 1;
     if (left < nLen)
     {
-        nLen = left;
-        nLen = TrimPartialSequence(nLen, src);
+        nLen = TrimPartialSequence(left, src);
     }
     memcpy(*bufc, src, nLen);
     *bufc += nLen;
