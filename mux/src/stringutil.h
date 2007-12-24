@@ -41,6 +41,7 @@ extern const UTF8 TableATOI[16][10];
 extern const unsigned char utf8_FirstByte[256];
 extern const UTF8 *latin1_utf8[256];
 #define latin1_utf8(x) ((const UTF8 *)latin1_utf8[(unsigned char)x])
+inline size_t TrimPartialSequence(size_t n, const UTF8 *p);
 
 #define mux_isprint_ascii(x) (mux_isprint_ascii[(unsigned char)(x)])
 #define mux_isprint_latin1(x) (mux_isprint_latin1[(unsigned char)(x)])
@@ -183,6 +184,27 @@ inline bool mux_isplayername(const unsigned char *p)
         iState = cl_playername_stt[iState][cl_playername_itt[(unsigned char)ch]];
     } while (iState < CL_PLAYERNAME_ACCEPTING_STATES_START);
     return ((iState - CL_PLAYERNAME_ACCEPTING_STATES_START) == 1) ? true : false;
+}
+
+// utf/cl_8859_1.txt
+//
+// 191 included, 1113921 excluded, 0 errors.
+// 3 states, 6 columns, 274 bytes
+//
+#define CL_8859_1_START_STATE (0)
+#define CL_8859_1_ACCEPTING_STATES_START (3)
+extern const unsigned char cl_8859_1_itt[256];
+extern const unsigned char cl_8859_1_stt[3][6];
+
+inline bool mux_is8859_1(const unsigned char *p)
+{
+    int iState = CL_8859_1_START_STATE;
+    do
+    {
+        unsigned char ch = *p++;
+        iState = cl_8859_1_stt[iState][cl_8859_1_itt[(unsigned char)ch]];
+    } while (iState < CL_8859_1_ACCEPTING_STATES_START);
+    return ((iState - CL_8859_1_ACCEPTING_STATES_START) == 1) ? true : false;
 }
 
 // utf/tr_utf8_latin1.txt
@@ -458,8 +480,7 @@ UTF8 *StringCloneLen(const UTF8 *str, size_t nStr);
 UTF8 *StringClone(const UTF8 *str);
 void safe_copy_str(const UTF8 *src, UTF8 *buff, UTF8 **bufp, size_t nSizeOfBuffer);
 void safe_copy_str_lbuf(const UTF8 *src, UTF8 *buff, UTF8 **bufp);
-size_t safe_copy_buf_ascii(const UTF8 *src, size_t nLen, UTF8 *buff, UTF8 **bufp);
-#define safe_copy_buf safe_copy_buf_ascii
+size_t safe_copy_buf(const UTF8 *src, size_t nLen, UTF8 *buff, UTF8 **bufp);
 size_t safe_fill(UTF8 *buff, UTF8 **bufc, UTF8 chFile, size_t nSpaces);
 void safe_chr_utf8(const UTF8 *src, UTF8 *buff, UTF8 **bufp);
 #define utf8_safe_chr safe_chr_utf8
