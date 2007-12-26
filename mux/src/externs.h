@@ -19,25 +19,24 @@
 
 // From bsd.cpp.
 //
-void boot_slave(dbref executor, dbref caller, dbref enactor, int eval, int key);
 void close_sockets(bool emergency, const UTF8 *message);
+#if defined(HAVE_WORKING_FORK)
+void boot_slave(dbref executor, dbref caller, dbref enactor, int eval, int key);
 void CleanUpSlaveSocket(void);
 void CleanUpSlaveProcess(void);
 #ifdef STUB_SLAVE
 void CleanUpStubSlaveSocket(void);
 void WaitOnStubSlaveProcess(void);
+void boot_stubslave(dbref executor, dbref caller, dbref enactor, int key);
+extern "C" MUX_RESULT DCL_API pipepump(void);
 #endif // STUB_SLAVE
+#endif // HAVE_WORKING_FORK
 #ifdef SSL_ENABLED
 void CleanUpSSLConnections(void);
 #endif
 #ifdef WIN32
 extern CRITICAL_SECTION csDescriptorList;
 #endif // WIN32
-
-#ifdef STUB_SLAVE
-void boot_stubslave(dbref executor, dbref caller, dbref enactor, int key);
-extern "C" MUX_RESULT DCL_API pipepump(void);
-#endif // STUB_SLAVE
 
 extern NAMETAB sigactions_nametab[];
 
@@ -970,7 +969,6 @@ extern long DebugTotalFiles;
 extern long DebugTotalSockets;
 
 #ifdef WIN32
-extern int game_pid;
 extern long DebugTotalThreads;
 extern long DebugTotalSemaphores;
 extern HANDLE hGameProcess;
@@ -980,9 +978,8 @@ typedef BOOL __stdcall FGETPROCESSTIMES(HANDLE hProcess,
     LPFILETIME pftUser);
 extern FCANCELIO *fpCancelIo;
 extern FGETPROCESSTIMES *fpGetProcessTimes;
-#else // WIN32
-extern pid_t game_pid;
 #endif // WIN32
+extern pid_t game_pid;
 
 // From timer.cpp
 //

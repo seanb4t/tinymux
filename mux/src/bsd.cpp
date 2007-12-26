@@ -56,19 +56,7 @@ static DESC *new_connection(PortInfo *Port, int *piError);
 static bool process_input(DESC *);
 static int make_nonblocking(SOCKET s);
 
-#ifdef WIN32
-static bool bDescriptorListInit = false;
-int game_pid;
-#else // WIN32
-int maxd = 0;
-pid_t slave_pid = 0;
-int slave_socket = INVALID_SOCKET;
 pid_t game_pid;
-#ifdef STUB_SLAVE
-pid_t stubslave_pid = 0;
-int stubslave_socket = INVALID_SOCKET;
-#endif // STUB_SLAVE
-#endif // WIN32
 
 #ifdef WIN32
 
@@ -89,6 +77,7 @@ static OVERLAPPED lpo_wakeup;  // special to indicate that the loop should wakeu
 CRITICAL_SECTION csDescriptorList;      // for thread synchronization
 static DWORD WINAPI MUDListenThread(LPVOID pVoid);
 static void ProcessWindowsTCP(DWORD dwTimeout);  // handle NT-style IOs
+static bool bDescriptorListInit = false;
 
 typedef struct
 {
@@ -487,6 +476,17 @@ static int get_slave_result(void)
 }
 
 #else // WIN32
+
+int maxd = 0;
+
+#if defined(HAVE_WORKING_FORK)
+
+pid_t slave_pid = 0;
+int slave_socket = INVALID_SOCKET;
+#ifdef STUB_SLAVE
+pid_t stubslave_pid = 0;
+int stubslave_socket = INVALID_SOCKET;
+#endif // STUB_SLAVE
 
 void CleanUpSlaveSocket(void)
 {
@@ -979,6 +979,7 @@ Done:
     free_lbuf(host);
     return 0;
 }
+#endif // HAVE_WORKING_FORK
 #endif // WIN32
 
 #ifdef SSL_ENABLED
@@ -1815,7 +1816,7 @@ void shovechars(int nPorts, PortInfo aPorts[])
         FD_ZERO(&input_set);
         FD_ZERO(&output_set);
 
-#ifdef STUB_SLAVE
+#if defined(HAVE_WORKING_FORK) && defined(STUB_SLAVE)
         // Listen for replies from the stubslave socket.
         //
         if (!IS_INVALID_SOCKET(stubslave_socket))
@@ -1826,7 +1827,7 @@ void shovechars(int nPorts, PortInfo aPorts[])
                 FD_SET(stubslave_socket, &output_set);
             }
         }
-#endif // STUB_SLAVE
+#endif // HAVE_WORKING_FORK && STUB_SLAVE
 
         // Listen for new connections if there are free descriptors.
         //
@@ -1838,12 +1839,14 @@ void shovechars(int nPorts, PortInfo aPorts[])
             }
         }
 
+#if defined(HAVE_WORKING_FORK)
         // Listen for replies from the slave socket.
         //
         if (!IS_INVALID_SOCKET(slave_socket))
         {
             FD_SET(slave_socket, &input_set);
         }
+#endif // HAVE_WORKING_FORK
 
         // Mark sockets that we want to test for change in status.
         //
@@ -1891,6 +1894,8 @@ void shovechars(int nPorts, PortInfo aPorts[])
                         shutdownsock(d, R_SOCKDIED);
                     }
                 }
+
+#if defined(HAVE_WORKING_FORK)
                 if (  !IS_INVALID_SOCKET(slave_socket)
                    && !ValidSocket(slave_socket))
                 {
@@ -1904,13 +1909,14 @@ void shovechars(int nPorts, PortInfo aPorts[])
                     boot_slave(GOD, GOD, GOD, 0, 0);
                 }
 
-#ifdef STUB_SLAVE
+#if defined(STUB_SLAVE)
                 if (  !IS_INVALID_SOCKET(stubslave_socket)
                    && !ValidSocket(stubslave_socket))
                 {
                     CleanUpStubSlaveSocket();
                 }
 #endif // STUB_SLAVE
+#endif // HAVE_WORKING_FORK
 
                 for (i = 0; i < nPorts; i++)
                 {
@@ -1933,6 +1939,7 @@ void shovechars(int nPorts, PortInfo aPorts[])
             continue;
         }
 
+#if defined(HAVE_WORKING_FORK)
         // Get usernames and hostnames.
         //
         if (  !IS_INVALID_SOCKET(slave_socket)
@@ -1944,7 +1951,7 @@ void shovechars(int nPorts, PortInfo aPorts[])
             }
         }
 
-#ifdef STUB_SLAVE
+#if defined(STUB_SLAVE)
         // Get data from stubslave.
         //
         if (!IS_INVALID_SOCKET(stubslave_socket))
@@ -1968,6 +1975,7 @@ void shovechars(int nPorts, PortInfo aPorts[])
             }
         }
 #endif // STUB_SLAVE
+#endif // HAVE_WORKING_FORK
 
         // Check for new connection requests.
         //
@@ -2034,7 +2042,7 @@ void shovechars(int nPorts, PortInfo aPorts[])
     }
 }
 
-#ifdef STUB_SLAVE
+#if defined(HAVE_WORKING_FORK) && defined(STUB_SLAVE)
 extern "C" MUX_RESULT DCL_API pipepump(void)
 {
     fd_set input_set;
@@ -2107,7 +2115,7 @@ extern "C" MUX_RESULT DCL_API pipepump(void)
     }
     return MUX_S_OK;
 }
-#endif // STUB_SLAVE
+#endif // HAVE_WORKINGFORK && STUB_SLAVE
 
 #endif // WIN32
 
@@ -2200,6 +2208,7 @@ DESC *new_connection(PortInfo *Port, int *piSocketError)
             }
         }
 #else // WIN32
+#if defined(HAVE_WORKING_FORK)
         // Make slave request
         //
         if (  !IS_INVALID_SOCKET(slave_socket)
@@ -2220,6 +2229,7 @@ DESC *new_connection(PortInfo *Port, int *piSocketError)
             }
             free_lbuf(pBuffL1);
         }
+#endif // HAVE_WORKING_FORK
 #endif // WIN32
 
         STARTLOG(LOG_NET, "NET", "CONN");
@@ -2546,7 +2556,7 @@ void shutdownsock(DESC *d, int reason)
             }
             return;
         }
-#endif
+#endif // WIN32
 
 #ifdef SSL_ENABLED
         if (d->ssl_session)
@@ -4670,6 +4680,7 @@ static RETSIGTYPE DCL_CDECL sighandler(int sig)
 
         while ((child = waitpid(0, &stat_buf, WNOHANG)) > 0)
         {
+#if defined(HAVE_WORKING_FORK)
             if (  WIFEXITED(stat_buf)
                || WIFSIGNALED(stat_buf))
             {
@@ -4726,10 +4737,12 @@ static RETSIGTYPE DCL_CDECL sighandler(int sig)
                     continue;
                 }
             }
+#endif // HAVE_WORKING_FORK
 
             log_signal(sig);
             LogStatBuf(stat_buf, "UKNWN");
 
+#if defined(HAVE_WORKING_FORK)
             STARTLOG(LOG_PROBLEMS, "SIG", "DEBUG");
 #ifdef STUB_SLAVE
             Log.tinyprintf("mudstate.dumper=%d, child=%d, slave_pid=%d, stubslave_pid=%d" ENDLINE,
@@ -4739,6 +4752,7 @@ static RETSIGTYPE DCL_CDECL sighandler(int sig)
                 mudstate.dumper, child, slave_pid);
 #endif // STUB_SLAVE
             ENDLOG;
+#endif // HAVE_WORKING_FORK
         }
         break;
 
@@ -4859,6 +4873,7 @@ static RETSIGTYPE DCL_CDECL sighandler(int sig)
             WSACleanup();
             exit(12345678);
 #else // WIN32
+#if defined(HAVE_WORKING_FORK)
             CleanUpSlaveSocket();
             CleanUpSlaveProcess();
 
@@ -4875,6 +4890,8 @@ static RETSIGTYPE DCL_CDECL sighandler(int sig)
             // We are the reproduced child with a slightly better chance.
             //
             dump_restart_db();
+#endif // HAVE_WORKING_FORK
+
 #ifdef GAME_DOOFERMUX
             execl("bin/netmux", mudconf.mud_name, "-c", mudconf.config_file, "-p", mudconf.pid_file, "-e", mudconf.log_dir, NULL);
 #else // GAME_DOOFERMUX
