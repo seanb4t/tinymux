@@ -925,7 +925,7 @@ void cache_prefix_cmds(void)
 #undef SET_PREFIX_CMD
 }
 
-bool DCL_INLINE is_prefix_cmd(const UTF8 *pCommand, size_t *pnPrefix, CMDENT **ppcmd)
+inline bool is_prefix_cmd(const UTF8 *pCommand, size_t *pnPrefix, CMDENT **ppcmd)
 {
     if (NULL != pCommand)
     {
@@ -4769,6 +4769,8 @@ void do_hook(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF
 
 NAMETAB charset_nametab[] =
 {
-    {T("ascii"),           5,       0,     ALLOW_CHARSET_ASCII|SW_MULTIPLE},
+    {T("ascii"),           5,       0,     ALLOW_CHARSET_ASCII},
+    {T("latin-1"),         5,       0,     ALLOW_CHARSET_8859_1},
+    {T("iso8859-1"),       5,       0,     ALLOW_CHARSET_8859_1},
     {(UTF8 *) NULL,        0,       0,     0}
 };
