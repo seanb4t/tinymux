@@ -1654,7 +1654,7 @@ void do_backup(dbref player, dbref caller, dbref enactor, int eval, int key)
     UNUSED_PARAMETER(eval);
     UNUSED_PARAMETER(key);
 
-    notify(player, T("This feature is not yet available on Win32-hosted MUX."));
+    notify(player, T("This feature is not yet available on Windows-hosted MUX."));
 }
 
 #elif defined(UNIX_PROCESSES)
