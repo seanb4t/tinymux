@@ -1431,7 +1431,7 @@ bool CLinearTimeAbsolute::SetSecondsString(UTF8 *arg_szSeconds)
 
 // OS Dependent Routines:
 //
-#ifdef WIN32
+#if defined(WINDOWS_TIME)
 
 void GetUTCLinearTime(INT64 *plt)
 {
@@ -1505,7 +1505,7 @@ void CMuxAlarm::Clear(void)
     bAlarmSet = false;
 }
 
-#else // !WIN32
+#elif defined(UNIX_TIME)
 
 void GetUTCLinearTime(INT64 *plt)
 {
@@ -1646,7 +1646,7 @@ void CMuxAlarm::Signal(void)
     bAlarmed  = true;
 }
 
-#endif // !WIN32
+#endif // UNIX_TIME
 
 static int YearType(int iYear)
 {
@@ -1746,7 +1746,7 @@ static time_t time_t_smallest(void)
 
 static bool mux_localtime(struct tm *ptm_arg, const time_t *pt_arg)
 {
-#if defined(WIN32) && !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
+#if defined(WINDOWS_TIME) && !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
     // 1400 is Visual C++ 2005
     //
     return (_localtime64_s(ptm_arg, pt_arg) == 0);
@@ -1763,7 +1763,7 @@ static bool mux_localtime(struct tm *ptm_arg, const time_t *pt_arg)
     {
         return false;
     }
-#endif // WIN32
+#endif // WINDOWS_TIME
 }
 
 // This determines the valid range of localtime() and finds a 'standard'
