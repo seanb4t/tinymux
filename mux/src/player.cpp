@@ -400,11 +400,11 @@ const UTF8 *mux_crypt(const UTF8 *szPassword, const UTF8 *szSetting, int *piType
     case CRYPT_BLOWFISH:
     case CRYPT_OTHER:
     case CRYPT_DES_EXT:
-#ifdef WIN32
-        // The WIN32 release only supports SHA1 and clear-text.
+#if defined(WINDOWS_CRYPT)
+        // The Windows release of TinyMUX only supports SHA1 and clear-text.
         //
         return szFail;
-#endif // WIN32
+#endif // WINDOWS_CRYPT
 
     case CRYPT_DES:
 #if defined(HAVE_LIBCRYPT) \
@@ -589,14 +589,14 @@ dbref create_player
     s_Home(player, start_home());
     free_lbuf(pbuf);
     local_data_create(player);
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
     ServerEventsSinkNode *p = g_pServerEventsSinkListHead;
     while (NULL != p)
     {
         p->pSink->data_create(player);
         p = p->pNext;
     }
-#endif
+#endif // TINYMUX_MODULES
     return player;
 }
 
