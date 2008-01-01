@@ -1,5 +1,5 @@
 TinyMUX 2.8:  CHANGES
-Last Update:  December 2007
+Last Update:  January 2007
 
 Major changes that may affect performance and require softcode tweaks:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -13,7 +13,7 @@ Feature Additions:
 
 Bug Fixes:
 ~~~~~~~~~
- -- Placeholder.
+ -- TruncateToBuffer() mis-handled trailing color (Issue 444).
 
 
 Performance Enhancements:
