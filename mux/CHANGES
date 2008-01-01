@@ -119,7 +119,6 @@ Feature Additions:
 
 Bug Fixes:
 ~~~~~~~~~
-<<<<<<< HEAD:mux/CHANGES
  -- INFO should show 'Patches' or 'INFO 1', but not both (Issue 236).
  -- @dolist and @trig were not passing TRACE bit through (Issue 237).
  -- Using \ as a shortcut to @emit no longer causes the beginning of
