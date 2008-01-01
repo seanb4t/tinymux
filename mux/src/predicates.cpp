@@ -1599,7 +1599,7 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int eval, int key)
 #endif
 
     local_presync_database();
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
     ServerEventsSinkNode *p = g_pServerEventsSinkListHead;
     while (NULL != p)
     {
@@ -1607,7 +1607,7 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int eval, int key)
         p = p->pNext;
     }
     final_modules();
-#endif
+#endif // TINYMUX_MODULES
 
 #ifndef MEMORY_BASED
     al_store();
@@ -1617,13 +1617,12 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int eval, int key)
     SYNC;
     CLOSE;
 
-#ifdef WIN32 // WIN32
-
+#if defined(WINDOWS_NETWORKING)
     WSACleanup();
+#endif // WINDOWS_NETWORKING
+#if defined(WINDOWS_PROCESSES)
     exit(12345678);
-
-#else // WIN32
-
+#elif defined(UNIX_PROCESSES)
 #if defined(HAVE_WORKING_FORK)
     dump_restart_db();
     CleanUpSlaveSocket();
@@ -1637,7 +1636,7 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int eval, int key)
 #else
     execl("bin/netmux", "netmux", "-c", mudconf.config_file, "-p", mudconf.pid_file, "-e", mudconf.log_dir, NULL);
 #endif // GAME_DOOFERMUX
-#endif // !WIN32
+#endif // UNIX_PROCESSES
 }
 
 /* ---------------------------------------------------------------------------
@@ -1646,7 +1645,7 @@ void do_restart(dbref executor, dbref caller, dbref enactor, int eval, int key)
  * Ported to MUX2 by Patrick Hill (7-5-2001), hellspawn@anomux.org
  */
 
-#ifdef WIN32
+#if defined(WINDOWS_PROCESSES)
 
 void do_backup(dbref player, dbref caller, dbref enactor, int eval, int key)
 {
@@ -1658,7 +1657,7 @@ void do_backup(dbref player, dbref caller, dbref enactor, int eval, int key)
     notify(player, T("This feature is not yet available on Win32-hosted MUX."));
 }
 
-#else // WIN32
+#elif defined(UNIX_PROCESSES)
 
 void do_backup(dbref executor, dbref caller, dbref enactor, int eval, int key)
 {
@@ -1695,7 +1694,7 @@ void do_backup(dbref executor, dbref caller, dbref enactor, int eval, int key)
 #endif // MEMORY_BASED
     raw_broadcast(0, "GAME: Backup finished.");
 }
-#endif // WIN32
+#endif // UNIX_PROCESSES
 
 /* ---------------------------------------------------------------------------
  * do_comment: Implement the @@ (comment) command. Very cpu-intensive :-)
