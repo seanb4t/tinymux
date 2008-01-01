@@ -110,22 +110,23 @@ void cf_init(void)
     mux_strncpy(mudconf.guests_channel, T("Guests"), 31);
     mux_strncpy(mudconf.guests_channel_alias, T("g"), 31);
     mux_strncpy(mudconf.pueblo_msg, T("</xch_mudtext><img xch_mode=html>"), GBUF_SIZE-1);
-#if defined(FIRANMUX)
-    mux_strncpy(mudconf.immobile_msg, T("You have been set immobile."), sizeof(mudconf.immobile_msg)-1);
-#endif // FIRANMUX
-#if defined(INLINESQL) || defined(HAVE_DLOPEN) || defined(WIN32)
+
+#if defined(INLINESQL) || defined(TINYMUX_MODULES)
     mudconf.sql_server[0]   = '\0';
     mudconf.sql_user[0]     = '\0';
     mudconf.sql_password[0] = '\0';
     mudconf.sql_database[0] = '\0';
-#endif // INLINESQL
+#endif // INLINESQL || TINYMUX_MODULES
+
 #if defined(FIRANMUX)
+    mux_strncpy(mudconf.immobile_msg, T("You have been set immobile."), sizeof(mudconf.immobile_msg)-1);
     mudconf.mail_server[0]  = '\0';
     mudconf.mail_ehlo[0]    = '\0';
     mudconf.mail_sendaddr[0]= '\0';
     mudconf.mail_sendname[0]= '\0';
     mudconf.mail_subject[0] = '\0';
 #endif // FIRANMUX
+
     mudconf.art_rules = NULL;
     mudconf.indent_desc = false;
     mudconf.name_spaces = true;
@@ -1910,11 +1911,11 @@ static CF_HAND(cf_module)
     else
     {
         UTF8 *buffer = alloc_lbuf("cf_module");
-#ifdef WIN32
+#if defined(WINDOWS_FILES)
         size_t n;
         mux_sprintf(buffer, LBUF_SIZE, ".\\bin\\%s.dll", str);
         UTF16 *filename = ConvertFromUTF8ToUTF16(buffer, &n);
-#else
+#elif defined(UNIX_FILES)
         mux_sprintf(buffer, LBUF_SIZE, "./bin/%s.so", str);
         UTF8 *filename = buffer;
 #endif
@@ -2294,7 +2295,7 @@ static CONFPARM conftable[] =
 #ifdef FIRANMUX
     {T("immobile_message"),          cf_string,      CA_WIZARD, CA_PUBLIC,   (int *)mudconf.immobile_msg,     NULL,             128},
 #endif // FIRANMUX
-#if defined(INLINESQL) || defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(INLINESQL) || defined(TINYMUX_MODULES)
     {T("sql_server"),                cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.sql_server,       NULL,             128},
     {T("sql_user"),                  cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.sql_user,         NULL,             128},
     {T("sql_password"),              cf_string,      CA_STATIC, CA_DISABLED, (int *)mudconf.sql_password,     NULL,             128},

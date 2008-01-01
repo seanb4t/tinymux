@@ -1281,7 +1281,7 @@ void do_shutdown
         emergency_shutdown();
 
         local_presync_database();
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
         ServerEventsSinkNode *p = g_pServerEventsSinkListHead;
         while (NULL != p)
         {
@@ -1289,7 +1289,7 @@ void do_shutdown
             p = p->pNext;
         }
         final_modules();
-#endif
+#endif // TINYMUX_MODULES
 
         // Close the attribute text db and dump the header db.
         //
@@ -1353,13 +1353,13 @@ static DUMP_PROCEDURE DumpProcedures[NUM_DUMP_TYPES] =
     { &mudconf.indb,   T(".SIG"),  false, UNLOAD_VERSION | UNLOAD_FLAGS, T("Opening signalled flatfile")}  // 4
 };
 
-#ifdef WIN32
+#if defined(WINDOWS_FILES)
 #define POPEN_READ_OP "rb"
 #define POPEN_WRITE_OP "wb"
-#else // WIN32
+#elif defined(UNIX_FILES)
 #define POPEN_READ_OP "r"
 #define POPEN_WRITE_OP "w"
-#endif // WIN32
+#endif // UNIX_FILES
 
 void dump_database_internal(int dump_type)
 {
@@ -1393,14 +1393,14 @@ void dump_database_internal(int dump_type)
     // in progress.
     //
     local_dump_database(dump_type);
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
     ServerEventsSinkNode *p = g_pServerEventsSinkListHead;
     while (NULL != p)
     {
         p->pSink->dump_database(dump_type);
         p = p->pNext;
     }
-#endif
+#endif // TINYMUX_MODULES
 
     if (0 < dump_type)
     {
@@ -1573,14 +1573,14 @@ static void dump_database(void)
     ENDLOG;
 
     local_presync_database();
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
     ServerEventsSinkNode *p = g_pServerEventsSinkListHead;
     while (NULL != p)
     {
         p->pSink->presync_database();
         p = p->pNext;
     }
-#endif
+#endif // TINYMUX_MODULES
 
 #ifndef MEMORY_BASED
     // Save cached modified attribute list
@@ -1607,14 +1607,14 @@ static void dump_database(void)
     local_dump_complete_signal();
 #endif // HAVE_WORKING_FORK
 
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
     p = g_pServerEventsSinkListHead;
     while (NULL != p)
     {
         p->pSink->dump_complete_signal();
         p = p->pNext;
     }
-#endif
+#endif // TINYMUX_MODULES
 }
 
 void fork_and_dump(int key)
@@ -1677,14 +1677,14 @@ void fork_and_dump(int key)
     free_lbuf(buff);
 
     local_presync_database();
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
     ServerEventsSinkNode *p = g_pServerEventsSinkListHead;
     while (NULL != p)
     {
         p->pSink->presync_database();
         p = p->pNext;
     }
-#endif
+#endif // TINYMUX_MODULES
 
 #ifndef MEMORY_BASED
     // Save cached modified attribute list
@@ -1785,14 +1785,14 @@ void fork_and_dump(int key)
         mudstate.dumper = 0;
         mudstate.dumping = false;
         local_dump_complete_signal();
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
         ServerEventsSinkNode *p = g_pServerEventsSinkListHead;
         while (NULL != p)
         {
             p->pSink->dump_complete_signal();
             p = p->pNext;
         }
-#endif
+#endif // TINYMUX_MODULES
     }
     bRequestAccepted = false;
 #endif // HAVE_WORKING_FORK
@@ -2197,6 +2197,7 @@ static void info(int fmt, int flags, int ver)
        || MAX_SUPPORTED_VERSION < ver)
     {
         Log.WriteString(T(" Unsupported version"));
+        exit(1);
     }
     else if (  (  (  1 == ver
                   || 2 == ver)
@@ -2205,6 +2206,7 @@ static void info(int fmt, int flags, int ver)
                && (flags & MANDFLAGS_V3) != MANDFLAGS_V3))
     {
         Log.WriteString(T(" Unsupported flags"));
+        exit(1);
     }
     if (flags & V_DATABASE)
         Log.WriteString(T(" Database"));
@@ -2214,7 +2216,7 @@ static void info(int fmt, int flags, int ver)
         Log.WriteString(T(" AtrKey"));
     if (flags & V_ATRMONEY)
         Log.WriteString(T(" AtrMoney"));
-    Log.WriteString(T("\n"));
+    Log.WriteString(T(ENDLINE));
 }
 
 static const UTF8 *standalone_infile = NULL;
@@ -2319,8 +2321,14 @@ static void dbconvert(void)
     {
         cache_redirect();
     }
+
     setvbuf(fpIn, NULL, _IOFBF, 16384);
-    db_read(fpIn, &db_format, &db_ver, &db_flags);
+    if (db_read(fpIn, &db_format, &db_ver, &db_flags) < 0)
+    {
+        cache_cleanup();
+        exit(1);
+    }
+
     if (do_redirect)
     {
         cache_pass2();
@@ -2432,10 +2440,10 @@ static void init_sql(void)
 #endif // INLINESQL
 long DebugTotalFiles = 3;
 long DebugTotalSockets = 0;
-#ifdef WIN32
+#if defined(WINDOWS_NETWORKING)
 long DebugTotalThreads = 1;
 long DebugTotalSemaphores = 0;
-#endif
+#endif // WINDOWS_NETWORKING
 #ifdef MEMORY_ACCOUNTING
 long DebugTotalMemory = 0;
 #endif
@@ -2481,9 +2489,9 @@ static CLI_OptionEntry OptionTable[NUM_CLI_OPTIONS] =
     { "u", CLI_NONE,     CLI_DO_UNLOAD      },
     { "d", CLI_REQUIRED, CLI_DO_BASENAME    },
 #endif // MEMORY_BASED
-#ifdef WIN32
+#if defined(WINDOWS_NETWORKING)
     { "n", CLI_NONE,     CLI_DO_SELECT      },
-#endif // WIN32
+#endif // WINDOWS_NETWORKING
     { "p", CLI_REQUIRED, CLI_DO_PID_FILE    },
     { "e", CLI_REQUIRED, CLI_DO_ERRORPATH   }
 };
@@ -2519,11 +2527,11 @@ static void CLI_CallBack(CLI_OptionEntry *p, const char *pValue)
             pErrorBasename = (UTF8 *)pValue;
             break;
 
-#ifdef WIN32
+#if defined(WINDOWS_NETWORKING)
         case CLI_DO_SELECT:
             bUseCompletionPorts = false;
             break;
-#endif // WIN32
+#endif // WINDOWS_NETWORKING
 
 #ifndef MEMORY_BASED
         case CLI_DO_INFILE:
@@ -3047,9 +3055,9 @@ int DCL_CDECL main(int argc, char *argv[])
             fprintf(stderr, "  -h  Display this help." ENDLINE);
             fprintf(stderr, "  -p  Specify process ID file." ENDLINE);
             fprintf(stderr, "  -s  Start with a minimal database." ENDLINE);
-#ifdef WIN32
+#if defined(WINDOWS_NETWORKING)
             fprintf(stderr, "  -n  Disable use of NT I/O Completion Ports." ENDLINE);
-#endif // WIN32
+#endif // WINDOWS_NETWORKING
             fprintf(stderr, "  -v  Display version string." ENDLINE ENDLINE);
         }
         return 1;
@@ -3077,7 +3085,7 @@ int DCL_CDECL main(int argc, char *argv[])
     bMemAccountingInitialized = true;
 #endif
 
-#ifdef WIN32
+#if defined(WINDOWS_NETWORKING)
 
     hGameProcess = GetCurrentProcess();
 
@@ -3145,10 +3153,6 @@ int DCL_CDECL main(int argc, char *argv[])
         //WSACleanup();
         //return 102;
     }
-    if (!bCryptoAPI)
-    {
-        Log.WriteString(T("Crypto API unavailable.\r\n"));
-    }
 
     if (bUseCompletionPorts)
     {
@@ -3158,9 +3162,15 @@ int DCL_CDECL main(int argc, char *argv[])
     {
         process_output = process_output_unix;
     }
-#else // WIN32
+#elif defined(UNIX_NETWORKING)
     process_output = process_output_unix;
-#endif // WIN32
+#endif // UNIX_NETWORKING
+#if defined(WINDOWS_CRYPT)
+    if (!bCryptoAPI)
+    {
+        Log.WriteString(T("Crypto API unavailable.\r\n"));
+    }
+#endif // WINDOWS_CYPT
 
     mudstate.restart_time.GetUTC();
     mudstate.start_time = mudstate.restart_time;
@@ -3191,7 +3201,7 @@ int DCL_CDECL main(int argc, char *argv[])
     init_attrtab();
     init_version();
 
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
     // The module subsystem must be ready to go before the configuration files
     // are consumed.  However, this means that the modules can't really do
     // much until they get a notification that the part of loading they depend
@@ -3201,13 +3211,13 @@ int DCL_CDECL main(int argc, char *argv[])
     boot_stubslave(GOD, GOD, GOD, 0);
 #endif // HAVE_WORKING_FORK && STUB_SLAVE
     init_modules();
-#endif
+#endif // TINYMUX_MODULES
 
     mudconf.config_file = StringClone(conffile);
     mudconf.log_dir = StringClone(pErrorBasename);
     cf_read();
 
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+#if defined(TINYMUX_MODULES)
     MUX_RESULT mr = mux_CreateInstance(CID_QueryServer, NULL, UseSlaveProcess, IID_IQueryControl, (void **)&mudstate.pIQueryControl);
     if (MUX_SUCCEEDED(mr))
     {
@@ -3260,7 +3270,8 @@ int DCL_CDECL main(int argc, char *argv[])
         log_text(T("Couldn't create interface to Query Server."));
         ENDLOG;
     }
-#endif
+#endif // TINYMUX_MODULES
+
 #if defined(INLINESQL)
     init_sql();
 #endif // INLINESQL
@@ -3387,18 +3398,19 @@ int DCL_CDECL main(int argc, char *argv[])
     // extensions to configure themselves.
     //
     local_startup();
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+
+#if defined(TINYMUX_MODULES)
     ServerEventsSinkNode *p = g_pServerEventsSinkListHead;
     while (NULL != p)
     {
         p->pSink->startup();
         p = p->pNext;
     }
-#endif
+#endif // TINYMUX_MODULES
 
     init_timer();
 
-#ifdef WIN32
+#if defined(WINDOWS_NETWORKING)
     if (bUseCompletionPorts)
     {
         shovecharsNT(nMainGamePorts, aMainGamePorts);
@@ -3407,9 +3419,9 @@ int DCL_CDECL main(int argc, char *argv[])
     {
         shovechars9x(nMainGamePorts, aMainGamePorts);
     }
-#else // WIN32
+#elif defined(UNIX_NETWORKING)
     shovechars(nMainGamePorts, aMainGamePorts);
-#endif // WIN32
+#endif // UNIX_NETWORKING
 
 #ifdef INLINESQL
      if (mush_database)
@@ -3429,7 +3441,8 @@ int DCL_CDECL main(int argc, char *argv[])
     // local extensions.
     //
     local_shutdown();
-#if defined(HAVE_DLOPEN) || defined(WIN32)
+
+#if defined(TINYMUX_MODULES)
     p = g_pServerEventsSinkListHead;
     while (NULL != p)
     {
@@ -3437,7 +3450,7 @@ int DCL_CDECL main(int argc, char *argv[])
         p = p->pNext;
     }
     final_modules();
-#endif
+#endif // TINYMUX_MODULES
     CLOSE;
 
 #if defined(HAVE_WORKING_FORK)
@@ -3460,7 +3473,7 @@ int DCL_CDECL main(int argc, char *argv[])
 
     db_free();
 
-#ifdef WIN32
+#if defined(WINDOWS_NETWORKING)
     // Critical section not needed any more.
     //
     if (bUseCompletionPorts)
@@ -3468,7 +3481,7 @@ int DCL_CDECL main(int argc, char *argv[])
         DeleteCriticalSection(&csDescriptorList);
     }
     WSACleanup();
-#endif // WIN32
+#endif // WINDOWS_NETWORKING
 
 #ifdef SSL_ENABLED
     shutdown_ssl();
@@ -3508,7 +3521,7 @@ bool mux_fopen(FILE **pFile, const UTF8 *filename, const UTF8 *mode)
         if (  NULL != filename
            && NULL != mode)
         {
-#if defined(WIN32) && !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
+#if defined(WINDOWS_FILES) && !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
             // 1400 is Visual C++ 2005
             //
             return (fopen_s(pFile, (const char *)filename, (const char *)mode) == 0);
@@ -3518,7 +3531,7 @@ bool mux_fopen(FILE **pFile, const UTF8 *filename, const UTF8 *mode)
             {
                 return true;
             }
-#endif // WIN32
+#endif // WINDOWS_FILES
         }
     }
     return false;
@@ -3531,11 +3544,11 @@ bool mux_open(int *pfh, const UTF8 *filename, int oflag)
         *pfh = MUX_OPEN_INVALID_HANDLE_VALUE;
         if (NULL != filename)
         {
-#if defined(WIN32) && !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
+#if defined(WINDOWS_FILES) && !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
             // 1400 is Visual C++ 2005
             //
             return (_sopen_s(pfh, (const char *)filename, oflag, _SH_DENYNO, _S_IREAD|_S_IWRITE) == 0);
-#elif defined(win32)
+#elif defined(WINDOWS_FILES)
             *pfh = _open((char *)filename, oflag, _S_IREAD|_S_IWRITE);
             return (0 <= *pfh);
 #else
@@ -3549,7 +3562,7 @@ bool mux_open(int *pfh, const UTF8 *filename, int oflag)
 
 const UTF8 *mux_strerror(int errnum)
 {
-#if defined(WIN32) && !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
+#if defined(WINDOWS_FILES) && !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
     // 1400 is Visual C++ 2005
     //
     static UTF8 buffer[80];
