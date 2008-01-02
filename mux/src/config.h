@@ -321,6 +321,7 @@ typedef char  boolexp_type;
 #define WINDOWS_CRYPT
 #define WINDOWS_TIME
 #define WINDOWS_THREADS
+#define WINDOWS_INSTRINSICS
 #define TINYMUX_MODULES
 
 #define DCL_CDECL  __cdecl
