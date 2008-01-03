@@ -300,13 +300,9 @@ void ChangePassword(dbref player, const UTF8 *szPassword)
 
 const UTF8 szFail[] = "$FAIL$$";
 
-// REMOVE: After 2006-JUL-23, remove support for DES-encrypted passwords on
-// Win32 build.  This should allow support for DES-encrypted passwords to
-// strattle three distinct versions of MUX.  After that, to convert the older
-// passwords automatically would require going through one of these three
-// older versions of the server.  Alternatively, since crypt and DES-encrypted
-// passwords should be supported on Unix for even longer, converting the
-// flatfile on a Unix box remains an option.
+// There is no longer any support for DES-encrypted passwords on the Windows
+// build.  To convert these, using #1 to @newpassword, go through an older
+// version of TinyMUX, or go through a Unix host.
 //
 const UTF8 *mux_crypt(const UTF8 *szPassword, const UTF8 *szSetting, int *piType)
 {

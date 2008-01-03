@@ -4316,6 +4316,7 @@ size_t TruncateToBuffer
     ColorState csLast    = CS_NORMAL;
     ColorState csCurrent = CS_NORMAL;
 
+    bool bText = false;
     const UTF8 *p = pString;
     bool bTruncated = false;
     while (  '\0' != p[0]
@@ -4334,6 +4335,7 @@ size_t TruncateToBuffer
         // Parse a run of text.  A run of text is always ended by '\0' and
         // sometimes by '\xEF' since all color code points start with '\xEF'.
         //
+        bool bText = false;
         size_t nTextRun = 0;
         const UTF8 *pTextRun = p;
         for (;;)
@@ -4402,6 +4404,7 @@ size_t TruncateToBuffer
 
                 // Lay down text.
                 //
+                bText = true;
                 memcpy(pBuffer + nOutput, pTextRun, nTextRun);
                 nOutput += nTextRun;
 
@@ -4412,7 +4415,7 @@ size_t TruncateToBuffer
         }
     }
 
-    pNormal = ColorBinaryNormal(csCurrent, &nNormal);
+    pNormal = ColorBinaryNormal((bText)?csCurrent:csLast, &nNormal);
     if (  0 < nNormal
        && nOutput + nNormal <= nBuffer)
     {
@@ -4756,7 +4759,7 @@ size_t DCL_CDECL mux_vsnprintf(UTF8 *buff, size_t count, const char *fmt, va_lis
     // on some systems to indicate how much space it -would- have taken
     // if not limited by the request.
     //
-    // On Win32, it can fill the buffer completely without a
+    // On Windows, it can fill the buffer completely without a
     // null-termination and return -1.
 
     // To favor the Unix case, if there is an output error, but
@@ -5062,7 +5065,7 @@ CF_HAND(cf_art_rule)
 
     const char *errptr;
     int erroffset;
-    pcre* reNewRegexp = pcre_compile((char *)pCurrent, 0, &errptr, &erroffset, NULL);
+    pcre* reNewRegexp = pcre_compile((char *)pCurrent, PCRE_UTF8, &errptr, &erroffset, NULL);
     if (!reNewRegexp)
     {
         cf_log_syntax(player, cmd, "Error processing regexp '%s':.",
@@ -6377,13 +6380,13 @@ void mux_string::replace_Chars
         // string size, we need to move things around.
         //
         nMove = m_iLast - (iStart + nLen);
-        if (CursorMax < m_iLast + nTo - nLen)
+        if (LBUF_SIZE - 1 < m_iLast.m_byte + sTo.m_iLast.m_byte - nLen.m_byte)
         {
             // The resulting string would be too large, so we need to trim
             // either the move or the copy part -- depending on how much
             // needs to be trimmed.
             //
-            if (CursorMax < iStart + nTo)
+            if (LBUF_SIZE - 1 < iStart.m_byte + nTo.m_byte)
             {
                 while (  sTo.cursor_prev(nCopy)
                       && CursorMax.m_byte - iStart.m_byte < nCopy.m_byte)

@@ -100,7 +100,7 @@ bool regexp_match
 
     pcre *re;
     if (  MuxAlarm.bAlarmed
-       || (re = pcre_compile((char *)pattern, case_opt, &errptr, &erroffset, NULL)) == NULL)
+       || (re = pcre_compile((char *)pattern, PCRE_UTF8|case_opt, &errptr, &erroffset, NULL)) == NULL)
     {
         /*
          * This is a matching error. We have an error message in
@@ -478,7 +478,7 @@ static bool check_filter(dbref object, dbref player, int filter, const UTF8 *msg
             UTF8 *cp = parse_to(&dp, ',', EV_STRIP_CURLY);
             pcre *re;
             if (  !MuxAlarm.bAlarmed
-               && (re = pcre_compile((char *)cp, case_opt, &errptr, &erroffset, NULL)) != NULL)
+               && (re = pcre_compile((char *)cp, PCRE_UTF8|case_opt, &errptr, &erroffset, NULL)) != NULL)
             {
                 const int ovecsize = 33;
                 int ovec[ovecsize];
@@ -615,7 +615,7 @@ void notify_check(dbref target, dbref sender, const mux_string &msg, int key)
     // If speaker is invalid or message is empty, just exit.
     //
     if (  !Good_obj(target)
-       || 0 == msg.length())
+       || 0 == msg.length_byte())
     {
         return;
     }
