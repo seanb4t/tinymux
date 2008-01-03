@@ -315,12 +315,17 @@ static void add_folder_name(dbref player, int fld, UTF8 *name)
     UTF8 *q = aNew;
     q += mux_ltoa(fld, q);
     safe_chr(':', aNew, &q);
-    UTF8 *p = name;
-    while (*p)
-    {
-        safe_chr(mux_toupper_ascii(*p), aNew, &q);
-        p++;
-    }
+
+    // Convert the folder name provided into upper case characters
+    //
+    UTF8 *ucName = alloc_lbuf("add_folder_name.ucname");
+    mux_string *ucname_str = new mux_string(name);
+    ucname_str->UpperCase();
+    ucname_str->export_TextPlain(ucName);
+    UTF8 *p = ucName;
+    delete ucname_str;
+
+    safe_str(ucName, aNew, &q);
     safe_chr(':', aNew, &q);
     q += mux_ltoa(fld, q);
     *q = '\0';
@@ -409,6 +414,7 @@ static void add_folder_name(dbref player, int fld, UTF8 *name)
     }
     free_lbuf(aFolders);
     free_lbuf(aNew);
+    free_lbuf(ucName);
 }
 
 static UTF8 *get_folder_name(dbref player, int fld)
@@ -467,12 +473,17 @@ static int get_folder_number(dbref player, UTF8 *name)
         UTF8 *aPattern = alloc_lbuf("get_folder_num_pat");
         UTF8 *q = aPattern;
         safe_chr(':', aPattern, &q);
-        UTF8 *p = name;
-        while (*p)
-        {
-            safe_chr(mux_toupper_ascii(*p), aPattern, &q);
-            p++;
-        }
+
+        // Convert the folder name provided into upper case characters
+        //
+        UTF8 *ucName = alloc_lbuf("get_folder_num.ucname");
+        mux_string *ucname_str = new mux_string(name);
+        ucname_str->UpperCase();
+        ucname_str->export_TextPlain(ucName);
+        UTF8 *p = ucName;
+        delete ucname_str;
+
+        safe_str(ucName, aPattern, &q);
         safe_chr(':', aPattern, &q);
         *q = '\0';
         size_t nPattern = q - aPattern;
@@ -493,8 +504,11 @@ static int get_folder_number(dbref player, UTF8 *name)
 
             int iFolderNumber = mux_atol(p);
             free_lbuf(aFolders);
+            free_lbuf(ucName);
             return iFolderNumber;
         }
+
+        free_lbuf(ucName);
     }
     free_lbuf(aFolders);
     return -1;
@@ -5079,8 +5093,8 @@ static void ListMailInFolder(dbref player, UTF8 *folder_name, UTF8 *msglist)
 {
     int folder = 0;
 
-    if (  NULL != folder_name
-       && '\0' != folder_name[0])
+    if (  NULL == folder_name
+       || '\0' == folder_name[0])
     {
         folder = player_folder(player);
     }
