@@ -482,7 +482,12 @@ extern const MUX_COLOR_SET aColors[];
 UTF8 *convert_color(const UTF8 *pString, bool bNoBleed);
 UTF8 *strip_color(const UTF8 *pString, size_t *pnLength = 0, size_t *pnPoints = 0);
 UTF8 *munge_space(const UTF8 *);
+
+// Trim leading white space and all trailing whitespace except one 
 UTF8 *trim_spaces(const UTF8 *);
+
+// Remove all leading and trailing whitespace
+UTF8 *strip_whitespace(const UTF8 *);
 UTF8 *grabto(UTF8 **, UTF8);
 int  string_compare(const UTF8 *, const UTF8 *);
 int  string_prefix(const UTF8 *, const UTF8 *);

@@ -3058,7 +3058,7 @@ dbref parse_dbref(const UTF8 *s)
 {
     // Enforce completely numeric dbrefs
     //
-    const UTF8 *p = s;
+    const UTF8 *p = strip_whitespace(s);
     if (p[0])
     {
         do
