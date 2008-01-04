@@ -615,7 +615,7 @@ void notify_check(dbref target, dbref sender, const mux_string &msg, int key)
     // If speaker is invalid or message is empty, just exit.
     //
     if (  !Good_obj(target)
-       || 0 == msg.length())
+       || 0 == msg.length_byte())
     {
         return;
     }
@@ -2197,6 +2197,7 @@ static void info(int fmt, int flags, int ver)
        || MAX_SUPPORTED_VERSION < ver)
     {
         Log.WriteString(T(" Unsupported version"));
+        exit(1);
     }
     else if (  (  (  1 == ver
                   || 2 == ver)
@@ -2205,6 +2206,7 @@ static void info(int fmt, int flags, int ver)
                && (flags & MANDFLAGS_V3) != MANDFLAGS_V3))
     {
         Log.WriteString(T(" Unsupported flags"));
+        exit(1);
     }
     if (flags & V_DATABASE)
         Log.WriteString(T(" Database"));
@@ -2214,7 +2216,7 @@ static void info(int fmt, int flags, int ver)
         Log.WriteString(T(" AtrKey"));
     if (flags & V_ATRMONEY)
         Log.WriteString(T(" AtrMoney"));
-    Log.WriteString(T("\n"));
+    Log.WriteString(T(ENDLINE));
 }
 
 static const UTF8 *standalone_infile = NULL;
@@ -2319,8 +2321,14 @@ static void dbconvert(void)
     {
         cache_redirect();
     }
+
     setvbuf(fpIn, NULL, _IOFBF, 16384);
-    db_read(fpIn, &db_format, &db_ver, &db_flags);
+    if (db_read(fpIn, &db_format, &db_ver, &db_flags) < 0)
+    {
+        cache_cleanup();
+        exit(1);
+    }
+
     if (do_redirect)
     {
         cache_pass2();
