@@ -991,10 +991,11 @@ public:
     // {
     // }
     //
-    inline void cursor_start(mux_cursor &c) const
+    inline bool cursor_start(mux_cursor &c) const
     {
         c.m_byte  = 0;
         c.m_point = 0;
+        return (0 != m_iLast.m_point);
     }
 
     inline bool cursor_next(mux_cursor &c) const
@@ -1133,6 +1134,11 @@ public:
             return true;
         }
         return false;
+    }
+
+    inline bool IsEscape(mux_cursor &c)
+    {
+        return mux_isescape(m_autf[c.m_byte]);
     }
 
     friend class mux_words;
