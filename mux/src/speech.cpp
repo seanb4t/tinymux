@@ -1541,12 +1541,12 @@ void do_pemit_whisper
         {
         case ';':
             notify(executor, tprintf("%s senses \"%s%s\"",
-                Moniker(executor), Moniker(aPlayers[0]), &message[1]));
+                Moniker(aPlayers[0]), Moniker(executor), &message[1]));
             break;
 
         case ':':
             notify(executor, tprintf("%s senses \"%s %s\"",
-                Moniker(executor), Moniker(aPlayers[0]), &message[1]));
+                Moniker(aPlayers[0]), Moniker(executor), &message[1]));
             break;
 
         default:
