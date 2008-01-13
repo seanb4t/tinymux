@@ -1594,12 +1594,12 @@ void do_pemit_whisper
         {
         case ';':
             notify(executor, tprintf("%s sense \"%s%s\"",
-                aFriendly, Moniker(aPlayers[0]), &message[1]));
+                aFriendly, Moniker(executor), &message[1]));
             break;
 
         case ':':
             notify(executor, tprintf("%s sense \"%s %s\"",
-                aFriendly, Moniker(aPlayers[0]), &message[1]));
+                aFriendly, Moniker(executor), &message[1]));
             break;
 
         default:
