@@ -137,15 +137,7 @@ void do_say(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF8
 
         case ':':
             message++;
-            if (*message == ' ')
-            {
-                message++;
-                key = SAY_POSE_NOSPC;
-            }
-            else
-            {
-                key = SAY_POSE;
-            }
+            key = SAY_POSE;
             break;
 
         case ';':
