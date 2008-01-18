@@ -1341,6 +1341,42 @@ void do_pemit_list
 }
 
 
+// Check if the target can be contacted by executor.   If not, issue an
+// error message to the executor and return false.   If checks pass, return
+// true.
+//
+static bool noisy_check_whisper_target(dbref executor, dbref target, int key)
+{
+    bool ok_to_do = false;
+
+    if (nearby(executor, target) || Long_Fingers(executor)
+            || Controls(executor, target))
+    {
+        ok_to_do = true;
+    }
+
+    if (false == ok_to_do
+            && (  !mudconf.pemit_any
+                || key != PEMIT_PEMIT))
+    {
+        notify(executor, 
+                tprintf("Sorry, you are to far away to contact %s.",
+                    Moniker(target)));
+        return false;
+    }
+
+    if( isPlayer(target) && !Connected(target))
+    {
+        page_return(executor, target, T("Away"), A_AWAY,
+                tprintf("Sorry, %s is not connected.", 
+                    Moniker(target)));
+        return false;
+    }
+
+    return true;
+}
+
+
 void do_pemit_whisper
 (
     dbref executor,
@@ -1386,10 +1422,19 @@ void do_pemit_whisper
         UTF8 *r;
         for (r = mux_strtok_parse(&tts); r; r = mux_strtok_parse(&tts))
         {
-            dbref targ = mux_atol(r);
-            if (Good_obj(targ))
+            dbref target = mux_atol(r);
+            if (Good_obj(target))
             {
-                aPlayers[nPlayers++] = targ;
+                if(false == 
+                        noisy_check_whisper_target(executor, target, 
+                            key))
+                {
+                    continue;
+                }
+                else
+                {
+                    aPlayers[nPlayers++] = target;
+                }
             }
         }
     }
@@ -1414,17 +1459,22 @@ void do_pemit_whisper
             for (r = mux_strtok_parse(&tts); r; r = mux_strtok_parse(&tts))
             {
                 dbref target = lookup_player(executor, r, true);
-                if (NOTHING != target)
-                {
-                    aPlayers[nPlayers++] = target;
-                }
-                else
+
+                if(NOTHING == target)
                 {
                     init_match(executor, r, NOTYPE);
                     match_neighbor();
                     target = match_result();
+                }
 
-                    if (NOTHING != target)
+                if(NOTHING != target)
+                {
+                    if(false == 
+                            noisy_check_whisper_target(executor, target, key))
+                    {
+                        continue;
+                    }
+                    else
                     {
                         aPlayers[nPlayers++] = target;
                     }
@@ -1456,7 +1506,16 @@ void do_pemit_whisper
 
                     if (NOTHING != target)
                     {
-                        aPlayers[nPlayers++] = target;
+                        if(false == 
+                                noisy_check_whisper_target(executor, target, 
+                                    key))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            aPlayers[nPlayers++] = target;
+                        }
                     }
                 }
 
