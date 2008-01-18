@@ -138,21 +138,6 @@ bool could_doit(dbref player, dbref thing, int locknum)
     return doit;
 }
 
-// Check VisibileLock 
-//  - Pass if and only if the object is not DARK and the player 
-//    can pass the visibility lock
-static bool PassesVisibileLock(dbref player, dbref thing)
-{
-    // The !Dark check is redundant but is a key part of visibility locking
-    // since the call the chain could change.
-    if(!Dark(thing) && could_doit(player, thing, A_LVISIBILITY))
-    {
-        return true;
-    }
-
-    return false;
-}
-
 bool can_see(dbref player, dbref thing, bool can_see_loc)
 {
     // Don't show if all the following apply: Sleeping players should not be
@@ -175,30 +160,23 @@ bool can_see(dbref player, dbref thing, bool can_see_loc)
         return false;
     }
 
-    // If loc is not dark, you see it if it's not dark or you pass the 
-    // VisibileLock of the object.   If loc is dark, you see it if you 
-    // control it.   Seeing your own dark objects is controlled by 
-    // mudconf.see_own_dark.   In dark locations, you also see things that 
-    // are set LIGHT and !DARK and if you pass the VisibileLock
-    if (can_see_loc)
-    {
+    // To be visible, light must come from either the location (can_see_loc)
+    // or the object itself (Light(thing)).  This light is then blocked
+    // by the object itself being dark (it blocked its own light), by not
+    // passing the visibility lock, or by being in a different reality.
+    //
+    // The exception to the above is mudconf.see_own_dark which allows a
+    // myopic self-examination.
+    //
+    return (  (  (  can_see_loc
+                 || Light(thing))
+              && !Dark(thing)
 #ifdef REALITY_LVLS
-       return ((!Dark(thing) && IsReal(player, thing)) ||
-#else
-        return ( (!Dark(thing) && PassesVisibileLock(player,thing)) ||
+              && IsReal(player, thing)
 #endif // REALITY_LVLS
-            (mudconf.see_own_dark && MyopicExam(player, thing)));
-    }
-    else
-    {
-#ifdef REALITY_LVLS
-        return ((Light(thing) && !Dark(thing) && IsReal(player, thing)) ||
-#else
-        return ((Light(thing) && !Dark(thing) &&
-                PassesVisibileLock(player,thing)) ||
-#endif // REALITY_LVLS
-            (mudconf.see_own_dark && MyopicExam(player, thing)));
-    }
+              && could_doit(player, thing, A_LVISIBILITY))
+           || (  mudconf.see_own_dark
+              && MyopicExam(player, thing)));
 }
 
 static bool pay_quota(dbref who, int cost)

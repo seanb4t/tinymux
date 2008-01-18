@@ -2490,7 +2490,7 @@ Related Topics: @name.
      VisibleLock:  All:            Controls object visibility when the object
                                    is not dark and the looker passes the lock.
                                    In DARK locations, the object must also be
-                                   set LIGHT and the viewer must pass the 
+                                   set LIGHT and the viewer must pass the
                                    VisibleLock.
 
  Note: If a player fails the UseLock on a parent of an object being searched
