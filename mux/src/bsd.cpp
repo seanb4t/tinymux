@@ -1375,7 +1375,7 @@ void SetupPorts(int *pnPorts, PortInfo aPorts[], IntArray *pia, IntArray *piaSSL
 #endif // UNIX_NETWORKING
                )
             {
-#if defined(UNIX_NETWORKING)                
+#if defined(UNIX_NETWORKING)
                 if (maxd <= aPorts[k].socket)
                 {
                     maxd = aPorts[k].socket + 1;
