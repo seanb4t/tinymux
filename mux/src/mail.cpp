@@ -309,29 +309,24 @@ static void add_folder_name(dbref player, int fld, UTF8 *name)
     atr_get_str_LEN(aFolders, player, A_MAILFOLDERS, &aowner, &aflags,
         &nFolders);
 
-    // Build new record ("%d:%s:%d", fld, uppercase(name), fld);
+    // Build new record ("%d:%s:%d", fld, uppercase(name), fld) upper-casing
+    // the provided folder name.
     //
+    mux_string *sRecord = new mux_string;
+    sRecord->append(fld);
+    sRecord->append(T(":"));
+    sRecord->append(name);
+    sRecord->append(T(":"));
+    sRecord->append(fld);
+    sRecord->UpperCase();
+
     UTF8 *aNew = alloc_lbuf("add_folder_name.new");
-    UTF8 *q = aNew;
-    q += mux_ltoa(fld, q);
-    safe_chr(':', aNew, &q);
+    sRecord->export_TextPlain(aNew);
+    delete sRecord;
+    size_t nNew = strlen((char *)aNew);
 
-    // Convert the folder name provided into upper case characters
-    //
-    UTF8 *ucName = alloc_lbuf("add_folder_name.ucname");
-    mux_string *ucname_str = new mux_string(name);
-    ucname_str->UpperCase();
-    ucname_str->export_TextPlain(ucName);
-    UTF8 *p = ucName;
-    delete ucname_str;
-
-    safe_str(ucName, aNew, &q);
-    safe_chr(':', aNew, &q);
-    q += mux_ltoa(fld, q);
-    *q = '\0';
-    size_t nNew = q - aNew;
-
-    if (nFolders != 0)
+    UTF8 *p, *q;
+    if (0 != nFolders)
     {
         // Build pattern ("%d:", fld)
         //
@@ -396,6 +391,7 @@ static void add_folder_name(dbref player, int fld, UTF8 *name)
         }
         free_lbuf(aPattern);
     }
+
     if (nFolders + 1 + nNew < LBUF_SIZE)
     {
         // It will fit. Append new record.
@@ -414,7 +410,6 @@ static void add_folder_name(dbref player, int fld, UTF8 *name)
     }
     free_lbuf(aFolders);
     free_lbuf(aNew);
-    free_lbuf(ucName);
 }
 
 static UTF8 *get_folder_name(dbref player, int fld)
@@ -470,27 +465,24 @@ static int get_folder_number(dbref player, UTF8 *name)
         &nFolders);
     if (nFolders != 0)
     {
-        UTF8 *aPattern = alloc_lbuf("get_folder_num_pat");
-        UTF8 *q = aPattern;
-        safe_chr(':', aPattern, &q);
-
-        // Convert the folder name provided into upper case characters
+        // Convert the folder name provided into upper-case characters.
         //
-        UTF8 *ucName = alloc_lbuf("get_folder_num.ucname");
-        mux_string *ucname_str = new mux_string(name);
-        ucname_str->UpperCase();
-        ucname_str->export_TextPlain(ucName);
-        UTF8 *p = ucName;
-        delete ucname_str;
+        mux_string *sRecord = new mux_string;
+        sRecord->append(T(":"));
+        sRecord->append(name);
+        sRecord->append(T(":"));
+        sRecord->UpperCase();
 
-        safe_str(ucName, aPattern, &q);
-        safe_chr(':', aPattern, &q);
-        *q = '\0';
-        size_t nPattern = q - aPattern;
+        UTF8 *aPattern = alloc_lbuf("add_folder_num_pat");
+        sRecord->export_TextPlain(aPattern);
+        delete sRecord;
+        size_t nPattern = strlen((char *)aPattern);
 
         size_t i;
         bool bSucceeded = BMH_StringSearch(&i, nPattern, aPattern, nFolders, aFolders);
         free_lbuf(aPattern);
+
+        UTF8 *p, *q;
         if (bSucceeded)
         {
             p = aFolders + i + nPattern;
@@ -504,11 +496,8 @@ static int get_folder_number(dbref player, UTF8 *name)
 
             int iFolderNumber = mux_atol(p);
             free_lbuf(aFolders);
-            free_lbuf(ucName);
             return iFolderNumber;
         }
-
-        free_lbuf(ucName);
     }
     free_lbuf(aFolders);
     return -1;
