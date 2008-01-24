@@ -45,11 +45,13 @@
 #define __deref_in_ecount(n)
 #define __deref_inout
 #define __deref_out
+#define __in
 #define __in_ecount(n)
 #define __in_opt
 #define __inout
-#define __inout_ecount_full
+#define __inout_ecount_full(n)
 #define __out
+#define __out_ecount(n)
 #define __out_opt
 #endif
 
