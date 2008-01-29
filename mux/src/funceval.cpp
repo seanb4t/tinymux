@@ -2658,12 +2658,41 @@ FUNCTION(fun_scramble)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return;
+    }
+
     LBUF_OFFSET nPoints = sStr->length_cursor().m_point;
 
     if (2 <= nPoints)
     {
-        mux_string *sOut = new mux_string;
+        mux_string *sOut = NULL;
+        try
+        {
+            sOut = new mux_string;
+        }
+        catch (...)
+        {
+            ; // Nothing.
+        }
+
+        if (NULL == sOut)
+        {
+            delete sStr;
+            return;
+        }
+
         LBUF_OFFSET iPoint;
         mux_cursor iStart, iEnd;
         while (0 < nPoints)
@@ -2704,7 +2733,21 @@ FUNCTION(fun_shuffle)
         return;
     }
 
-    mux_string *sIn = new mux_string(fargs[0]);
+    mux_string *sIn = NULL;
+    try
+    {
+        sIn = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sIn)
+    {
+        return;
+    }
+
     mux_words *words = NULL;
     try
     {
@@ -2714,10 +2757,31 @@ FUNCTION(fun_shuffle)
     {
         ; // Nothing.
     }
-    ISOUTOFMEMORY(words);
+
+    if (NULL == words)
+    {
+        delete sIn;
+        return;
+    }
 
     LBUF_OFFSET n = words->find_Words(sep.str);
-    mux_string *sOut = new mux_string;
+    mux_string *sOut = NULL;
+    try
+    {
+        sOut = new mux_string;
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sOut)
+    {
+        delete sIn;
+        delete words;
+        return;
+    }
+
     bool bFirst = true;
     LBUF_OFFSET i = 0;
     mux_cursor iStart = CursorMin, iEnd = CursorMin;
