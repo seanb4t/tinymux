@@ -1484,7 +1484,36 @@ LBUF_OFFSET linewrap_general(const UTF8 *pStr,     LBUF_OFFSET nWidth,
                              const UTF8 *pOSep,    mux_cursor  curOSep,
                              LBUF_OFFSET nWidth0)
 {
-    mux_string *sStr = new mux_string(pStr);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(pStr);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return 0;
+    }
+
+    mux_string *sSpaces = NULL;
+    try
+    {
+        sSpaces = new mux_string(T("        "));
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sSpaces)
+    {
+        return 0;
+    }
+
     mux_cursor nStr = sStr->length_cursor();
     bool bFirst = true, bNewline = false;
     mux_field fldLine, fldTemp, fldPad;
@@ -1535,7 +1564,6 @@ LBUF_OFFSET linewrap_general(const UTF8 *pStr,     LBUF_OFFSET nWidth,
         }
         while (sStr->search(T("\t"), &curTab, curStr, curEnd))
         {
-            mux_string *sSpaces = new mux_string(T("        "));
             LBUF_OFFSET nSpaces = 8 - ((curTab.m_point - curStr.m_point) % 8);
             mux_cursor curSpaces(nSpaces, nSpaces);
             sSpaces->truncate(curSpaces);
@@ -4102,7 +4130,20 @@ static FUNCTION(fun_lpos)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return;
+    }
 
     if (0 == sStr->length_byte())
     {
@@ -4110,7 +4151,22 @@ static FUNCTION(fun_lpos)
         return;
     }
 
-    mux_string *sPat = new mux_string(fargs[1]);
+    mux_string *sPat = NULL;
+    try
+    {
+        sPat = new mux_string(fargs[1]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sPat)
+    {
+        delete sStr;
+        delete sPat;
+        return;
+    }
 
     if (0 == sPat->length_byte())
     {
@@ -4316,8 +4372,36 @@ static FUNCTION(fun_insert)
         return;
     }
 
-    mux_string *sList = new mux_string(fargs[0]);
-    mux_string *sWord = new mux_string(fargs[2]);
+    mux_string *sList = NULL;
+    try
+    {
+        sList = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sList)
+    {
+        return;
+    }
+
+    mux_string *sWord = NULL;
+    try
+    {
+        sWord = new mux_string(fargs[2]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sWord)
+    {
+        delete sList;
+        return;
+    }
 
     // Insert a word at position X of a list.
     //
@@ -4345,7 +4429,21 @@ static FUNCTION(fun_remove)
         return;
     }
 
-    mux_string *sWord = new mux_string(fargs[1]);
+    mux_string *sWord = NULL;
+    try
+    {
+        sWord = new mux_string(fargs[1]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sWord)
+    {
+        return;
+    }
+
     if (sWord->search(sep.str))
     {
         safe_str(T("#-1 CAN ONLY REMOVE ONE ELEMENT"), buff, bufc);
@@ -4353,7 +4451,21 @@ static FUNCTION(fun_remove)
         return;
     }
 
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        delete sWord;
+        return;
+    }
     mux_words *words = NULL;
     try
     {
@@ -4463,13 +4575,40 @@ static FUNCTION(fun_secure)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return;
+    }
     mux_cursor nLen = sStr->length_cursor();
 
     mux_cursor i = CursorMin;
     if (i < nLen)
     {
-        mux_string *sTo = new mux_string(T(" "));
+        mux_string *sTo = NULL;
+        try
+        {
+            sTo = new mux_string(T(" "));
+        }
+        catch (...)
+        {
+            ; // Nothing.
+        }
+
+        if (NULL == sTo)
+        {
+            return;
+        }
+
         do
         {
             UTF8 ch = sStr->export_Char(i.m_byte);
@@ -4504,8 +4643,36 @@ static FUNCTION(fun_escape)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    mux_string *sStr = new mux_string(fargs[0]);
-    mux_string *sOut = new mux_string;
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return;
+    }
+
+    mux_string *sOut = NULL;
+    try
+    {
+        sOut = new mux_string;
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sOut)
+    {
+        delete sStr;
+        return;
+    }
     mux_cursor curStr;
     mux_cursor curOut;
 
@@ -5859,7 +6026,20 @@ static FUNCTION(fun_after)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    mux_string *sPat = new mux_string;
+    mux_string *sPat = NULL;
+    try
+    {
+        sPat = new mux_string;
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sPat)
+    {
+        return;
+    }
 
     // Sanity-check arg1 and arg2.
     //
@@ -5907,7 +6087,20 @@ static FUNCTION(fun_before)
     UNUSED_PARAMETER(cargs);
     UNUSED_PARAMETER(ncargs);
 
-    mux_string *sPat = new mux_string;
+    mux_string *sPat = NULL;
+    try
+    {
+        sPat = new mux_string;
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sPat)
+    {
+        return;
+    }
     size_t nPat;
 
     // Sanity-check arg1 and arg2.
@@ -5932,7 +6125,21 @@ static FUNCTION(fun_before)
 
     // Look for the target string.
     //
-    mux_string *sStr = new mux_string(bp);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(bp);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        delete sPat;
+        return;
+    }
     mux_cursor i;
 
     bool bSucceeded = sStr->search(*sPat, &i);
