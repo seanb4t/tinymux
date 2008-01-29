@@ -8992,7 +8992,7 @@ FUNCTION(fun_rsrec)
     {
         if (!bFirst)
         {
-            print_sep(&sepColumn, buff, bufc);
+            print_sep(sepColumn, buff, bufc);
         }
         else
         {
@@ -9040,7 +9040,7 @@ FUNCTION(fun_rsrecnext)
     {
         if (!bFirst)
         {
-            print_sep(&sepColumn, buff, bufc);
+            print_sep(sepColumn, buff, bufc);
         }
         else
         {
@@ -9095,7 +9095,7 @@ FUNCTION(fun_rsrecprev)
     {
         if (!bFirst)
         {
-            print_sep(&sepColumn, buff, bufc);
+            print_sep(sepColumn, buff, bufc);
         }
         else
         {
