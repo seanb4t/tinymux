@@ -532,9 +532,9 @@ MUX_RESULT CStubSlave::DisconnectObject(void)
 
 #if defined(WINDOWS_FILES)
 MUX_RESULT CStubSlave::AddModule(const UTF8 aModuleName[], const UTF16 aFileName[])
-#elif defined(WINDOWS_FILES)
+#elif defined(UNIX_FILES)
 MUX_RESULT CStubSlave::AddModule(const UTF8 aModuleName[], const UTF8 aFileName[])
-#endif // WINDOWNS_FILES
+#endif // UNIX_FILES
 {
     return mux_AddModule(aModuleName, aFileName);
 }
