@@ -2347,7 +2347,8 @@ UTF8 *munge_space(const UTF8 *string)
 }
 
 /* ---------------------------------------------------------------------------
- * trim_spaces: Remove leading and trailing spaces except for one final space
+ * trim_spaces: Remove leading and trailing spaces and space-compress internal
+ * spaces.
  */
 UTF8 *trim_spaces(const UTF8 *string)
 {
@@ -2385,46 +2386,6 @@ UTF8 *trim_spaces(const UTF8 *string)
             if (*p)
             {
                 *q++ = ' ';
-            }
-        }
-    }
-
-    // Terminate string.
-    //
-    *q = '\0';
-    return buffer;
-}
-
-/* ---------------------------------------------------------------------------
- * strip_whitespace: Remove all leading and trailing white space.
- */
-UTF8 *strip_whitespace(const UTF8 *string)
-{
-    UTF8 *buffer = alloc_lbuf("strip_whitespace");
-    const UTF8 *p = string;
-    UTF8 *q = buffer;
-
-    if (p)
-    {
-        while (*p && mux_isspace(*p))
-        {
-            p++;
-        }
-
-        while (*p)
-        {
-            // Copy non-space characters.
-            //
-            while (*p && !mux_isspace(*p))
-            {
-                *q++ = *p++;
-            }
-
-            // Compress spaces.
-            //
-            if(mux_isspace(*p))
-            {
-                break;
             }
         }
     }

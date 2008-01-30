@@ -9146,7 +9146,7 @@ static FUNCTION(fun_isdbref)
     bool bResult = false;
     if (nfargs >= 1)
     {
-        UTF8 *p = strip_whitespace(fargs[0]);
+        UTF8 *p = fargs[0];
         if (NUMBER_TOKEN == p[0])
         {
             p++;
