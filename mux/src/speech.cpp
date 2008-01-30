@@ -1411,13 +1411,14 @@ void do_pemit_whisper
     {
         dbref aowner;
         int   aflags;
-        recipient = atr_get("do_whisper.1290", executor, A_LASTWHISPER,
+        UTF8* stored_recipient = 
+            atr_get("do_whisper.1290", executor, A_LASTWHISPER,
             &aowner, &aflags);
 
         bModified = false;
 
         MUX_STRTOK_STATE tts;
-        mux_strtok_src(&tts, recipient);
+        mux_strtok_src(&tts, stored_recipient);
         mux_strtok_ctl(&tts, T(", "));
         UTF8 *r;
         for (r = mux_strtok_parse(&tts); r; r = mux_strtok_parse(&tts))
@@ -1437,6 +1438,8 @@ void do_pemit_whisper
                 }
             }
         }
+
+        free_lbuf(stored_recipient);
     }
 
     if (bModified)
