@@ -1411,8 +1411,8 @@ void do_pemit_whisper
     {
         dbref aowner;
         int   aflags;
-        UTF8* stored_recipient = 
-            atr_get("do_whisper.1290", executor, A_LASTWHISPER,
+        UTF8* stored_recipient =
+            atr_get("do_whisper.1316", executor, A_LASTWHISPER,
             &aowner, &aflags);
 
         bModified = false;
