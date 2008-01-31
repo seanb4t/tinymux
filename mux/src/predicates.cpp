@@ -413,7 +413,6 @@ UTF8 *MakeCanonicalObjectName(const UTF8 *pName, size_t *pnName, bool *pbValid, 
 UTF8 *MakeCanonicalExitName(const UTF8 *pName, size_t *pnName, bool *pbValid)
 {
     static UTF8 Buf[MBUF_SIZE];
-    static UTF8 Out[MBUF_SIZE];
 
     *pnName = 0;
     *pbValid = false;
@@ -554,7 +553,7 @@ bool ValidatePlayerName(const UTF8 *pName)
     else
     {
         const UTF8 *p = pName;
-        while ('\0' != p)
+        while ('\0' != *p)
         {
             if (!mux_isplayername(p))
             {
