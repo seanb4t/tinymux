@@ -2088,7 +2088,7 @@ FUNCTION(fun_successes)
     }
     else if (100 < num_dice)
     {
-        safe_str(T("#-1 THAT'S TOO MANY DICE FOR ME TO ROLL"), buff, bufc);
+        safe_str(T("#-1 TOO MANY DICE FOR ME TO ROLL"), buff, bufc);
     }
     else
     {
@@ -3963,7 +3963,7 @@ FUNCTION(fun_entrances)
 
     if (!payfor(executor, mudconf.searchcost))
     {
-        notify(executor, tprintf("You don't have enough %s.",
+        notify(executor, tprintf("You don\xE2\x80\x99t have enough %s.",
             mudconf.many_coins));
         safe_nothing(buff, bufc);
         return;
@@ -9321,7 +9321,7 @@ static FUNCTION(fun_error)
     }
     else
     {
-        safe_str(T("Huh?  (Type \"help\" for help.)"), buff, bufc);
+        safe_str(T("Huh?  (Type \xE2\x80\x9Chelp\xE2\x80\x9D for help.)"), buff, bufc);
     }
 }
 
