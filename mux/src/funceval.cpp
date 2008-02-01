@@ -627,7 +627,7 @@ static void set_attr_internal(dbref player, dbref thing, int attrnum, UTF8 *attr
     if (!Good_obj(thing))
     {
         safe_noperm(buff, bufc);
-        notify_quiet(player, T("You shouldn't be rummaging through the garbage."));
+        notify_quiet(player, T("You shouldn\xE2\x80\x99t be rummaging through the garbage."));
         return;
     }
 
@@ -1233,7 +1233,7 @@ FUNCTION(fun_columns)
         return;
     }
 
-    UTF8 *cp = trim_space_sep(fargs[0], &sep);
+    UTF8 *cp = trim_space_sep(fargs[0], sep);
     if (!*cp)
     {
         return;
@@ -1407,13 +1407,13 @@ FUNCTION(fun_table)
     SEP sep;
     sep.n = 1;
     sep.str[0] = cDelimiter;
-    UTF8 *pNext = trim_space_sep(fargs[0], &sep);
+    UTF8 *pNext = trim_space_sep(fargs[0], sep);
     if (!*pNext)
     {
         return;
     }
 
-    UTF8 *pCurrent = split_token(&pNext, &sep);
+    UTF8 *pCurrent = split_token(&pNext, sep);
     if (!pCurrent)
     {
         return;
@@ -1462,7 +1462,7 @@ FUNCTION(fun_table)
             }
         }
 
-        pCurrent = split_token(&pNext, &sep);
+        pCurrent = split_token(&pNext, sep);
         if (!pCurrent)
         {
             break;
@@ -2552,20 +2552,20 @@ FUNCTION(fun_elements)
     LBUF_OFFSET nWords = words->find_Words(sep.str);
 
     bool bFirst = true;
-    UTF8 *s = trim_space_sep(fargs[1], &sepSpace);
+    UTF8 *s = trim_space_sep(fargs[1], sepSpace);
 
     // Go through the second list, grabbing the numbers and finding the
     // corresponding elements.
     //
     do {
-        UTF8 *r = split_token(&s, &sepSpace);
+        UTF8 *r = split_token(&s, sepSpace);
         int cur = mux_atol(r) - 1;
         if (  0 <= cur
            && cur < static_cast<int>(nWords))
         {
             if (!bFirst)
             {
-                print_sep(&osep, buff, bufc);
+                print_sep(osep, buff, bufc);
             }
             else
             {
@@ -2597,10 +2597,10 @@ FUNCTION(fun_grab)
 
     // Walk the wordstring, until we find the word we want.
     //
-    UTF8 *s = trim_space_sep(fargs[0], &sep);
+    UTF8 *s = trim_space_sep(fargs[0], sep);
     do
     {
-        UTF8 *r = split_token(&s, &sep);
+        UTF8 *r = split_token(&s, sep);
         mudstate.wild_invk_ctr = 0;
         if (quick_wild(fargs[1], r))
         {
@@ -2624,16 +2624,16 @@ FUNCTION(fun_graball)
     }
 
     bool bFirst = true;
-    UTF8 *s = trim_space_sep(fargs[0], &sep);
+    UTF8 *s = trim_space_sep(fargs[0], sep);
     do
     {
-        UTF8 *r = split_token(&s, &sep);
+        UTF8 *r = split_token(&s, sep);
         mudstate.wild_invk_ctr = 0;
         if (quick_wild(fargs[1], r))
         {
             if (!bFirst)
             {
-                print_sep(&osep, buff, bufc);
+                print_sep(osep, buff, bufc);
             }
             else
             {
@@ -2827,7 +2827,7 @@ FUNCTION(fun_pickrand)
         return;
     }
 
-    UTF8 *s = trim_space_sep(fargs[0], &sep);
+    UTF8 *s = trim_space_sep(fargs[0], sep);
     if (s[0] == '\0')
     {
         return;
@@ -2973,14 +2973,14 @@ FUNCTION(fun_sortby)
     UTF8 *list = alloc_lbuf("fun_sortby");
     mux_strncpy(list, fargs[1], LBUF_SIZE-1);
     UTF8 *ptrs[LBUF_SIZE / 2];
-    int nptrs = list2arr(ptrs, LBUF_SIZE / 2, list, &sep);
+    int nptrs = list2arr(ptrs, LBUF_SIZE / 2, list, sep);
 
     if (nptrs > 1)
     {
         mincomp_sort(&ctx, (void**)ptrs, nptrs);
     }
 
-    arr2list(ptrs, nptrs, buff, bufc, &osep);
+    arr2list(ptrs, nptrs, buff, bufc, osep);
     free_lbuf(list);
     free_lbuf(ctx.buff);
     free_lbuf(atext);
@@ -3144,10 +3144,10 @@ FUNCTION(fun_matchall)
     // match. If none match, return 0.
     //
     wcount = 1;
-    s = trim_space_sep(fargs[0], &sep);
+    s = trim_space_sep(fargs[0], sep);
     do
     {
-        r = split_token(&s, &sep);
+        r = split_token(&s, sep);
         mudstate.wild_invk_ctr = 0;
         if (quick_wild(fargs[1], r))
         {
@@ -3249,8 +3249,8 @@ FUNCTION(fun_mix)
     UTF8 *cp[NUM_ENV_VARS];
     for (i = 0; i < lastn; i++)
     {
-        cp[i] = trim_space_sep(fargs[i+1], &sep);
-        int twords = countwords(cp[i], &sep);
+        cp[i] = trim_space_sep(fargs[i+1], sep);
+        int twords = countwords(cp[i], sep);
         if (nwords < twords)
         {
             nwords = twords;
@@ -3267,7 +3267,7 @@ FUNCTION(fun_mix)
     {
         if (!bFirst)
         {
-            print_sep(&sep, buff, bufc);
+            print_sep(sep, buff, bufc);
         }
         else
         {
@@ -3276,7 +3276,7 @@ FUNCTION(fun_mix)
 
         for (i = 0; i < lastn; i++)
         {
-            os[i] = split_token(&cp[i], &sep);
+            os[i] = split_token(&cp[i], sep);
             if (NULL == os[i])
             {
                 os[i] = T("");
@@ -3330,7 +3330,7 @@ FUNCTION(fun_step)
         return;
     }
 
-    UTF8 *cp = trim_space_sep(fargs[1], &isep);
+    UTF8 *cp = trim_space_sep(fargs[1], isep);
 
     const UTF8 *os[NUM_ENV_VARS];
     bool bFirst = true;
@@ -3340,7 +3340,7 @@ FUNCTION(fun_step)
     {
         if (!bFirst)
         {
-            print_sep(&osep, buff, bufc);
+            print_sep(osep, buff, bufc);
         }
         else
         {
@@ -3349,7 +3349,7 @@ FUNCTION(fun_step)
 
         for (i = 0; cp && i < step_size; i++)
         {
-            os[i] = split_token(&cp, &isep);
+            os[i] = split_token(&cp, isep);
         }
         mux_exec(atext, LBUF_SIZE-1, buff, bufc, executor, caller, enactor,
              AttrTrace(aflags, EV_STRIP_CURLY|EV_FCHECK|EV_EVAL), os, i);
@@ -3505,7 +3505,7 @@ FUNCTION(fun_munge)
     // Prepare data structures for a hash table that will map
     // elements of list1 to corresponding elements of list2.
     //
-    int nWords = countwords(fargs[1], &sep);
+    int nWords = countwords(fargs[1], sep);
     if (0 == nWords)
     {
         free_lbuf(atext);
@@ -3548,12 +3548,12 @@ FUNCTION(fun_munge)
     // Chop up the lists, converting them into a hash table that
     // maps elements of list1 to corresponding elements of list2.
     //
-    UTF8 *p1 = trim_space_sep(fargs[1], &sep);
-    UTF8 *p2 = trim_space_sep(fargs[2], &sep);
+    UTF8 *p1 = trim_space_sep(fargs[1], sep);
+    UTF8 *p2 = trim_space_sep(fargs[2], sep);
     UTF8 *pKey, *pValue;
-    for (pKey = split_token(&p1, &sep), pValue = split_token(&p2, &sep);
+    for (pKey = split_token(&p1, sep), pValue = split_token(&p2, sep);
          NULL != pKey && NULL != pValue;
-         pKey = split_token(&p1, &sep), pValue = split_token(&p2, &sep))
+         pKey = split_token(&p1, sep), pValue = split_token(&p2, sep))
     {
         UINT32 nHash = munge_hash(pKey);
         int nHashSlot = 1 + (nHash % nWords);
@@ -3605,13 +3605,13 @@ FUNCTION(fun_munge)
     // Translate its elements according to the mappings in our hash table.
     //
     bool bFirst = true;
-    bp = trim_space_sep(rlist, &sep);
+    bp = trim_space_sep(rlist, sep);
     if ('\0' != *bp)
     {
         UTF8 *result;
-        for (result = split_token(&bp, &sep);
+        for (result = split_token(&bp, sep);
              NULL != result;
-             result = split_token(&bp, &sep))
+             result = split_token(&bp, sep))
         {
             UINT32 nHash = munge_hash(result);
             int nHashSlot = 1 + (nHash % nWords);
@@ -3629,7 +3629,7 @@ FUNCTION(fun_munge)
             {
                 if (!bFirst)
                 {
-                    print_sep(&sep, buff, bufc);
+                    print_sep(sep, buff, bufc);
                 }
                 else
                 {
@@ -3723,7 +3723,7 @@ FUNCTION(fun_lrand)
         {
             INT32 val = RandomINT32(iLower, iUpper);
             safe_ltoa(val, buff, bufc);
-            print_sep(&sep, buff, bufc);
+            print_sep(sep, buff, bufc);
         }
         INT32 val = RandomINT32(iLower, iUpper);
         safe_ltoa(val, buff, bufc);
@@ -4676,7 +4676,7 @@ static void real_regmatch(const UTF8 *search, const UTF8 *pattern, UTF8 *registe
     SEP sep;
     sep.n = 1;
     memcpy(sep.str, " ", 2);
-    int nqregs = list2arr(qregs, NSUBEXP, registers, &sep);
+    int nqregs = list2arr(qregs, NSUBEXP, registers, sep);
     int i;
     for (i = 0; i < nqregs; i++)
     {
@@ -4732,8 +4732,8 @@ FUNCTION(fun_regmatchi)
  * instead of a wildcard pattern. The versions ending in i are case-insensitive.
  */
 
-static void real_regrab(UTF8 *search, const UTF8 *pattern, SEP *psep, UTF8 *buff,
-                 UTF8 **bufc, bool cis, bool all)
+static void real_regrab(__in UTF8 *search, __in const UTF8 *pattern, __in const SEP &sep, __in UTF8 *buff,
+                 __deref_inout UTF8 **bufc, bool cis, bool all)
 {
     if (MuxAlarm.bAlarmed)
     {
@@ -4766,10 +4766,10 @@ static void real_regrab(UTF8 *search, const UTF8 *pattern, SEP *psep, UTF8 *buff
     }
 
     bool first = true;
-    UTF8 *s = trim_space_sep(search, psep);
+    UTF8 *s = trim_space_sep(search, sep);
     do
     {
-        UTF8 *r = split_token(&s, psep);
+        UTF8 *r = split_token(&s, sep);
         if (  !MuxAlarm.bAlarmed
            && pcre_exec(re, study, (char *)r, static_cast<int>(strlen((char *)r)), 0, 0, ovec, ovecsize) >= 0)
         {
@@ -4779,7 +4779,7 @@ static void real_regrab(UTF8 *search, const UTF8 *pattern, SEP *psep, UTF8 *buff
             }
             else
             {
-                print_sep(psep, buff, bufc);
+                print_sep(sep, buff, bufc);
             }
             safe_str(r, buff, bufc);
             if (!all)
@@ -4803,7 +4803,7 @@ FUNCTION(fun_regrab)
     {
         return;
     }
-    real_regrab(fargs[0], fargs[1], &sep, buff, bufc, false, false);
+    real_regrab(fargs[0], fargs[1], sep, buff, bufc, false, false);
 }
 
 FUNCTION(fun_regrabi)
@@ -4813,7 +4813,7 @@ FUNCTION(fun_regrabi)
     {
         return;
     }
-    real_regrab(fargs[0], fargs[1], &sep, buff, bufc, true, false);
+    real_regrab(fargs[0], fargs[1], sep, buff, bufc, true, false);
 }
 
 FUNCTION(fun_regraball)
@@ -4823,7 +4823,7 @@ FUNCTION(fun_regraball)
     {
         return;
     }
-    real_regrab(fargs[0], fargs[1], &sep, buff, bufc, false, true);
+    real_regrab(fargs[0], fargs[1], sep, buff, bufc, false, true);
 }
 
 FUNCTION(fun_regraballi)
@@ -4833,7 +4833,7 @@ FUNCTION(fun_regraballi)
     {
         return;
     }
-    real_regrab(fargs[0], fargs[1], &sep, buff, bufc, true, true);
+    real_regrab(fargs[0], fargs[1], sep, buff, bufc, true, true);
 }
 
 
