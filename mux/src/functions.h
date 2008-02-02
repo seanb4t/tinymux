@@ -13,9 +13,9 @@
 typedef struct tagFun
 {
     const UTF8 *name;     // function name
-    void (*fun)(UTF8 *buff, UTF8 **bufc, dbref executor, dbref caller,
-        dbref enactor, int eval, UTF8 *fargs[], int nfargs,
-        const UTF8 *cargs[], int ncargs);  // handler
+    void (*fun)(__in UTF8 *buff, __deref_inout UTF8 **bufc, dbref executor, dbref caller,
+        dbref enactor, int eval, __in UTF8 *fargs[], int nfargs,
+        __in const UTF8 *cargs[], int ncargs);  // handler
     int maxArgsParsed;// Maximum number of arguments parsed.
     int minArgs;      // Minimum number of args needed or expected
     int maxArgs;      // Maximum number of arguments permitted
@@ -79,7 +79,7 @@ bool delim_check
     int sep_arg, SEP *sep, int dflags
 );
 
-void arr2list(UTF8 *arr[], int alen, UTF8 *list, UTF8 **bufc, SEP *psep);
+void arr2list(__in_ecount(alen) UTF8 *arr[], int alen, __inout UTF8 *list, __deref_inout UTF8 **bufc, __in SEP *psep);
 int list2arr(UTF8 *arr[], int maxlen, UTF8 *list, SEP *psep);
 UTF8 *trim_space_sep(UTF8 *str, SEP *psep);
 UTF8 *trim_space_sep_LEN(UTF8 *str, size_t nStr, SEP *psep, size_t *nTrim);
@@ -92,9 +92,9 @@ bool check_command(dbref player, const UTF8 *name, UTF8 *buff, UTF8 **bufc);
 // This is the prototype for functions
 //
 #define FUNCTION(x) \
-    void x(UTF8 *buff, UTF8 **bufc, dbref executor, dbref caller,     \
-        dbref enactor, int eval, UTF8 *fargs[], int nfargs,           \
-        const UTF8 *cargs[], int ncargs)
+    void x(__in UTF8 *buff, __deref_inout UTF8 **bufc, dbref executor, dbref caller,  \
+        dbref enactor, int eval, __in UTF8 *fargs[], int nfargs,                      \
+        __in const UTF8 *cargs[], int ncargs)
 
 // This is for functions that take an optional delimiter character.
 //
@@ -102,9 +102,9 @@ bool check_command(dbref player, const UTF8 *name, UTF8 *buff, UTF8 **bufc);
     delim_check(buff, bufc, executor, caller, enactor, eval,     \
         fargs, nfargs, cargs, ncargs, (iSep), &(Sep), (dflags))
 
-#define XFUNCTION(x) void x(UTF8 *buff, UTF8 **bufc, dbref executor,    \
- dbref caller, dbref enactor, int eval, UTF8 *fargs[], int nfargs,      \
- const UTF8 *cargs[], int ncargs)
+#define XFUNCTION(x) void x(__in UTF8 *buff, __deref_inout UTF8 **bufc, dbref executor, \
+ dbref caller, dbref enactor, int eval, __in UTF8 *fargs[], int nfargs,                 \
+ __in const UTF8 *cargs[], int ncargs)
 
 // Interface for adding additional hardcode functions.
 //
