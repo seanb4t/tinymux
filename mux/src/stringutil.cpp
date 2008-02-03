@@ -5052,7 +5052,7 @@ CF_HAND(cf_art_rule)
     if (!bOkay)
     {
         *pCurrent = '\0';
-        cf_log_syntax(player, cmd, "Invalid article '%s'.", pArticle);
+        cf_log_syntax(player, cmd, "Invalid article \xE2\x80\x98%s\xE2\x80\x99.", pArticle);
         return -1;
     }
 
@@ -5072,7 +5072,7 @@ CF_HAND(cf_art_rule)
     pcre* reNewRegexp = pcre_compile((char *)pCurrent, PCRE_UTF8, &errptr, &erroffset, NULL);
     if (!reNewRegexp)
     {
-        cf_log_syntax(player, cmd, "Error processing regexp '%s':.",
+        cf_log_syntax(player, cmd, "Error processing regexp \xE2\x80\x98%s\xE2\x80\x99:.",
               pCurrent, errptr);
         return -1;
     }
@@ -6146,7 +6146,11 @@ void mux_string::import(const mux_string &sStr, mux_cursor iStart)
         memcpy(m_autf, sStr.m_autf + iStart.m_byte, m_iLast.m_byte);
         m_autf[m_iLast.m_byte] = '\0';
 
-        if (0 != sStr.m_ncs)
+        if (0 == sStr.m_ncs)
+        {
+            realloc_m_pcs(0);
+        }
+        else
         {
             realloc_m_pcs(m_iLast.m_point);
             memcpy(m_pcs, sStr.m_pcs + iStart.m_point, m_iLast.m_point * sizeof(m_pcs[0]));
