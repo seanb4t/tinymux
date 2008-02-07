@@ -1239,26 +1239,22 @@ FUNCTION(fun_columns)
         return;
     }
 
-    mux_string *sStr = new mux_string(cp);
+    mux_string *sStr = NULL;
     mux_words *words = NULL;
     try
     {
+        sStr = new mux_string(cp);
         words = new mux_words(*sStr);
     }
     catch (...)
     {
         ; // Nothing.
     }
-    if (NULL == words)
-    {
-        ISOUTOFMEMORY(words);
-        delete sStr;
-        return;
-    }
 
-    LBUF_OFFSET nWords = words->find_Words(sep.str);
-
-    if (0 == nWords)
+    LBUF_OFFSET nWords;
+    if (  NULL == sStr
+       || NULL == words
+       || 0 == (nWords = words->find_Words(sep.str)))
     {
         delete sStr;
         delete words;
@@ -1307,6 +1303,7 @@ FUNCTION(fun_columns)
         }
         nBufferAvailable = LBUF_SIZE - (*bufc-buff) - 1;
     }
+
     if (bNeedCRLF)
     {
         safe_copy_buf(T("\r\n"), 2, buff, bufc);
@@ -1749,7 +1746,21 @@ FUNCTION(fun_strtrunc)
         return;
     }
 
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return;
+    }
+
     mux_cursor nLen = sStr->length_cursor();
 
     if (nLeft < nLen.m_point)
@@ -2532,20 +2543,23 @@ FUNCTION(fun_elements)
 
     // Turn the first list into an array.
     //
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
     mux_words *words = NULL;
     try
     {
+        sStr  = new mux_string(fargs[0]);
         words = new mux_words(*sStr);
     }
     catch (...)
     {
         ; // Nothing.
     }
-    if (NULL == words)
+
+    if (  NULL == sStr
+       || NULL == words)
     {
-        ISOUTOFMEMORY(words);
         delete sStr;
+        delete words;
         return;
     }
 
@@ -2557,7 +2571,8 @@ FUNCTION(fun_elements)
     // Go through the second list, grabbing the numbers and finding the
     // corresponding elements.
     //
-    do {
+    do
+    {
         UTF8 *r = split_token(&s, &sepSpace);
         int cur = mux_atol(r) - 1;
         if (  0 <= cur
@@ -2815,14 +2830,10 @@ FUNCTION(fun_shuffle)
 //
 FUNCTION(fun_pickrand)
 {
-    if (  nfargs == 0
-       || fargs[0][0] == '\0')
-    {
-        return;
-    }
-
     SEP sep;
-    if (!OPTIONAL_DELIM(2, sep, DELIM_DFLT|DELIM_STRING))
+    if (  nfargs == 0
+       || fargs[0][0] == '\0'
+       || !OPTIONAL_DELIM(2, sep, DELIM_DFLT|DELIM_STRING))
     {
         return;
     }
@@ -2833,29 +2844,28 @@ FUNCTION(fun_pickrand)
         return;
     }
 
-    mux_string *sStr = new mux_string(s);
+    mux_string *sStr = NULL;
     mux_words *words = NULL;
     try
     {
+        sStr = new mux_string(s);
         words = new mux_words(*sStr);
     }
     catch (...)
     {
         ; // Nothing.
     }
-    if (NULL == words)
-    {
-        ISOUTOFMEMORY(words);
-        delete sStr;
-        return;
-    }
 
-    INT32 n = static_cast<INT32>(words->find_Words(sep.str));
-
-    if (0 < n)
+    if (  NULL != sStr
+       && NULL != words)
     {
-        LBUF_OFFSET w = static_cast<LBUF_OFFSET>(RandomINT32(0, n-1));
-        words->export_WordColor(w, buff, bufc);
+        INT32 n = static_cast<INT32>(words->find_Words(sep.str));
+
+        if (0 < n)
+        {
+            LBUF_OFFSET w = static_cast<LBUF_OFFSET>(RandomINT32(0, n-1));
+            words->export_WordColor(w, buff, bufc);
+        }
     }
     delete sStr;
     delete words;
@@ -3003,26 +3013,24 @@ FUNCTION(fun_last)
         return;
     }
 
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
     mux_words *words = NULL;
     try
     {
+        sStr = new mux_string(fargs[0]);
         words = new mux_words(*sStr);
     }
     catch (...)
     {
         ; // Nothing.
     }
-    if (NULL == words)
+
+    if (  NULL != sStr
+       && NULL != words)
     {
-        ISOUTOFMEMORY(words);
-        delete sStr;
-        return;
+        LBUF_OFFSET nWords = words->find_Words(sep.str);
+        words->export_WordColor(nWords-1, buff, bufc);
     }
-
-    LBUF_OFFSET nWords = words->find_Words(sep.str);
-    words->export_WordColor(nWords-1, buff, bufc);
-
     delete sStr;
     delete words;
 }
@@ -3389,7 +3397,21 @@ FUNCTION(fun_foreach)
 
     UTF8 cbuf[5] = {'\0', '\0', '\0', '\0', '\0'};
     const UTF8 *bp = cbuf;
-    mux_string *sStr = new mux_string(fargs[1]);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[1]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return;
+    }
+
     sStr->trim();
     size_t nStr = sStr->length_byte();
     LBUF_OFFSET i = 0, nBytes = 0;
