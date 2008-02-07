@@ -3173,13 +3173,9 @@ static FUNCTION(fun_strmatch)
 static FUNCTION(fun_extract)
 {
     SEP sep;
-    if (!OPTIONAL_DELIM(4, sep, DELIM_DFLT|DELIM_STRING))
-    {
-        return;
-    }
-
     SEP osep = sep;
-    if (!OPTIONAL_DELIM(5, osep, DELIM_NULL|DELIM_CRLF|DELIM_INIT|DELIM_STRING))
+    if (  !OPTIONAL_DELIM(4, sep, DELIM_DFLT|DELIM_STRING)
+       || !OPTIONAL_DELIM(5, osep, DELIM_NULL|DELIM_CRLF|DELIM_INIT|DELIM_STRING))
     {
         return;
     }
@@ -3193,20 +3189,23 @@ static FUNCTION(fun_extract)
         return;
     }
 
-    mux_string *sStr = new mux_string(trim_space_sep(fargs[0], sep));
+    mux_string *sStr = NULL;
     mux_words *words = NULL;
     try
     {
+        sStr = new mux_string(trim_space_sep(fargs[0], sep));
         words = new mux_words(*sStr);
     }
     catch (...)
     {
         ; // Nothing.
     }
-    if (NULL == words)
+
+    if (  NULL == sStr
+       || NULL == words)
     {
-        ISOUTOFMEMORY(words);
         delete sStr;
+        delete words;
         return;
     }
 
@@ -4469,6 +4468,7 @@ static FUNCTION(fun_remove)
         delete sWord;
         return;
     }
+
     mux_words *words = NULL;
     try
     {
@@ -4478,6 +4478,7 @@ static FUNCTION(fun_remove)
     {
         ; // Nothing.
     }
+
     if (NULL == words)
     {
         delete sWord;
@@ -5978,20 +5979,23 @@ static FUNCTION(fun_revwords)
         return;
     }
 
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
     mux_words *words = NULL;
     try
     {
+        sStr = new mux_string(fargs[0]);
         words = new mux_words(*sStr);
     }
     catch (...)
     {
         ; // Nothing.
     }
-    if (NULL == words)
+
+    if (  NULL == sStr
+       || NULL == words)
     {
-        ISOUTOFMEMORY(words);
         delete sStr;
+        delete words;
         return;
     }
 
@@ -9198,7 +9202,20 @@ static FUNCTION(fun_trim)
         }
     }
 
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return;
+    }
 
     if (0 == n)
     {
@@ -9341,7 +9358,20 @@ static FUNCTION(fun_strip)
     {
         return;
     }
-    mux_string *sStr = new mux_string(fargs[0]);
+    mux_string *sStr = NULL;
+    try
+    {
+        sStr = new mux_string(fargs[0]);
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sStr)
+    {
+        return;
+    }
 
     if (  1 < nfargs
        && '\0' != fargs[1][0])
@@ -10558,7 +10588,22 @@ void transform_range(mux_string &sStr)
     //
     mux_cursor nPos, nStart;
     UTF8 cBefore, cAfter;
-    mux_string *sTemp = new mux_string;
+
+    mux_string *sTemp = NULL;
+    try
+    {
+        sTemp = new mux_string;
+    }
+    catch (...)
+    {
+        ; // Nothing.
+    }
+
+    if (NULL == sTemp)
+    {
+        return;
+    }
+
     sTemp->cursor_start(nStart);
     sTemp->cursor_next(nStart);
 
@@ -10690,8 +10735,8 @@ static FUNCTION(fun_tr)
             delete sFrom;
             delete sTo;
         }
-        delete sStr;
     }
+    delete sStr;
 }
 
 // ----------------------------------------------------------------------------
