@@ -120,12 +120,13 @@ void cf_init(void)
 
 #if defined(FIRANMUX)
     mux_strncpy(mudconf.immobile_msg, T("You have been set immobile."), sizeof(mudconf.immobile_msg)-1);
+#endif // FIRANMUX
+
     mudconf.mail_server[0]  = '\0';
     mudconf.mail_ehlo[0]    = '\0';
     mudconf.mail_sendaddr[0]= '\0';
     mudconf.mail_sendname[0]= '\0';
     mudconf.mail_subject[0] = '\0';
-#endif // FIRANMUX
 
     mudconf.art_rules = NULL;
     mudconf.indent_desc = false;
