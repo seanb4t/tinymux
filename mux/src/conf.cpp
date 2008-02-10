@@ -110,7 +110,9 @@ void cf_init(void)
     mux_strncpy(mudconf.guests_channel, T("Guests"), 31);
     mux_strncpy(mudconf.guests_channel_alias, T("g"), 31);
     mux_strncpy(mudconf.pueblo_msg, T("</xch_mudtext><img xch_mode=html>"), GBUF_SIZE-1);
-
+#if defined(FIRANMUX)
+    mux_strncpy(mudconf.immobile_msg, T("You have been set immobile."), sizeof(mudconf.immobile_msg)-1);
+#endif // FIRANMUX
 #if defined(INLINESQL) || defined(TINYMUX_MODULES)
     mudconf.sql_server[0]   = '\0';
     mudconf.sql_user[0]     = '\0';
@@ -118,14 +120,11 @@ void cf_init(void)
     mudconf.sql_database[0] = '\0';
 #endif // INLINESQL || TINYMUX_MODULES
 
-#if defined(FIRANMUX)
-    mux_strncpy(mudconf.immobile_msg, T("You have been set immobile."), sizeof(mudconf.immobile_msg)-1);
     mudconf.mail_server[0]  = '\0';
     mudconf.mail_ehlo[0]    = '\0';
     mudconf.mail_sendaddr[0]= '\0';
     mudconf.mail_sendname[0]= '\0';
     mudconf.mail_subject[0] = '\0';
-#endif // FIRANMUX
 
     mudconf.art_rules = NULL;
     mudconf.indent_desc = false;
