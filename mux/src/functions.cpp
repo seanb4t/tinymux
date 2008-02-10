@@ -3173,13 +3173,9 @@ static FUNCTION(fun_strmatch)
 static FUNCTION(fun_extract)
 {
     SEP sep;
-    if (!OPTIONAL_DELIM(4, sep, DELIM_DFLT|DELIM_STRING))
-    {
-        return;
-    }
-
     SEP osep = sep;
-    if (!OPTIONAL_DELIM(5, osep, DELIM_NULL|DELIM_CRLF|DELIM_INIT|DELIM_STRING))
+    if (  !OPTIONAL_DELIM(4, sep, DELIM_DFLT|DELIM_STRING)
+       || !OPTIONAL_DELIM(5, osep, DELIM_NULL|DELIM_CRLF|DELIM_INIT|DELIM_STRING))
     {
         return;
     }
