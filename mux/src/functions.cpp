@@ -68,10 +68,10 @@ UTF8 *trim_space_sep_LEN(UTF8 *str, size_t nStr, SEP *sep, size_t *nTrim)
 
 // Trim off leading and trailing spaces if the separator char is a space.
 //
-UTF8 *trim_space_sep(UTF8 *str, SEP *sep)
+UTF8 *trim_space_sep(__in UTF8 *str, __in const SEP &sep)
 {
-    if (  sep->n != 1
-       || sep->str[0] != ' ')
+    if (  sep.n != 1
+       || sep.str[0] != ' ')
     {
         return str;
     }
@@ -95,12 +95,12 @@ UTF8 *trim_space_sep(UTF8 *str, SEP *sep)
 
 // next_token: Point at start of next token in string
 //
-UTF8 *next_token(UTF8 *str, SEP *psep)
+UTF8 *next_token(__deref_inout UTF8 *str, const SEP &sep)
 {
-    if (psep->n == 1)
+    if (sep.n == 1)
     {
         while (  *str != '\0'
-              && *str != psep->str[0])
+              && *str != sep.str[0])
         {
             str++;
         }
@@ -109,7 +109,7 @@ UTF8 *next_token(UTF8 *str, SEP *psep)
             return NULL;
         }
         str++;
-        if (psep->str[0] == ' ')
+        if (sep.str[0] == ' ')
         {
             while (*str == ' ')
             {
@@ -119,10 +119,10 @@ UTF8 *next_token(UTF8 *str, SEP *psep)
     }
     else
     {
-        UTF8 *p = (UTF8 *)strstr((char *)str, (char *)psep->str);
+        UTF8 *p = (UTF8 *)strstr((char *)str, (char *)sep.str);
         if (p)
         {
-            str = p + psep->n;
+            str = p + sep.n;
         }
         else
         {
@@ -135,7 +135,7 @@ UTF8 *next_token(UTF8 *str, SEP *psep)
 // split_token: Get next token from string as null-term string.  String is
 // destructively modified.
 //
-UTF8 *split_token(UTF8 **sp, SEP *psep)
+UTF8 *split_token(__deref_inout UTF8 **sp, const SEP &sep)
 {
     UTF8 *str = *sp;
     UTF8 *save = str;
@@ -145,17 +145,17 @@ UTF8 *split_token(UTF8 **sp, SEP *psep)
         *sp = NULL;
         return NULL;
     }
-    if (psep->n == 1)
+    if (sep.n == 1)
     {
         while (  *str
-              && *str != psep->str[0])
+              && *str != sep.str[0])
         {
             str++;
         }
         if (*str)
         {
             *str++ = '\0';
-            if (psep->str[0] == ' ')
+            if (sep.str[0] == ' ')
             {
                 while (*str == ' ')
                 {
@@ -170,11 +170,11 @@ UTF8 *split_token(UTF8 **sp, SEP *psep)
     }
     else
     {
-        UTF8 *p = (UTF8 *)strstr((char *)str, (char *)psep->str);
+        UTF8 *p = (UTF8 *)strstr((char *)str, (char *)sep.str);
         if (p)
         {
             *p = '\0';
-            str = p + psep->n;
+            str = p + sep.n;
         }
         else
         {
@@ -264,29 +264,29 @@ int AutoDetect::GetType(void)
     return m_CouldBe;
 }
 
-int list2arr(UTF8 *arr[], int maxcount, UTF8 *list, SEP *psep)
+int list2arr(__out_ecount(maxlen) UTF8 *arr[], int maxlen, __in UTF8 *list, __in const SEP &sep)
 {
-    list = trim_space_sep(list, psep);
+    list = trim_space_sep(list, sep);
     if (list[0] == '\0')
     {
         return 0;
     }
-    UTF8 *p = split_token(&list, psep);
+    UTF8 *p = split_token(&list, sep);
     int i;
-    for (i = 0; p && i < maxcount; i++, p = split_token(&list, psep))
+    for (i = 0; p && i < maxlen; i++, p = split_token(&list, sep))
     {
         arr[i] = p;
     }
     return i;
 }
 
-void arr2list(__in_ecount(alen) UTF8 *arr[], int alen, __inout UTF8 *list, __deref_inout UTF8 **bufc, __in SEP *psep)
+void arr2list(__in_ecount(alen) UTF8 *arr[], int alen, __inout UTF8 *list, __deref_inout UTF8 **bufc, __in const SEP &sep)
 {
     int i;
     for (i = 0; i < alen-1; i++)
     {
         safe_str(arr[i], list, bufc);
-        print_sep(psep, list, bufc);
+        print_sep(sep, list, bufc);
     }
     if (alen)
     {
@@ -336,11 +336,11 @@ static bool nearby_or_control(dbref player, dbref thing)
  */
 bool delim_check
 (
-    UTF8 *buff, UTF8 **bufc,
+    __in UTF8 *buff, __deref_inout UTF8 **bufc,
     dbref executor, dbref caller, dbref enactor,
     int   eval,
-    UTF8 *fargs[], int nfargs,
-    const UTF8 *cargs[], int ncargs,
+    __in UTF8 *fargs[], int nfargs,
+    __in const UTF8 *cargs[], int ncargs,
     int sep_arg, SEP *sep, int dflags
 )
 {
@@ -434,16 +434,16 @@ bool delim_check
  * Added 1/28/91 Philip D. Wasson
  */
 
-int countwords(UTF8 *str, SEP *psep)
+int countwords(__in UTF8 *str, __in const SEP &sep)
 {
     int n;
 
-    str = trim_space_sep(str, psep);
+    str = trim_space_sep(str, sep);
     if (!*str)
     {
         return 0;
     }
-    for (n = 0; str; str = next_token(str, psep), n++)
+    for (n = 0; str; str = next_token(str, sep), n++)
     {
         ; // Nothing.
     }
@@ -464,7 +464,7 @@ static FUNCTION(fun_words)
         return;
     }
 
-    safe_ltoa(countwords(strip_color(fargs[0]), &sep), buff, bufc);
+    safe_ltoa(countwords(strip_color(fargs[0]), sep), buff, bufc);
 }
 
 /* ---------------------------------------------------------------------------
@@ -2091,7 +2091,7 @@ FUNCTION(fun_successes)
     }
     else if (100 < num_dice)
     {
-        safe_str(T("#-1 THAT'S TOO MANY DICE FOR ME TO ROLL"), buff, bufc);
+        safe_str(T("#-1 TOO MANY DICE FOR ME TO ROLL"), buff, bufc);
     }
     else
     {
@@ -2526,8 +2526,8 @@ static FUNCTION(fun_first)
         return;
     }
 
-    UTF8 *s = trim_space_sep(fargs[0], &sep);
-    UTF8 *first = split_token(&s, &sep);
+    UTF8 *s = trim_space_sep(fargs[0], sep);
+    UTF8 *first = split_token(&s, sep);
     if (first)
     {
         safe_str(first, buff, bufc);
@@ -2555,8 +2555,8 @@ static FUNCTION(fun_rest)
         return;
     }
 
-    UTF8 *s = trim_space_sep(fargs[0], &sep);
-    split_token(&s, &sep);
+    UTF8 *s = trim_space_sep(fargs[0], sep);
+    split_token(&s, sep);
     if (s)
     {
         safe_str(s, buff, bufc);
@@ -2590,7 +2590,7 @@ static FUNCTION(fun_v)
             {
                 return;
             }
-    
+
             // If we can access it, return it, otherwise return a null
             // string.
             //
@@ -3129,9 +3129,9 @@ static FUNCTION(fun_match)
     // one that matches.  If none match, return 0.
     //
     int wcount = 1;
-    UTF8 *s = trim_space_sep(fargs[0], &sep);
+    UTF8 *s = trim_space_sep(fargs[0], sep);
     do {
-        UTF8 *r = split_token(&s, &sep);
+        UTF8 *r = split_token(&s, sep);
         mudstate.wild_invk_ctr = 0;
         if (quick_wild(fargs[1], r))
         {
@@ -3193,7 +3193,7 @@ static FUNCTION(fun_extract)
     mux_words *words = NULL;
     try
     {
-        sStr = new mux_string(trim_space_sep(fargs[0], &sep));
+        sStr = new mux_string(trim_space_sep(fargs[0], sep));
         words = new mux_words(*sStr);
     }
     catch (...)
@@ -3227,7 +3227,7 @@ static FUNCTION(fun_extract)
         {
             if (!bFirst)
             {
-                print_sep(&osep, buff, bufc);
+                print_sep(osep, buff, bufc);
             }
             else
             {
@@ -3965,7 +3965,7 @@ FUNCTION(fun_entrances)
 
     if (!payfor(executor, mudconf.searchcost))
     {
-        notify(executor, tprintf("You don't have enough %s.",
+        notify(executor, tprintf("You don\xE2\x80\x99t have enough %s.",
             mudconf.many_coins));
         safe_nothing(buff, bufc);
         return;
@@ -4210,8 +4210,8 @@ static FUNCTION(fun_lpos)
 #define IF_REPLACE  1
 #define IF_INSERT   2
 
-static void do_itemfuns(UTF8 *buff, UTF8 **bufc, mux_string *sList, int iWord,
-                        mux_string *sWord, SEP *psep, int flag)
+static void do_itemfuns(__in UTF8 *buff, __deref_inout UTF8 **bufc, mux_string *sList, int iWord,
+                        mux_string *sWord, __in const SEP &sep, int flag)
 {
     // If passed a null string return an empty string, except that we
     // are allowed to append to a null string.
@@ -4249,7 +4249,7 @@ static void do_itemfuns(UTF8 *buff, UTF8 **bufc, mux_string *sList, int iWord,
         return;
     }
 
-    LBUF_OFFSET nWords = words->find_Words(psep->str);
+    LBUF_OFFSET nWords = words->find_Words(sep.str);
 
     if (  nWords <= iWord
        && (  flag != IF_INSERT
@@ -4268,7 +4268,7 @@ static void do_itemfuns(UTF8 *buff, UTF8 **bufc, mux_string *sList, int iWord,
     {
         if (!bFirst)
         {
-            print_sep(psep, buff, bufc);
+            print_sep(sep, buff, bufc);
         }
         else
         {
@@ -4281,7 +4281,7 @@ static void do_itemfuns(UTF8 *buff, UTF8 **bufc, mux_string *sList, int iWord,
     {
         if (!bFirst)
         {
-            print_sep(psep, buff, bufc);
+            print_sep(sep, buff, bufc);
         }
         else
         {
@@ -4296,7 +4296,7 @@ static void do_itemfuns(UTF8 *buff, UTF8 **bufc, mux_string *sList, int iWord,
 
         if (flag == IF_INSERT)
         {
-            print_sep(psep, buff, bufc);
+            print_sep(sep, buff, bufc);
             words->export_WordColor(i, buff, bufc);
         }
     }
@@ -4305,7 +4305,7 @@ static void do_itemfuns(UTF8 *buff, UTF8 **bufc, mux_string *sList, int iWord,
     {
         if (!bFirst)
         {
-            print_sep(psep, buff, bufc);
+            print_sep(sep, buff, bufc);
         }
         else
         {
@@ -4329,7 +4329,7 @@ static FUNCTION(fun_ldelete)
 
     // Delete a word at position X of a list.
     //
-    do_itemfuns(buff, bufc, sList, mux_atol(fargs[1]), NULL, &sep, IF_DELETE);
+    do_itemfuns(buff, bufc, sList, mux_atol(fargs[1]), NULL, sep, IF_DELETE);
 
     delete sList;
 }
@@ -4359,7 +4359,7 @@ static FUNCTION(fun_replace)
     if (  NULL != sList
        && NULL != sWord)
     {
-        do_itemfuns(buff, bufc, sList, mux_atol(fargs[1]), sWord, &sep, IF_REPLACE);
+        do_itemfuns(buff, bufc, sList, mux_atol(fargs[1]), sWord, sep, IF_REPLACE);
     }
 
     delete sList;
@@ -4407,7 +4407,7 @@ static FUNCTION(fun_insert)
 
     // Insert a word at position X of a list.
     //
-    do_itemfuns(buff, bufc, sList, mux_atol(fargs[1]), sWord, &sep, IF_INSERT);
+    do_itemfuns(buff, bufc, sList, mux_atol(fargs[1]), sWord, sep, IF_INSERT);
 
     delete sList;
     delete sWord;
@@ -4523,7 +4523,7 @@ static FUNCTION(fun_remove)
             }
             else
             {
-                print_sep(&osep, buff, bufc);
+                print_sep(osep, buff, bufc);
             }
             words->export_WordColor(i, buff, bufc);
         }
@@ -4551,10 +4551,10 @@ static FUNCTION(fun_member)
     UTF8 *r, *s;
 
     wcount = 1;
-    s = trim_space_sep(fargs[0], &sep);
+    s = trim_space_sep(fargs[0], sep);
     do
     {
-        r = split_token(&s, &sep);
+        r = split_token(&s, sep);
         if (!strcmp((char *)fargs[1], (char *)r))
         {
             safe_ltoa(wcount, buff, bufc);
@@ -4738,7 +4738,7 @@ static FUNCTION(fun_wordpos)
         size_t ncp_trimmed;
         UTF8 *tp = &(cp[charpos - 1]);
         cp = trim_space_sep_LEN(cp, ncp, &sep, &ncp_trimmed);
-        UTF8 *xp = split_token(&cp, &sep);
+        UTF8 *xp = split_token(&cp, sep);
 
         int i;
         for (i = 1; xp; i++)
@@ -4747,7 +4747,7 @@ static FUNCTION(fun_wordpos)
             {
                 break;
             }
-            xp = split_token(&cp, &sep);
+            xp = split_token(&cp, sep);
         }
         safe_ltoa(i, buff, bufc);
         return;
@@ -5698,7 +5698,7 @@ static FUNCTION(fun_lnum)
         safe_ltoa(bot, buff, bufc);
         for (i = bot+step; i <= top; i += step)
         {
-            print_sep(&sep, buff, bufc);
+            print_sep(sep, buff, bufc);
             UTF8 *p = *bufc;
             safe_ltoa(i, buff, bufc);
             if (p == *bufc)
@@ -5712,7 +5712,7 @@ static FUNCTION(fun_lnum)
         safe_ltoa(bot, buff, bufc);
         for (i = bot-step; i >= top; i -= step)
         {
-            print_sep(&sep, buff, bufc);
+            print_sep(sep, buff, bufc);
             UTF8 *p = *bufc;
             safe_ltoa(i, buff, bufc);
             if (p == *bufc)
@@ -6006,7 +6006,7 @@ static FUNCTION(fun_revwords)
     {
         if (!bFirst)
         {
-            print_sep(&osep, buff, bufc);
+            print_sep(osep, buff, bufc);
         }
         else
         {
@@ -6064,7 +6064,7 @@ static FUNCTION(fun_after)
     if (  1 == nPat.m_byte
        && ' ' == sPat->export_Char(0))
     {
-        bp = trim_space_sep(bp, &sepSpace);
+        bp = trim_space_sep(bp, sepSpace);
     }
 
     // Look for the target string.
@@ -6141,7 +6141,7 @@ static FUNCTION(fun_before)
     if (  1 == nPat
        && ' ' == sPat->export_Char(0))
     {
-        bp = trim_space_sep(bp, &sepSpace);
+        bp = trim_space_sep(bp, sepSpace);
     }
 
     // Look for the target string.
@@ -6365,13 +6365,13 @@ static FUNCTION(fun_splice)
 
     // Length checks.
     //
-    if (countwords(fargs[2], &sep) > 1)
+    if (countwords(fargs[2], sep) > 1)
     {
         safe_str(T("#-1 TOO MANY WORDS"), buff, bufc);
         return;
     }
-    int words = countwords(fargs[0], &sep);
-    if (words != countwords(fargs[1], &sep))
+    int words = countwords(fargs[0], sep);
+    if (words != countwords(fargs[1], sep))
     {
         safe_str(T("#-1 NUMBER OF WORDS MUST BE EQUAL"), buff, bufc);
         return;
@@ -6386,11 +6386,11 @@ static FUNCTION(fun_splice)
     int i;
     for (i = 0; i < words; i++)
     {
-        p2 = split_token(&p1, &sep);
-        q2 = split_token(&q1, &sep);
+        p2 = split_token(&p1, sep);
+        q2 = split_token(&q1, sep);
         if (!first)
         {
-            print_sep(&osep, buff, bufc);
+            print_sep(osep, buff, bufc);
         }
         if (strcmp((char *)p2, (char *)fargs[2]) == 0)
         {
@@ -6528,11 +6528,11 @@ static FUNCTION(fun_iter)
     {
         if (!first)
         {
-            print_sep(&osep, buff, bufc);
+            print_sep(osep, buff, bufc);
         }
         first = false;
         number++;
-        UTF8 *objstring = split_token(&cp, &sep);
+        UTF8 *objstring = split_token(&cp, sep);
         if (bLoopInBounds)
         {
             mudstate.itext[mudstate.in_loop-1] = objstring;
@@ -6642,7 +6642,7 @@ static FUNCTION(fun_list)
           && !MuxAlarm.bAlarmed)
     {
         number++;
-        objstring = split_token(&cp, &sep);
+        objstring = split_token(&cp, sep);
         if (bLoopInBounds)
         {
             mudstate.itext[mudstate.in_loop-1] = objstring;
@@ -6726,7 +6726,7 @@ static FUNCTION(fun_fold)
        && fargs[2])
     {
         clist[0] = fargs[2];
-        clist[1] = split_token(&cp, &sep);
+        clist[1] = split_token(&cp, sep);
         result = bp = alloc_lbuf("fun_fold");
         mux_exec(atext, LBUF_SIZE-1, result, &bp, thing, executor, enactor,
             AttrTrace(aflags, EV_STRIP_CURLY|EV_FCHECK|EV_EVAL),
@@ -6735,8 +6735,8 @@ static FUNCTION(fun_fold)
     }
     else
     {
-        clist[0] = split_token(&cp, &sep);
-        clist[1] = split_token(&cp, &sep);
+        clist[0] = split_token(&cp, sep);
+        clist[1] = split_token(&cp, sep);
         result = bp = alloc_lbuf("fun_fold");
         mux_exec(atext, LBUF_SIZE-1, result, &bp, thing, executor, enactor,
             AttrTrace(aflags, EV_STRIP_CURLY|EV_FCHECK|EV_EVAL),
@@ -6752,7 +6752,7 @@ static FUNCTION(fun_fold)
           && !MuxAlarm.bAlarmed)
     {
         clist[0] = rstore;
-        clist[1] = split_token(&cp, &sep);
+        clist[1] = split_token(&cp, sep);
         bp = result;
         mux_exec(atext, LBUF_SIZE-1, result, &bp, thing, executor, enactor,
             AttrTrace(aflags, EV_STRIP_CURLY|EV_FCHECK|EV_EVAL),
@@ -6795,13 +6795,13 @@ static FUNCTION(fun_itemize)
     }
 
     int pos = 1;
-    UTF8 *cp = trim_space_sep(fargs[0], &sep);
-    UTF8 *word = split_token(&cp, &sep);
+    UTF8 *cp = trim_space_sep(fargs[0], sep);
+    UTF8 *word = split_token(&cp, sep);
     while (cp && *cp)
     {
         pos++;
         safe_str(word, buff, bufc);
-        UTF8 *nextword = split_token(&cp, &sep);
+        UTF8 *nextword = split_token(&cp, sep);
 
         if (!cp || !*cp)
         {
@@ -6837,10 +6837,10 @@ static FUNCTION(fun_choose)
         return;
     }
 
-    UTF8 **elems = NULL;
+    PUTF8 *elems = NULL;
     try
     {
-        elems = new UTF8 *[LBUF_SIZE/2];
+        elems = new PUTF8[LBUF_SIZE/2];
     }
     catch (...)
     {
@@ -6852,10 +6852,10 @@ static FUNCTION(fun_choose)
         return;
     }
 
-    UTF8 **weights = NULL;
+    PUTF8 *weights = NULL;
     try
     {
-        weights = new UTF8 *[LBUF_SIZE/2];
+        weights = new PUTF8[LBUF_SIZE/2];
     }
     catch (...)
     {
@@ -6868,8 +6868,8 @@ static FUNCTION(fun_choose)
         return;
     }
 
-    int n_elems   = list2arr(elems, LBUF_SIZE/2, fargs[0], &isep);
-    int n_weights = list2arr(weights, LBUF_SIZE/2, fargs[1], &sepSpace);
+    int n_elems   = list2arr(elems, LBUF_SIZE/2, fargs[0], isep);
+    int n_weights = list2arr(weights, LBUF_SIZE/2, fargs[1], sepSpace);
 
     if (n_elems != n_weights)
     {
@@ -7011,7 +7011,7 @@ FUNCTION(fun_distribute)
         {
             if (!first)
             {
-                print_sep(&osep, buff, bufc);
+                print_sep(osep, buff, bufc);
             }
             first = false;
             safe_ltoa(bin_array[current_bin], buff, bufc);
@@ -7126,7 +7126,7 @@ FUNCTION(fun_sql)
  */
 
 static void filter_handler(__inout UTF8 *buff, __deref_inout UTF8 **bufc, dbref executor, dbref enactor,
-                    __in_ecount(nfargs) UTF8 *fargs[], int nfargs, __in SEP *psep, __in SEP *posep, bool bBool)
+                    __in_ecount(nfargs) UTF8 *fargs[], int nfargs, __in const SEP &sep, __in const SEP &osep, bool bBool)
 {
     UTF8 *atext;
     dbref thing;
@@ -7148,7 +7148,7 @@ static void filter_handler(__inout UTF8 *buff, __deref_inout UTF8 **bufc, dbref 
 
     // Now iteratively eval the attrib with the argument list.
     //
-    UTF8 *cp = trim_space_sep(fargs[1], psep);
+    UTF8 *cp = trim_space_sep(fargs[1], sep);
     if ('\0' != cp[0])
     {
         UTF8 *result = alloc_lbuf("fun_filter");
@@ -7157,7 +7157,7 @@ static void filter_handler(__inout UTF8 *buff, __deref_inout UTF8 **bufc, dbref 
               && mudstate.func_invk_ctr < mudconf.func_invk_lim
               && !MuxAlarm.bAlarmed)
         {
-            UTF8 *objstring = split_token(&cp, psep);
+            UTF8 *objstring = split_token(&cp, sep);
             UTF8 *bp = result;
             filter_args[0] = objstring;
             mux_exec(atext, LBUF_SIZE-1, result, &bp, thing, executor, enactor,
@@ -7173,7 +7173,7 @@ static void filter_handler(__inout UTF8 *buff, __deref_inout UTF8 **bufc, dbref 
             {
                 if (!bFirst)
                 {
-                    print_sep(posep, buff, bufc);
+                    print_sep(osep, buff, bufc);
                 }
                 safe_str(objstring, buff, bufc);
                 bFirst = false;
@@ -7196,7 +7196,7 @@ static FUNCTION(fun_filter)
     {
         return;
     }
-    filter_handler(buff, bufc, executor, enactor, fargs, nfargs, &sep, &osep, false);
+    filter_handler(buff, bufc, executor, enactor, fargs, nfargs, sep, osep, false);
 }
 
 static FUNCTION(fun_filterbool)
@@ -7211,7 +7211,7 @@ static FUNCTION(fun_filterbool)
     {
         return;
     }
-    filter_handler(buff, bufc, executor, enactor, fargs, nfargs, &sep, &osep, true);
+    filter_handler(buff, bufc, executor, enactor, fargs, nfargs, sep, osep, true);
 }
 
 /* ---------------------------------------------------------------------------
@@ -7258,7 +7258,7 @@ static FUNCTION(fun_map)
 
     // Now process the list one element at a time.
     //
-    UTF8 *cp = trim_space_sep(fargs[1], &sep);
+    UTF8 *cp = trim_space_sep(fargs[1], sep);
     if ('\0' != cp[0])
     {
         bool first = true;
@@ -7268,10 +7268,10 @@ static FUNCTION(fun_map)
         {
             if (!first)
             {
-                print_sep(&osep, buff, bufc);
+                print_sep(osep, buff, bufc);
             }
             first = false;
-            UTF8 *objstring = split_token(&cp, &sep);
+            UTF8 *objstring = split_token(&cp, sep);
             map_args[0] = objstring;
             mux_exec(atext, LBUF_SIZE-1, buff, bufc, thing, executor, enactor,
                 AttrTrace(aflags, EV_STRIP_CURLY|EV_FCHECK|EV_EVAL),
@@ -8056,7 +8056,7 @@ static FUNCTION(fun_sort)
     //
     UTF8 *list = alloc_lbuf("fun_sort");
     mux_strncpy(list, fargs[0], LBUF_SIZE-1);
-    int nitems = list2arr(ptrs, LBUF_SIZE / 2, list, &sep);
+    int nitems = list2arr(ptrs, LBUF_SIZE / 2, list, sep);
 
     int sort_type = ASCII_LIST;
     if (2 <= nfargs)
@@ -8106,7 +8106,7 @@ static FUNCTION(fun_sort)
         do_asort_finish(&sc);
     }
 
-    arr2list(ptrs, nitems, buff, bufc, &osep);
+    arr2list(ptrs, nitems, buff, bufc, osep);
     free_lbuf(list);
 }
 
@@ -8120,13 +8120,13 @@ static FUNCTION(fun_sort)
 
 static void handle_sets
 (
-    int    nfargs,
-    UTF8  *fargs[],
-    UTF8  *buff,
-    UTF8 **bufc,
-    int    oper,
-    SEP   *psep,
-    SEP   *posep
+    int                  nfargs,
+    __in UTF8           *fargs[],
+    __in UTF8           *buff,
+    __deref_inout UTF8 **bufc,
+    int                  oper,
+    __in const SEP      &sep,
+    __in const SEP      &osep
 )
 {
     UTF8 **ptrs1 = NULL;
@@ -8164,11 +8164,11 @@ static void handle_sets
 
     UTF8 *list1 = alloc_lbuf("fun_setunion.1");
     mux_strncpy(list1, fargs[0], LBUF_SIZE-1);
-    int n1 = list2arr(ptrs1, LBUF_SIZE/2, list1, psep);
+    int n1 = list2arr(ptrs1, LBUF_SIZE/2, list1, sep);
 
     UTF8 *list2 = alloc_lbuf("fun_setunion.2");
     mux_strncpy(list2, fargs[1], LBUF_SIZE-1);
-    int n2 = list2arr(ptrs2, LBUF_SIZE/2, list2, psep);
+    int n2 = list2arr(ptrs2, LBUF_SIZE/2, list2, sep);
 
     int sort_type = ASCII_LIST;
     if (5 <= nfargs)
@@ -8305,7 +8305,7 @@ static void handle_sets
             {
                 if (!bFirst)
                 {
-                    print_sep(posep, buff, bufc);
+                    print_sep(osep, buff, bufc);
                 }
 
                 bFirst = false;
@@ -8333,7 +8333,7 @@ static void handle_sets
             {
                 if (!bFirst)
                 {
-                    print_sep(posep, buff, bufc);
+                    print_sep(osep, buff, bufc);
                 }
                 bFirst = false;
                 oldp = &sc1.m_ptrs[i1];
@@ -8348,7 +8348,7 @@ static void handle_sets
             {
                 if (!bFirst)
                 {
-                    print_sep(posep, buff, bufc);
+                    print_sep(osep, buff, bufc);
                 }
                 bFirst = false;
                 oldp = &sc2.m_ptrs[i2];
@@ -8371,7 +8371,7 @@ static void handle_sets
                 //
                 if (!bFirst)
                 {
-                    print_sep(posep, buff, bufc);
+                    print_sep(osep, buff, bufc);
                 }
                 bFirst = false;
                 oldp = &sc1.m_ptrs[i1];
@@ -8430,7 +8430,7 @@ static void handle_sets
                 //
                 if (!bFirst)
                 {
-                    print_sep(posep, buff, bufc);
+                    print_sep(osep, buff, bufc);
                 }
                 bFirst = false;
                 safe_str(sc1.m_ptrs[i1].str, buff, bufc);
@@ -8462,7 +8462,7 @@ static void handle_sets
         {
             if (!bFirst)
             {
-                print_sep(posep, buff, bufc);
+                print_sep(osep, buff, bufc);
             }
             bFirst = false;
             safe_str(sc1.m_ptrs[i1].str, buff, bufc);
@@ -8498,7 +8498,7 @@ static FUNCTION(fun_setunion)
         return;
     }
 
-    handle_sets(nfargs, fargs, buff, bufc, SET_UNION, &sep, &osep);
+    handle_sets(nfargs, fargs, buff, bufc, SET_UNION, sep, osep);
 }
 
 static FUNCTION(fun_setdiff)
@@ -8515,7 +8515,7 @@ static FUNCTION(fun_setdiff)
         return;
     }
 
-    handle_sets(nfargs, fargs, buff, bufc, SET_DIFF, &sep, &osep);
+    handle_sets(nfargs, fargs, buff, bufc, SET_DIFF, sep, osep);
 }
 
 static FUNCTION(fun_setinter)
@@ -8532,7 +8532,7 @@ static FUNCTION(fun_setinter)
         return;
     }
 
-    handle_sets(nfargs, fargs, buff, bufc, SET_INTERSECT, &sep, &osep);
+    handle_sets(nfargs, fargs, buff, bufc, SET_INTERSECT, sep, osep);
 }
 
 /* ---------------------------------------------------------------------------
@@ -9013,7 +9013,7 @@ FUNCTION(fun_rsrec)
     {
         if (!bFirst)
         {
-            print_sep(&sepColumn, buff, bufc);
+            print_sep(sepColumn, buff, bufc);
         }
         else
         {
@@ -9061,7 +9061,7 @@ FUNCTION(fun_rsrecnext)
     {
         if (!bFirst)
         {
-            print_sep(&sepColumn, buff, bufc);
+            print_sep(sepColumn, buff, bufc);
         }
         else
         {
@@ -9116,7 +9116,7 @@ FUNCTION(fun_rsrecprev)
     {
         if (!bFirst)
         {
-            print_sep(&sepColumn, buff, bufc);
+            print_sep(sepColumn, buff, bufc);
         }
         else
         {
@@ -9341,7 +9341,7 @@ static FUNCTION(fun_error)
     }
     else
     {
-        safe_str(T("Huh?  (Type \"help\" for help.)"), buff, bufc);
+        safe_str(T("Huh?  (Type \xE2\x80\x9Chelp\xE2\x80\x9D for help.)"), buff, bufc);
     }
 }
 
@@ -10208,7 +10208,7 @@ static FUNCTION(fun_lcmds)
                     {
                         if (!isFirst)
                         {
-                            print_sep(&sep, buff, bufc);
+                            print_sep(sep, buff, bufc);
                         }
 
                         size_t nCased;
