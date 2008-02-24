@@ -7057,7 +7057,7 @@ FUNCTION(fun_sql)
     *dp = '\0';
 
     UTF8 *cp = curr;
-    cp = trim_space_sep(cp, &sepSpace);
+    cp = trim_space_sep(cp, sepSpace);
     if (!*cp)
     {
         free_lbuf(curr);
@@ -7095,14 +7095,14 @@ FUNCTION(fun_sql)
         {
             if (loop)
             {
-                print_sep(&sepColumn, buff, bufc);
+                print_sep(sepColumn, buff, bufc);
             }
             safe_str((UTF8 *)row[loop], buff, bufc);
         }
         row = mysql_fetch_row(result);
         if (row)
         {
-            print_sep(&sepRow, buff, bufc);
+            print_sep(sepRow, buff, bufc);
         }
     }
 
