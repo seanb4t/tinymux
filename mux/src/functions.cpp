@@ -3173,9 +3173,13 @@ static FUNCTION(fun_strmatch)
 static FUNCTION(fun_extract)
 {
     SEP sep;
+    if (!OPTIONAL_DELIM(4, sep, DELIM_DFLT|DELIM_STRING))
+    {
+        return;
+    }
+
     SEP osep = sep;
-    if (  !OPTIONAL_DELIM(4, sep, DELIM_DFLT|DELIM_STRING)
-       || !OPTIONAL_DELIM(5, osep, DELIM_NULL|DELIM_CRLF|DELIM_INIT|DELIM_STRING))
+    if (!OPTIONAL_DELIM(5, osep, DELIM_NULL|DELIM_CRLF|DELIM_INIT|DELIM_STRING))
     {
         return;
     }
@@ -7057,7 +7061,7 @@ FUNCTION(fun_sql)
     *dp = '\0';
 
     UTF8 *cp = curr;
-    cp = trim_space_sep(cp, &sepSpace);
+    cp = trim_space_sep(cp, sepSpace);
     if (!*cp)
     {
         free_lbuf(curr);
@@ -7095,14 +7099,14 @@ FUNCTION(fun_sql)
         {
             if (loop)
             {
-                print_sep(&sepColumn, buff, bufc);
+                print_sep(sepColumn, buff, bufc);
             }
             safe_str((UTF8 *)row[loop], buff, bufc);
         }
         row = mysql_fetch_row(result);
         if (row)
         {
-            print_sep(&sepRow, buff, bufc);
+            print_sep(sepRow, buff, bufc);
         }
     }
 
