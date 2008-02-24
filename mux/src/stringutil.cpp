@@ -2347,7 +2347,8 @@ UTF8 *munge_space(const UTF8 *string)
 }
 
 /* ---------------------------------------------------------------------------
- * trim_spaces: Remove leading and trailing spaces.
+ * trim_spaces: Remove leading and trailing spaces and space-compress internal
+ * spaces.
  */
 UTF8 *trim_spaces(const UTF8 *string)
 {
@@ -4475,7 +4476,8 @@ bool ItemToList_AddInteger(ITL *pContext, int i)
     }
     p += mux_ltoa(i, p);
     size_t nLen = p - smbuf;
-    if (nLen > pContext->nBufferAvailable)
+    if (  pContext->nBufferAvailable < nLen
+       || sizeof(smbuf) < nLen)
     {
         // Out of room.
         //
@@ -4506,7 +4508,8 @@ bool ItemToList_AddInteger64(ITL *pContext, INT64 i64)
     }
     p += mux_i64toa(i64, p);
     size_t nLen = p - smbuf;
-    if (nLen > pContext->nBufferAvailable)
+    if (  pContext->nBufferAvailable < nLen
+       || sizeof(smbuf) < nLen)
     {
         // Out of room.
         //
@@ -6694,13 +6697,13 @@ void mux_string::strip(const UTF8 *pStripSet, mux_cursor iStart, mux_cursor iEnd
     // Load set of characters to strip.
     //
     memset(strip_table, false, sizeof(strip_table));
-    while (*pStripSet)
+    while ('\0' != *pStripSet)
     {
-        if (mux_isprint_ascii(*pStripSet))
+        UTF8 ch = *pStripSet++;
+        if (mux_isprint_ascii(ch))
         {
-            strip_table[*pStripSet] = true;
+            strip_table[ch] = true;
         }
-        pStripSet++;
     }
     stripWithTable(strip_table, iStart, iEnd);
 }
@@ -7205,11 +7208,11 @@ void mux_words::set_Control(const UTF8 *pControlSet)
     memset(m_aControl, false, sizeof(m_aControl));
     while (*pControlSet)
     {
-        if (mux_isprint_ascii(*pControlSet))
+        UTF8 ch = *pControlSet++;
+        if (mux_isprint_ascii(ch))
         {
-            m_aControl[*pControlSet] = true;
+            m_aControl[ch] = true;
         }
-        pControlSet++;
     }
 }
 

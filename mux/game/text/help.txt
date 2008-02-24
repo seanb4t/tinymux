@@ -2487,6 +2487,11 @@ Related Topics: @name.
      UserLock:     All:            Not used by MUX, is intended to be used
                                    in MUX programming where a user-defined
                                    lock is needed.
+     VisibleLock:  All:            Controls object visibility when the object
+                                   is not dark and the looker passes the lock.
+                                   In DARK locations, the object must also be
+                                   set LIGHT and the viewer must pass the
+                                   VisibleLock.
 
  Note: If a player fails the UseLock on a parent of an object being searched
  for $-commands, then the search for attributes stops and the parent chain is
@@ -13016,6 +13021,7 @@ SUBSTITUTIONS (continued)
 
     %m       Text of the last command executed.
     %0-%9    Value of positional parameter/stack location 0 through 9.
+    %i0-%i9  Equivalent to itext(0) through itext(9).
     %q0-%q9  Value of temporary (setq) register 0 through 9.
     %qa-%qz  Value of temporary (setq) register A through Z.
 
