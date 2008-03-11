@@ -398,7 +398,7 @@ UTF8 *MakeCanonicalObjectName(const UTF8 *pName, size_t *pnName, bool *pbValid, 
         return NULL;
     }
 
-    if (IsRestricted(fldLen.m_byte, Buf, charset))
+    if (IsRestricted(nStripped, pStripped, charset))
     {
         return NULL;
     }
@@ -440,9 +440,6 @@ UTF8 *MakeCanonicalExitName(const UTF8 *pName, size_t *pnName, bool *pbValid)
     bool bHaveDisplay = false;
     for (ptr = mux_strtok_parse(&tts); ptr; ptr = mux_strtok_parse(&tts))
     {
-        bool valid = false;
-        size_t len = 0;
-
         UTF8 *pTrimmedSegment = NULL;
         if (bHaveDisplay)
         {
@@ -462,23 +459,22 @@ UTF8 *MakeCanonicalExitName(const UTF8 *pName, size_t *pnName, bool *pbValid)
         //
         if ('\0' != pTrimmedSegment[0])
         {
-            UTF8 *pValidSegment = MakeCanonicalObjectName(pTrimmedSegment, &len, &valid, mudconf.exit_name_charset);
-            if (!valid)
-            {
-                *pnName = 0;
-                *pbValid = true;
-                return Buf;
-            }
+            bool valid = false;
+            size_t len = 0;
 
-            if (bHaveDisplay)
+            UTF8 *pValidSegment = MakeCanonicalObjectName(pTrimmedSegment, &len, &valid, mudconf.exit_name_charset);
+            if (valid)
             {
-                clean_names.append(T(";"));
-                clean_names.append(mux_string(pValidSegment));
-            }
-            else
-            {
-                clean_names.prepend(pValidSegment);
-                bHaveDisplay = true;
+                if (bHaveDisplay)
+                {
+                    clean_names.append(T(";"));
+                    clean_names.append(mux_string(pValidSegment));
+                }
+                else
+                {
+                    clean_names.prepend(pValidSegment);
+                    bHaveDisplay = true;
+                }
             }
         }
     }
@@ -493,12 +489,6 @@ UTF8 *MakeCanonicalExitName(const UTF8 *pName, size_t *pnName, bool *pbValid)
 
     clean_names.export_TextColor(Buf);
     *pnName = mux_strlen(Buf);
-
-    if (IsRestricted(*pnName, Buf, mudconf.exit_name_charset))
-    {
-        *pnName = 0;
-        return Buf;
-    }
 
     return Buf;
 }
