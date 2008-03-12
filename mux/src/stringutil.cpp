@@ -6038,7 +6038,7 @@ UTF8 *mux_string::export_TextConverted
  * \param nLen     Number of chars to copy. Defaults to LBUF_SIZE.
  * \param nBuffer  Size of buffer we're outputting into.
  *                 Defaults to LBUF_SIZE-1.
- * \return         None.
+ * \return         length of resulting string in bytes.
  */
 
 LBUF_OFFSET mux_string::export_TextPlain
@@ -6453,6 +6453,11 @@ void mux_string::replace_Chars
         }
 
         m_iLast = iLast;
+    }
+    else if (  0 == m_ncs
+            && 0 != sTo.m_ncs)
+    {
+        realloc_m_pcs(m_iLast.m_point);
     }
 
     // Copy replacement text over substring.
