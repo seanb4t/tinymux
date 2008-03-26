@@ -772,6 +772,7 @@ extern int anum_alc_top;
 
 #define ALLOW_CHARSET_ASCII  1
 #define ALLOW_CHARSET_8859_1 2
+#define ALLOW_CHARSET_8859_2 4
 
 /* Hush codes for movement messages */
 
@@ -958,9 +959,9 @@ extern PortInfo aMainGamePorts[MAX_LISTEN_PORTS];
 #endif
 extern int      nMainGamePorts;
 
-#if defined(UNIX_NETWORKING)
+#if defined(UNIX_NETWORKING_SELECT)
 extern int maxd;
-#endif // UNIX_NETWORKING
+#endif // UNIX_NETWORKING_SELECT
 
 extern unsigned int ndescriptors;
 
