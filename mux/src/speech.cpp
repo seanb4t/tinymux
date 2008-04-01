@@ -991,7 +991,6 @@ static dbref FindPemitTarget(dbref player, int key, UTF8 *recipient)
         match_everything(0);
         target = match_result();
     }
-
     return target;
 }
 
@@ -1006,12 +1005,12 @@ void do_pemit_single
     UTF8 *message
 )
 {
-    dbref target, loc;
+    dbref loc;
     UTF8 *buf2, *bp;
     int depth;
     bool ok_to_do = false;
 
-    target = FindPemitTarget(player, key, recipient);
+    dbref target = FindPemitTarget(player, key, recipient);
 
     switch (key)
     {
@@ -1289,22 +1288,20 @@ void do_pemit_list
         return;
     }
 
-    UTF8 *p;
-    bool lookup_error = false;
-    dbref target = NOTHING;
-    UTF8 *error_message;
-    UTF8 *error_ptr;
+    UTF8 *error_message = NULL;
+    UTF8 *error_ptr = NULL;
 
     MUX_STRTOK_STATE tts;
     mux_strtok_src(&tts, list);
     mux_strtok_ctl(&tts, T(", "));
-    for (p = mux_strtok_parse(&tts); p; p = mux_strtok_parse(&tts))
+    for (UTF8 *p = mux_strtok_parse(&tts); p; p = mux_strtok_parse(&tts))
     {
-        target = FindPemitTarget(player, key, p);
+        dbref target = FindPemitTarget(player, key, p);
 
-        if(NOTHING == target || AMBIGUOUS == target)
+        if (  NOTHING == target
+           || AMBIGUOUS == target)
         {
-            if(false == lookup_error)
+            if (NULL == error_message)
             {
                 error_message = alloc_lbuf("do_pemit_list.error");
                 error_ptr = error_message;
@@ -1315,33 +1312,34 @@ void do_pemit_list
                 safe_str(T(", "), error_message, &error_ptr);
             }
 
-            lookup_error = true;
-
             safe_str(p, error_message, &error_ptr);
 
             switch(target)
             {
-                case NOTHING:
-                    safe_str(T(" (unknown)"), error_message, &error_ptr);
-                    break;
-                case AMBIGUOUS:
-                    safe_str(T(" (ambiguous)"), error_message, &error_ptr);
-                    break;
+            case NOTHING:
+                safe_str(T(" (unknown)"), error_message, &error_ptr);
+                break;
+
+            case AMBIGUOUS:
+                safe_str(T(" (ambiguous)"), error_message, &error_ptr);
+                break;
             }
 
         }
         else
         {
-            do_pemit_single(player, key, bDoContents, pemit_flags, p, 
+            do_pemit_single(player, key, bDoContents, pemit_flags, p,
                     chPoseType, message);
         }
     }
 
-    if(true == lookup_error)
+    if (NULL != error_message)
     {
         *error_ptr = '\0';
         notify(player, error_message);
         free_lbuf(error_message);
+        error_message = NULL;
+        error_ptr = NULL;
     }
 }
 
