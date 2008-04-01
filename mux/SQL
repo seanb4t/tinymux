@@ -2,9 +2,9 @@ TinyMUX 2.8:  SQL
 Last Update:  March 2008
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TinyMUX 2.8 supports both asynchronous and synchronous SQL. The synchronous/
-in-line support is similar to that of PennMUSH and TinyMUSH, namely the sql() 
-function. The asynchronous support is unique to TinyMUX at this time and is 
+TinyMUX 2.8 supports both asynchronous and synchronous SQL.  The synchronous/
+in-line support is similar to that of PennMUSH and TinyMUSH, namely the sql()
+function.  The asynchronous support is unique to TinyMUX at this time and is
 the recommended method for SQL access.
 
 
@@ -24,7 +24,7 @@ Asynchronous SQL:
 
 2) Once the game has been compiled you will need to add six configuration
    options to the .conf file.  You can check the wizhelp file for more
-   information regarding the option. The six are listed below:
+   information regarding the option.  The six are listed below:
 
       module sqlproxy
       module sqlslave local
@@ -34,20 +34,20 @@ Asynchronous SQL:
       sql_password <MySQL password>
 
 
-3) Start the game and check the log file.  You should see two entries like 
+3) Start the game and check the log file.  You should see two entries like
    the following:
 
       MUX NET/STUB : Stub slave started on fd 3
       MUX INI/LOAD : Registered netmux modules.
       MUX INI/LOAD : Opened interface for StubSlave management.
 
-   To perform MySQL queries you will use the @query command in conjunction 
-   with the rsrelease(), rserror(), rsprev(), rsrecnext(), rsrows(), 
+   To perform MySQL queries you will use the @query command in conjunction
+   with the rsrelease(), rserror(), rsprev(), rsrecnext(), rsrows(),
    rsrec(), rsnext() and rsrecprev() functions.
 
 
 4) This method will allow SQL queries to occur without blocking the main game
-   process. If the SQL is on another machine, slow or even has been disabled 
+   process.  If the SQL is on another machine, slow or even has been disabled
    or crashed then the game will not hang while waiting on the result to be
    returned.
 
@@ -75,7 +75,7 @@ In-Line/Synchronous SQL:
       sql_password <MySQL password>
 
 
-3) Start the game and check the log file.  You should see two entries like 
+3) Start the game and check the log file.  You should see two entries like
    the following:
 
       SQL/CONN : Connecting: <database>@<address> as <user>
@@ -95,6 +95,5 @@ In-Line/Synchronous SQL:
    mean the whole game hangs while waiting.
 
    When using the in-line SQL functionality bear this potential problem in mind.
-   You should test your game with the SQL functionality first before using it in 
+   You should test your game with the SQL functionality first before using it in
    a live environment.
-

@@ -11729,7 +11729,7 @@ RSRECNEXT()
   FUNCTION: RSRECNEXT([<output delim>])
 
   Within a @query completion @trigger, this returns the current row of the
-  results set and positions the cursor to the next row. The optional output 
+  results set and positions the cursor to the next row. The optional output
   delimiter will be used to separate the columns in the returned row.
 
   Related Topics: @query, rserror(), rsnext(), rsprev(), rsrelease(), rsrec(),
@@ -11741,7 +11741,7 @@ RSRECPREV()
   FUNCTION: RSRECPREV([<output delim>])
 
   Within a @query completion @trigger, this returns the current row of the
-  results set and positions the cursor to the previous row. The optional output 
+  results set and positions the cursor to the previous row. The optional output
   delimiter will be used to separate the columns in the returned row.
 
   Related Topics: @query, rserror(), rsnext(), rsprev(), rsrelease(), rsrec(),
