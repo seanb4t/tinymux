@@ -124,11 +124,11 @@ long mux_atol(const char *pString)
 
 // Korean Hangul Constants.
 //
-const int SBase = 0xAC00;
-const int LBase = 0x1100;
-const int VBase = 0x1161;
-const int TBase = 0x11A7;
-const int SCount = 11172;
+const UTF32 SBase = 0xAC00;
+const UTF32 LBase = 0x1100;
+const UTF32 VBase = 0x1161;
+const UTF32 TBase = 0x11A7;
+const UTF32 SCount = 11172;
 const int LCount = 19;
 const int VCount = 21;
 const int TCount = 28;
@@ -140,8 +140,8 @@ const size_t codepoints = 1114109;
 #define SUBCATEGORY_UPPER             0x0000001   // Lu
 #define SUBCATEGORY_LOWER             0x0000002   // Ll
 #define SUBCATEGORY_TITLE             0x0000004   // Lt
-#define SUBCATEGORY_MODIFIER          0x0000004   // Lm
-#define SUBCATEGORY_LET_OTHER         0x0000008   // Lo
+#define SUBCATEGORY_LET_MODIFIER      0x0000008   // Lm
+#define SUBCATEGORY_LET_OTHER         0x0000010   // Lo
 
 #define CATEGORY_MARK                 0x0002000
 #define SUBCATEGORY_NONSPACING        0x0000001   // Mn
@@ -165,7 +165,7 @@ const size_t codepoints = 1114109;
 #define CATEGORY_SYMBOL               0x0010000
 #define SUBCATEGORY_MATH              0x0000001   // Sm
 #define SUBCATEGORY_CURRENCY          0x0000002   // Sc
-#define SUBCATEGORY_MODIFIER          0x0000004   // Sk
+#define SUBCATEGORY_SYM_MODIFIER      0x0000004   // Sk
 #define SUBCATEGORY_SYM_OTHER         0x0000008   // So
 
 #define CATEGORY_SEPARATOR            0x0020000 
@@ -189,7 +189,7 @@ static struct
     { CATEGORY_LETTER|SUBCATEGORY_UPPER,              "Lu" },
     { CATEGORY_LETTER|SUBCATEGORY_LOWER,              "Ll" },
     { CATEGORY_LETTER|SUBCATEGORY_TITLE,              "Lt" },
-    { CATEGORY_LETTER|SUBCATEGORY_MODIFIER,           "Lm" },
+    { CATEGORY_LETTER|SUBCATEGORY_LET_MODIFIER,       "Lm" },
     { CATEGORY_LETTER|SUBCATEGORY_LET_OTHER,          "Lo" },
     { CATEGORY_MARK|SUBCATEGORY_NONSPACING,           "Mn" },
     { CATEGORY_MARK|SUBCATEGORY_SPACING_COMBINING,    "Mc" },
@@ -206,7 +206,7 @@ static struct
     { CATEGORY_PUNCTUATION|SUBCATEGORY_PUNC_OTHER,    "Po" },
     { CATEGORY_SYMBOL|SUBCATEGORY_MATH,               "Sm" },
     { CATEGORY_SYMBOL|SUBCATEGORY_CURRENCY,           "Sc" },
-    { CATEGORY_SYMBOL|SUBCATEGORY_MODIFIER,           "Sk" },
+    { CATEGORY_SYMBOL|SUBCATEGORY_SYM_MODIFIER,       "Sk" },
     { CATEGORY_SYMBOL|SUBCATEGORY_SYM_OTHER,          "So" },
     { CATEGORY_SEPARATOR|SUBCATEGORY_SPACE,           "Zs" },
     { CATEGORY_SEPARATOR|SUBCATEGORY_LINE,            "Zl" },
@@ -350,6 +350,20 @@ public:
     void SetBidiMirrored(bool b) { m_bBidiMirrored = b; };
     bool GetBidiMirrored(void) { return m_bBidiMirrored; };
 
+    void SetUnicode1Name(char *p);
+    char *GetUnicode1Name(void) { return m_pUnicode1Name; };
+
+    void SetISOComment(char *p);
+    char *GetISOComment(void) { return m_pISOComment; };
+
+    void SetSimpleUppercaseMapping(UTF32 ptUpper) { m_SimpleUppercaseMapping = ptUpper; };
+    void SetSimpleLowercaseMapping(UTF32 ptLower) { m_SimpleLowercaseMapping = ptLower; };
+    void SetSimpleTitlecaseMapping(UTF32 ptTitle) { m_SimpleTitlecaseMapping = ptTitle; };
+
+    UTF32 GetSimpleUppercaseMapping(void) { return m_SimpleUppercaseMapping; };
+    UTF32 GetSimpleLowercaseMapping(void) { return m_SimpleLowercaseMapping; };
+    UTF32 GetSimpleTitlecaseMapping(void) { return m_SimpleTitlecaseMapping; };
+
 private:
     bool  m_bDefined;
     char *m_pDescription;
@@ -358,14 +372,21 @@ private:
     int   m_bidi;
     int   m_DecompType;
     int   m_nDecompMapping;
-    UTF32 m_aDecompMapping[10];
+    UTF32 m_aDecompMapping[30];
+
     int   m_nDecimalDigitValue;
     bool  m_bHaveDecimalDigitValue;
     int   m_nDigitValue;
     bool  m_bHaveDigitValue;
     char *m_pNumericValue;
     bool  m_bHaveNumericValue;
+
     bool  m_bBidiMirrored;
+    char *m_pUnicode1Name;
+    char *m_pISOComment;
+    UTF32 m_SimpleUppercaseMapping;
+    UTF32 m_SimpleLowercaseMapping;
+    UTF32 m_SimpleTitlecaseMapping;
 };
 
 void CodePoint::SetDecimalDigitValue(int n)
@@ -440,6 +461,11 @@ CodePoint::CodePoint()
     m_pNumericValue = NULL;
     m_bHaveNumericValue = false;
     m_bBidiMirrored = false;
+    m_pUnicode1Name = NULL;
+    m_pISOComment = NULL;
+    m_SimpleUppercaseMapping = UNI_EOF;
+    m_SimpleLowercaseMapping = UNI_EOF;
+    m_SimpleTitlecaseMapping = UNI_EOF;
 }
 
 CodePoint::~CodePoint()
@@ -465,6 +491,30 @@ void CodePoint::SetDescription(char *pDescription)
     m_bDefined = true;
 }
 
+void CodePoint::SetUnicode1Name(char *p)
+{
+    if (NULL != m_pUnicode1Name)
+    {
+        delete [] m_pUnicode1Name;
+        m_pUnicode1Name = NULL;
+    }
+    size_t n = strlen(p);
+    m_pUnicode1Name = new char[n+1];
+    memcpy(m_pUnicode1Name, p, n+1);
+}
+
+void CodePoint::SetISOComment(char *p)
+{
+    if (NULL != m_pISOComment)
+    {
+        delete [] m_pISOComment;
+        m_pISOComment = NULL;
+    }
+    size_t n = strlen(p);
+    m_pISOComment = new char[n+1];
+    memcpy(m_pISOComment, p, n+1);
+}
+
 class UniData
 {
 public:
@@ -478,7 +528,7 @@ public:
     void SaveMasterFile(void);
 
 private:
-    CodePoint cp[codepoints];
+    CodePoint cp[codepoints+1];
 };
 
 UniData *g_UniData = NULL;
@@ -743,9 +793,9 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
                 else
                 {
                     int   nPoints;
-                    char *aPoints[10];
-                    UTF32 pts[10];
-                    ParsePoints(pDecomposition_Mapping, 10, nPoints, aPoints);
+                    char *aPoints[30];
+                    UTF32 pts[30];
+                    ParsePoints(pDecomposition_Mapping, 30, nPoints, aPoints);
                     for (int i = 0; i < nPoints; i++)
                     {
                         pts[i] = DecodeCodePoint(aPoints[i]);
@@ -817,6 +867,49 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
                 exit(0);
             }
         }
+
+        // Unicode_1_Name.
+        //
+        if (  11 <= nFields
+           && '\0' != aFields[10][0])
+        {
+            cp[codepoint].SetUnicode1Name(aFields[10]);
+        }
+
+        // ISO Comment.
+        //
+        if (  12 <= nFields
+           && '\0' != aFields[11][0])
+        {
+            cp[codepoint].SetISOComment(aFields[11]);
+        }
+
+        // Simple Uppercase Mapping.
+        //
+        if (  13 <= nFields
+           && '\0' != aFields[12][0])
+        {
+            UTF32 pt = DecodeCodePoint(aFields[12]);
+            cp[codepoint].SetSimpleUppercaseMapping(pt);
+        }
+
+        // Simple Lowercase Mapping.
+        //
+        if (  14 <= nFields
+           && '\0' != aFields[13][0])
+        {
+            UTF32 pt = DecodeCodePoint(aFields[13]);
+            cp[codepoint].SetSimpleLowercaseMapping(pt);
+        }
+
+        // Simple Titlecase Mapping.
+        //
+        if (  15 <= nFields
+           && '\0' != aFields[14][0])
+        {
+            UTF32 pt = DecodeCodePoint(aFields[14]);
+            cp[codepoint].SetSimpleTitlecaseMapping(pt);
+        }
     }
 }
 
@@ -839,7 +932,7 @@ void UniData::SaveMasterFile(void)
                 strcat(DecompBuffer, ">");
             }
 
-            UTF32 pts[10];
+            UTF32 pts[30];
             int nPoints = cp[pt].GetDecompositionMapping(pts);
 
             if (nPoints != 1 || pts[0] != pt)
@@ -901,6 +994,56 @@ void UniData::SaveMasterFile(void)
                 printf(";N");
             }
 
+            char *pUnicode1Name = cp[pt].GetUnicode1Name();
+            if (pUnicode1Name)
+            {
+                printf(";%s", pUnicode1Name);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            char *pISOComment = cp[pt].GetISOComment();
+            if (pISOComment)
+            {
+                printf(";%s", pISOComment);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
+            if (UNI_EOF != ptUpper)
+            {
+                printf(";%04X", ptUpper);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
+            if (UNI_EOF != ptLower)
+            {
+                printf(";%04X", ptLower);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
+            if (UNI_EOF != ptTitle)
+            {
+                printf(";%04X", ptTitle);
+            }
+            else
+            {
+                printf(";");
+            }
+
             printf("\n");
         }
     }
@@ -956,7 +1099,6 @@ void UniData::LoadUnicodeHanFile(void)
         char buffer[1024];
         while (NULL != ReadLine(fp, buffer, sizeof(buffer)))
         {
-            bool  bValid = false;
             int   nFields;
             char *aFields[2];
 
@@ -973,7 +1115,7 @@ void UniData::LoadUnicodeHanFile(void)
                 }
                 else
                 {
-                    pt1 = DecodeCodePoint(aFields[0]);
+                    pt2 = DecodeCodePoint(aFields[0]);
                     pt1 = pt2;
                 }
 
