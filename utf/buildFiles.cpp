@@ -526,6 +526,9 @@ public:
     void LoadUnicodeHanFile(void);
 
     void SaveMasterFile(void);
+    void SaveTranslateToUpper(void);
+    void SaveTranslateToLower(void);
+    void SaveTranslateToTitle(void);
 
 private:
     CodePoint cp[codepoints+1];
@@ -546,6 +549,9 @@ int main(int argc, char *argv[])
     g_UniData->LoadUnicodeHanFile();
 
     g_UniData->SaveMasterFile();
+    g_UniData->SaveTranslateToUpper();
+    g_UniData->SaveTranslateToLower();
+    g_UniData->SaveTranslateToTitle();
     return 0;
 }
 
@@ -913,13 +919,85 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
     }
 }
 
-void UniData::SaveMasterFile(void)
+void UniData::SaveTranslateToUpper()
 {
+    FILE *fp = fopen("tr_toupper.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
         if (cp[pt].IsDefined())
         {
-            printf("%04X;%s;%s;%d;%s", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
+            UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
+            if (UNI_EOF != ptUpper)
+            {
+                char *p = cp[pt].GetUnicode1Name();
+                fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptUpper, cp[pt].GetDescription(), (NULL == p) ? "" : p);
+            }
+        }
+    }
+}
+
+void UniData::SaveTranslateToLower()
+{
+    FILE *fp = fopen("tr_tolower.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
+            if (UNI_EOF != ptLower)
+            {
+                char *p = cp[pt].GetUnicode1Name();
+                fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptLower, cp[pt].GetDescription(), (NULL == p) ? "" : p);
+            }
+        }
+    }
+}
+
+void UniData::SaveTranslateToTitle()
+{
+    FILE *fp = fopen("tr_totitle.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
+            if (UNI_EOF != ptTitle)
+            {
+                char *p = cp[pt].GetUnicode1Name();
+                fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptTitle, cp[pt].GetDescription(), (NULL == p) ? "" : p);
+            }
+        }
+    }
+}
+
+void UniData::SaveMasterFile(void)
+{
+    FILE *fp = fopen("UnicodeMaster.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            fprintf(fp, "%04X;%s;%s;%d;%s", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
                 cp[pt].GetCombiningClass(), cp[pt].GetBiDiName());
 
             char DecompBuffer[1024];
@@ -954,99 +1032,100 @@ void UniData::SaveMasterFile(void)
                     strcat(DecompBuffer, buf);
                 }
             }
-            printf(";%s", DecompBuffer);
+            fprintf(fp, ";%s", DecompBuffer);
 
             int n;
             if (cp[pt].GetDecimalDigitValue(&n))
             {
-                printf(";%d", n);
+                fprintf(fp, ";%d", n);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             if (cp[pt].GetDigitValue(&n))
             {
-                printf(";%d", n);
+                fprintf(fp, ";%d", n);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             char *pNumericValue = NULL;
             if (cp[pt].GetNumericValue(&pNumericValue))
             {
-                printf(";%s", pNumericValue);
+                fprintf(fp, ";%s", pNumericValue);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             if (cp[pt].GetBidiMirrored())
             {
-                printf(";Y");
+                fprintf(fp, ";Y");
             }
             else
             {
-                printf(";N");
+                fprintf(fp, ";N");
             }
 
             char *pUnicode1Name = cp[pt].GetUnicode1Name();
             if (pUnicode1Name)
             {
-                printf(";%s", pUnicode1Name);
+                fprintf(fp, ";%s", pUnicode1Name);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             char *pISOComment = cp[pt].GetISOComment();
             if (pISOComment)
             {
-                printf(";%s", pISOComment);
+                fprintf(fp, ";%s", pISOComment);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
             if (UNI_EOF != ptUpper)
             {
-                printf(";%04X", ptUpper);
+                fprintf(fp, ";%04X", ptUpper);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
             if (UNI_EOF != ptLower)
             {
-                printf(";%04X", ptLower);
+                fprintf(fp, ";%04X", ptLower);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
             if (UNI_EOF != ptTitle)
             {
-                printf(";%04X", ptTitle);
+                fprintf(fp, ";%04X", ptTitle);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
-            printf("\n");
+            fprintf(fp, "\n");
         }
     }
+    fclose(fp);
 }
 
 char *CodePoint::GetCategoryName(void)
@@ -1121,6 +1200,11 @@ void UniData::LoadUnicodeHanFile(void)
 
                 for (UTF32 pt = pt1; pt <= pt2; pt++)
                 {
+                    if (cp[pt].IsDefined())
+                    {
+                        continue;
+                    }
+
                     char hex[32];
                     char desc[1024];
 
