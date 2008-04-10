@@ -283,6 +283,7 @@ static struct
 #define DECOMP_TYPE_SQUARE            14
 #define DECOMP_TYPE_FRACTION          15
 #define DECOMP_TYPE_COMPAT            16
+#define DECOMP_TYPE_ALL               17
 
 static struct
 {
@@ -367,6 +368,9 @@ public:
     void SetProhibited(void) { m_bProhibited = true; };
     bool IsProhibited(void) { return m_bProhibited; };
 
+    void SetASCII(UTF32 ptASCII) { m_ptASCII = ptASCII; };
+    bool IsASCII(UTF32 &ptASCII) { ptASCII = m_ptASCII; return (m_ptASCII != UNI_EOF); };
+
 private:
     bool  m_bDefined;
     char *m_pDescription;
@@ -392,6 +396,7 @@ private:
     UTF32 m_SimpleTitlecaseMapping;
 
     bool  m_bProhibited;
+    UTF32 m_ptASCII;
 };
 
 void CodePoint::SetDecimalDigitValue(int n)
@@ -472,6 +477,7 @@ CodePoint::CodePoint()
     m_SimpleLowercaseMapping = UNI_EOF;
     m_SimpleTitlecaseMapping = UNI_EOF;
     m_bProhibited = false;
+    m_ptASCII = UNI_EOF;
 }
 
 CodePoint::~CodePoint()
@@ -530,14 +536,15 @@ public:
     void LoadUnicodeDataFile(void);
     void LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[]);
     void LoadUnicodeHanFile(void);
-    void LoadProhibited(void);
+    void LoadMappingASCII(void);
 
-    void CheckProhibited(void);
+    void Prohibit(void);
 
     void SaveMasterFile(void);
     void SaveTranslateToUpper(void);
     void SaveTranslateToLower(void);
     void SaveTranslateToTitle(void);
+    void SaveTranslateToASCII();
     void SaveClassifyPrivateUse(void);
     void SaveDecompositions(void);
     void SaveClassifyPrintable(void);
@@ -558,6 +565,7 @@ void UniData::GetDecomposition(UTF32 pt, int dt, int &nPoints, UTF32 pts[])
     }
 
     if (  DECOMP_TYPE_NONE != cp[pt].GetDecompositionType()
+       && DECOMP_TYPE_ALL != dt
        && dt != cp[pt].GetDecompositionType())
     {
         pts[nPoints++] = pt;
@@ -589,14 +597,15 @@ int main(int argc, char *argv[])
     g_UniData = new UniData;
     g_UniData->LoadUnicodeDataFile();
     g_UniData->LoadUnicodeHanFile();
-    g_UniData->LoadProhibited();
+    g_UniData->LoadMappingASCII();
 
-    g_UniData->CheckProhibited();
+    g_UniData->Prohibit();
 
     g_UniData->SaveMasterFile();
     g_UniData->SaveTranslateToUpper();
     g_UniData->SaveTranslateToLower();
     g_UniData->SaveTranslateToTitle();
+    g_UniData->SaveTranslateToASCII();
     g_UniData->SaveClassifyPrivateUse();
     g_UniData->SaveDecompositions();
     g_UniData->SaveClassifyPrintable();
@@ -968,6 +977,31 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
     }
 }
 
+void UniData::LoadMappingASCII(void)
+{
+    FILE *fp = fopen("cl_ascii.txt", "r");
+    if (NULL != fp)
+    {
+        char buffer[1024];
+        while (NULL != ReadLine(fp, buffer, sizeof(buffer)))
+        {
+            int   nFields;
+            char *aFields[1];
+
+            ParseFields(buffer, 1, nFields, aFields);
+            if (1 == nFields)
+            {
+                UTF32 pt = DecodeCodePoint(aFields[0]);
+                if (cp[pt].IsDefined())
+                {
+                    cp[pt].SetASCII(pt);
+                }
+            }
+        }
+        fclose(fp);
+    }
+}
+
 void UniData::SaveDecompositions()
 {
     FILE *fp = fopen("Decompositions.txt", "w+");
@@ -1002,6 +1036,46 @@ void UniData::SaveDecompositions()
     fclose(fp);
 }
 
+void UniData::SaveTranslateToASCII()
+{
+    FILE *fp = fopen("tr_utf8_ascii2.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            int   nPoints = 0;
+            UTF32 pts[100];
+            GetDecomposition(pt, DECOMP_TYPE_ALL, nPoints, pts);
+
+            UTF32 ptASCII;
+            UTF32 pt2;
+            int cnt = 0;
+            for (pt2 = 0; pt2 < nPoints; pt2++)
+            {
+                if (cp[pts[pt2]].IsASCII(ptASCII))
+                {
+                    cnt++;
+                }
+            }
+
+            if (  1 == cnt
+               && cp[pts[0]].IsASCII(ptASCII))
+            {
+                char *pUnicode1Name = cp[pt].GetUnicode1Name();
+                fprintf(fp, "%04X;%d;%s;%s\n", pt, ptASCII,
+                    cp[pt].GetDescription(),
+                    (NULL == pUnicode1Name) ? "" : pUnicode1Name);
+            }
+        }
+    }
+    fclose(fp);
+}
+
 void UniData::SaveTranslateToUpper()
 {
     FILE *fp = fopen("tr_toupper.txt", "w+");
@@ -1012,10 +1086,13 @@ void UniData::SaveTranslateToUpper()
 
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
-        if (cp[pt].IsDefined())
+        if (  cp[pt].IsDefined()
+           && !cp[pt].IsProhibited())
         {
             UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
-            if (UNI_EOF != ptUpper)
+            if (  UNI_EOF != ptUpper
+               && cp[ptUpper].IsDefined()
+               && !cp[ptUpper].IsProhibited())
             {
                 char *p = cp[pt].GetUnicode1Name();
                 fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptUpper, cp[pt].GetDescription(), (NULL == p) ? "" : p);
@@ -1035,10 +1112,13 @@ void UniData::SaveTranslateToLower()
 
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
-        if (cp[pt].IsDefined())
+        if (  cp[pt].IsDefined()
+           && !cp[pt].IsProhibited())
         {
             UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
-            if (UNI_EOF != ptLower)
+            if (  UNI_EOF != ptLower
+               && cp[ptLower].IsDefined()
+               && !cp[ptLower].IsProhibited())
             {
                 char *p = cp[pt].GetUnicode1Name();
                 fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptLower, cp[pt].GetDescription(), (NULL == p) ? "" : p);
@@ -1058,10 +1138,13 @@ void UniData::SaveTranslateToTitle()
 
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
-        if (cp[pt].IsDefined())
+        if (  cp[pt].IsDefined()
+           && !cp[pt].IsProhibited())
         {
             UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
-            if (UNI_EOF != ptTitle)
+            if (  UNI_EOF != ptTitle
+               && cp[ptTitle].IsDefined()
+               && !cp[ptTitle].IsProhibited())
             {
                 char *p = cp[pt].GetUnicode1Name();
                 fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptTitle, cp[pt].GetDescription(), (NULL == p) ? "" : p);
@@ -1214,14 +1297,8 @@ void UniData::SaveMasterFile(void)
     fclose(fp);
 }
 
-void UniData::CheckProhibited(void)
+void UniData::Prohibit(void)
 {
-    FILE *fp = fopen("ProhibitedCheck.txt", "w+");
-    if (NULL == fp)
-    {
-        return;
-    }
-
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
         if (cp[pt].IsDefined())
@@ -1233,23 +1310,25 @@ void UniData::CheckProhibited(void)
                 bShouldProhibit = true;
             }
 
-            if (bShouldProhibit != cp[pt].IsProhibited())
+            if (cp[pt].GetCategory() == (CATEGORY_OTHER|SUBCATEGORY_PRIVATE_USE))
             {
-                fprintf(fp, "%04X;%s;%s;%d", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
-                    cp[pt].GetCombiningClass());
+                if (  (  0xE000 <= pt 
+                      && pt <= 0xE0FF)
+                   || ( 0xF8D0 <= pt
+                      && pt <= 0xF8FF))
+                {
+                    // Tengwar and Klingon
+                    //
+                    bShouldProhibit = false;
+                }
+            }
 
-                if (bShouldProhibit)
-                {
-                    fprintf(fp, " # Should prohibit?\n");
-                }
-                else
-                {
-                    fprintf(fp, " # Should not prohibit?\n");
-                }
+            if (bShouldProhibit)
+            {
+                cp[pt].SetProhibited();
             }
         }
     }
-    fclose(fp);
 }
 
 void UniData::SaveClassifyPrintable(void)
@@ -1517,47 +1596,6 @@ void UniData::LoadUnicodeHanFile(void)
                     aFields1[14] = "";
 
                     LoadUnicodeDataLine(pt, nFields1, aFields1);
-                }
-            }
-        }
-        fclose(fp);
-    }
-}
-
-void UniData::LoadProhibited(void)
-{
-    FILE *fp = fopen("StringprepProhibited.txt", "r");
-    if (NULL != fp)
-    {
-        char buffer[1024];
-        while (NULL != ReadLine(fp, buffer, sizeof(buffer)))
-        {
-            int   nFields;
-            char *aFields[2];
-
-            ParseFields(buffer, 2, nFields, aFields);
-            if (1 <= nFields)
-            {
-                UTF32 pt1, pt2;
-                char *p = strchr(aFields[0], '-');
-                if (NULL != p)
-                {
-                    *p++ = '\0';
-                    pt1 = DecodeCodePoint(aFields[0]);
-                    pt2 = DecodeCodePoint(p);
-                }
-                else
-                {
-                    pt2 = DecodeCodePoint(aFields[0]);
-                    pt1 = pt2;
-                }
-
-                for (UTF32 pt = pt1; pt <= pt2; pt++)
-                {
-                    if (cp[pt].IsDefined())
-                    {
-                        cp[pt].SetProhibited();
-                    }
                 }
             }
         }
