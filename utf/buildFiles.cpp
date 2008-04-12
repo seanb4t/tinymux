@@ -136,7 +136,7 @@ const int NCount = VCount * TCount;
 
 const size_t codepoints = 1114109;
 
-#define CATEGORY_LETTER               0x0001000 
+#define CATEGORY_LETTER               0x0001000
 #define SUBCATEGORY_UPPER             0x0000001   // Lu
 #define SUBCATEGORY_LOWER             0x0000002   // Ll
 #define SUBCATEGORY_TITLE             0x0000004   // Lt
@@ -168,12 +168,12 @@ const size_t codepoints = 1114109;
 #define SUBCATEGORY_SYM_MODIFIER      0x0000004   // Sk
 #define SUBCATEGORY_SYM_OTHER         0x0000008   // So
 
-#define CATEGORY_SEPARATOR            0x0020000 
+#define CATEGORY_SEPARATOR            0x0020000
 #define SUBCATEGORY_SPACE             0x0000001   // Zs
 #define SUBCATEGORY_LINE              0x0000002   // Zl
 #define SUBCATEGORY_PARAGRAPH         0x0000004   // Zp
 
-#define CATEGORY_OTHER                0x0040000 
+#define CATEGORY_OTHER                0x0040000
 #define SUBCATEGORY_CONTROL           0x0000001   // Cc
 #define SUBCATEGORY_FORMAT            0x0000002   // Cf
 #define SUBCATEGORY_SURROGATE         0x0000004   // Cs
@@ -184,7 +184,7 @@ static struct
 {
     int   cat;
     char *catlet;
-} CategoryTable[] = 
+} CategoryTable[] =
 {
     { CATEGORY_LETTER|SUBCATEGORY_UPPER,              "Lu" },
     { CATEGORY_LETTER|SUBCATEGORY_LOWER,              "Ll" },
@@ -364,6 +364,9 @@ public:
     UTF32 GetSimpleLowercaseMapping(void) { return m_SimpleLowercaseMapping; };
     UTF32 GetSimpleTitlecaseMapping(void) { return m_SimpleTitlecaseMapping; };
 
+    void SetProhibited(void) { m_bProhibited = true; };
+    bool IsProhibited(void) { return m_bProhibited; };
+
 private:
     bool  m_bDefined;
     char *m_pDescription;
@@ -387,6 +390,8 @@ private:
     UTF32 m_SimpleUppercaseMapping;
     UTF32 m_SimpleLowercaseMapping;
     UTF32 m_SimpleTitlecaseMapping;
+
+    bool  m_bProhibited;
 };
 
 void CodePoint::SetDecimalDigitValue(int n)
@@ -466,6 +471,7 @@ CodePoint::CodePoint()
     m_SimpleUppercaseMapping = UNI_EOF;
     m_SimpleLowercaseMapping = UNI_EOF;
     m_SimpleTitlecaseMapping = UNI_EOF;
+    m_bProhibited = false;
 }
 
 CodePoint::~CodePoint()
@@ -525,12 +531,15 @@ public:
     void LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[]);
     void LoadUnicodeHanFile(void);
 
+    void Prohibit(void);
+
     void SaveMasterFile(void);
     void SaveTranslateToUpper(void);
     void SaveTranslateToLower(void);
     void SaveTranslateToTitle(void);
     void SaveClassifyPrivateUse(void);
     void SaveDecompositions(void);
+    void SaveClassifyPrintable(void);
 
     void GetDecomposition(UTF32 pt, int dt, int &nPoints, UTF32 pts[]);
 
@@ -580,12 +589,15 @@ int main(int argc, char *argv[])
     g_UniData->LoadUnicodeDataFile();
     g_UniData->LoadUnicodeHanFile();
 
+    g_UniData->Prohibit();
+
     g_UniData->SaveMasterFile();
     g_UniData->SaveTranslateToUpper();
     g_UniData->SaveTranslateToLower();
     g_UniData->SaveTranslateToTitle();
     g_UniData->SaveClassifyPrivateUse();
     g_UniData->SaveDecompositions();
+    g_UniData->SaveClassifyPrintable();
 
     return 0;
 }
@@ -998,10 +1010,13 @@ void UniData::SaveTranslateToUpper()
 
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
-        if (cp[pt].IsDefined())
+        if (  cp[pt].IsDefined()
+           && !cp[pt].IsProhibited())
         {
             UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
-            if (UNI_EOF != ptUpper)
+            if (  UNI_EOF != ptUpper
+               && cp[ptUpper].IsDefined()
+               && !cp[ptUpper].IsProhibited())
             {
                 char *p = cp[pt].GetUnicode1Name();
                 fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptUpper, cp[pt].GetDescription(), (NULL == p) ? "" : p);
@@ -1021,10 +1036,13 @@ void UniData::SaveTranslateToLower()
 
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
-        if (cp[pt].IsDefined())
+        if (  cp[pt].IsDefined()
+           && !cp[pt].IsProhibited())
         {
             UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
-            if (UNI_EOF != ptLower)
+            if (  UNI_EOF != ptLower
+               && cp[ptLower].IsDefined()
+               && !cp[ptLower].IsProhibited())
             {
                 char *p = cp[pt].GetUnicode1Name();
                 fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptLower, cp[pt].GetDescription(), (NULL == p) ? "" : p);
@@ -1044,10 +1062,13 @@ void UniData::SaveTranslateToTitle()
 
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
-        if (cp[pt].IsDefined())
+        if (  cp[pt].IsDefined()
+           && !cp[pt].IsProhibited())
         {
             UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
-            if (UNI_EOF != ptTitle)
+            if (  UNI_EOF != ptTitle
+               && cp[ptTitle].IsDefined()
+               && !cp[ptTitle].IsProhibited())
             {
                 char *p = cp[pt].GetUnicode1Name();
                 fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptTitle, cp[pt].GetDescription(), (NULL == p) ? "" : p);
@@ -1068,6 +1089,184 @@ void UniData::SaveMasterFile(void)
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
         if (cp[pt].IsDefined())
+        {
+            fprintf(fp, "%04X;%s;%s;%d;%s", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
+                cp[pt].GetCombiningClass(), cp[pt].GetBiDiName());
+
+            char DecompBuffer[1024];
+            DecompBuffer[0] = '\0';
+
+            if (cp[pt].GetDecompositionType() != DECOMP_TYPE_NONE)
+            {
+                strcat(DecompBuffer, "<");
+                strcat(DecompBuffer, cp[pt].GetDecompositionTypeName());
+                strcat(DecompBuffer, ">");
+            }
+
+            UTF32 pts[30];
+            int nPoints = cp[pt].GetDecompositionMapping(pts);
+
+            if (nPoints != 1 || pts[0] != pt)
+            {
+                if ('\0' != DecompBuffer[0])
+                {
+                    strcat(DecompBuffer, " ");
+                }
+
+                for (int i = 0; i < nPoints; i++)
+                {
+                    if (0 != i)
+                    {
+                        strcat(DecompBuffer, " ");
+                    }
+
+                    char buf[12];
+                    sprintf(buf, "%04X", pts[i]);
+                    strcat(DecompBuffer, buf);
+                }
+            }
+            fprintf(fp, ";%s", DecompBuffer);
+
+            int n;
+            if (cp[pt].GetDecimalDigitValue(&n))
+            {
+                fprintf(fp, ";%d", n);
+            }
+            else
+            {
+                fprintf(fp, ";");
+            }
+
+            if (cp[pt].GetDigitValue(&n))
+            {
+                fprintf(fp, ";%d", n);
+            }
+            else
+            {
+                fprintf(fp, ";");
+            }
+
+            char *pNumericValue = NULL;
+            if (cp[pt].GetNumericValue(&pNumericValue))
+            {
+                fprintf(fp, ";%s", pNumericValue);
+            }
+            else
+            {
+                fprintf(fp, ";");
+            }
+
+            if (cp[pt].GetBidiMirrored())
+            {
+                fprintf(fp, ";Y");
+            }
+            else
+            {
+                fprintf(fp, ";N");
+            }
+
+            char *pUnicode1Name = cp[pt].GetUnicode1Name();
+            if (pUnicode1Name)
+            {
+                fprintf(fp, ";%s", pUnicode1Name);
+            }
+            else
+            {
+                fprintf(fp, ";");
+            }
+
+            char *pISOComment = cp[pt].GetISOComment();
+            if (pISOComment)
+            {
+                fprintf(fp, ";%s", pISOComment);
+            }
+            else
+            {
+                fprintf(fp, ";");
+            }
+
+            UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
+            if (UNI_EOF != ptUpper)
+            {
+                fprintf(fp, ";%04X", ptUpper);
+            }
+            else
+            {
+                fprintf(fp, ";");
+            }
+
+            UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
+            if (UNI_EOF != ptLower)
+            {
+                fprintf(fp, ";%04X", ptLower);
+            }
+            else
+            {
+                fprintf(fp, ";");
+            }
+
+            UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
+            if (UNI_EOF != ptTitle)
+            {
+                fprintf(fp, ";%04X", ptTitle);
+            }
+            else
+            {
+                fprintf(fp, ";");
+            }
+
+            fprintf(fp, "\n");
+        }
+    }
+    fclose(fp);
+}
+
+void UniData::Prohibit(void)
+{
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            bool bShouldProhibit = false;
+            if (  0 != cp[pt].GetCombiningClass()
+               || (cp[pt].GetCategory() & CATEGORY_OTHER))
+            {
+                bShouldProhibit = true;
+            }
+
+            if (cp[pt].GetCategory() == (CATEGORY_OTHER|SUBCATEGORY_PRIVATE_USE))
+            {
+                if (  (  0xE000 <= pt 
+                      && pt <= 0xE0FF)
+                   || ( 0xF8D0 <= pt
+                      && pt <= 0xF8FF))
+                {
+                    // Tengwar and Klingon
+                    //
+                    bShouldProhibit = false;
+                }
+            }
+
+            if (bShouldProhibit)
+            {
+                cp[pt].SetProhibited();
+            }
+        }
+    }
+}
+
+void UniData::SaveClassifyPrintable(void)
+{
+    FILE *fp = fopen("cl_Printable.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (  cp[pt].IsDefined()
+           && !cp[pt].IsProhibited())
         {
             fprintf(fp, "%04X;%s;%s;%d;%s", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
                 cp[pt].GetCombiningClass(), cp[pt].GetBiDiName());
