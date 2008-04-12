@@ -140,8 +140,8 @@ const size_t codepoints = 1114109;
 #define SUBCATEGORY_UPPER             0x0000001   // Lu
 #define SUBCATEGORY_LOWER             0x0000002   // Ll
 #define SUBCATEGORY_TITLE             0x0000004   // Lt
-#define SUBCATEGORY_MODIFIER          0x0000004   // Lm
-#define SUBCATEGORY_LET_OTHER         0x0000008   // Lo
+#define SUBCATEGORY_LET_MODIFIER      0x0000008   // Lm
+#define SUBCATEGORY_LET_OTHER         0x0000010   // Lo
 
 #define CATEGORY_MARK                 0x0002000
 #define SUBCATEGORY_NONSPACING        0x0000001   // Mn
@@ -165,7 +165,7 @@ const size_t codepoints = 1114109;
 #define CATEGORY_SYMBOL               0x0010000
 #define SUBCATEGORY_MATH              0x0000001   // Sm
 #define SUBCATEGORY_CURRENCY          0x0000002   // Sc
-#define SUBCATEGORY_MODIFIER          0x0000004   // Sk
+#define SUBCATEGORY_SYM_MODIFIER      0x0000004   // Sk
 #define SUBCATEGORY_SYM_OTHER         0x0000008   // So
 
 #define CATEGORY_SEPARATOR            0x0020000 
@@ -189,7 +189,7 @@ static struct
     { CATEGORY_LETTER|SUBCATEGORY_UPPER,              "Lu" },
     { CATEGORY_LETTER|SUBCATEGORY_LOWER,              "Ll" },
     { CATEGORY_LETTER|SUBCATEGORY_TITLE,              "Lt" },
-    { CATEGORY_LETTER|SUBCATEGORY_MODIFIER,           "Lm" },
+    { CATEGORY_LETTER|SUBCATEGORY_LET_MODIFIER,       "Lm" },
     { CATEGORY_LETTER|SUBCATEGORY_LET_OTHER,          "Lo" },
     { CATEGORY_MARK|SUBCATEGORY_NONSPACING,           "Mn" },
     { CATEGORY_MARK|SUBCATEGORY_SPACING_COMBINING,    "Mc" },
@@ -206,7 +206,7 @@ static struct
     { CATEGORY_PUNCTUATION|SUBCATEGORY_PUNC_OTHER,    "Po" },
     { CATEGORY_SYMBOL|SUBCATEGORY_MATH,               "Sm" },
     { CATEGORY_SYMBOL|SUBCATEGORY_CURRENCY,           "Sc" },
-    { CATEGORY_SYMBOL|SUBCATEGORY_MODIFIER,           "Sk" },
+    { CATEGORY_SYMBOL|SUBCATEGORY_SYM_MODIFIER,       "Sk" },
     { CATEGORY_SYMBOL|SUBCATEGORY_SYM_OTHER,          "So" },
     { CATEGORY_SEPARATOR|SUBCATEGORY_SPACE,           "Zs" },
     { CATEGORY_SEPARATOR|SUBCATEGORY_LINE,            "Zl" },
@@ -266,6 +266,49 @@ static struct
     { 0, NULL }
 };
 
+#define DECOMP_TYPE_NONE               0
+#define DECOMP_TYPE_FONT               1
+#define DECOMP_TYPE_NOBREAK            2
+#define DECOMP_TYPE_INITIAL            3
+#define DECOMP_TYPE_MEDIAL             4
+#define DECOMP_TYPE_FINAL              5
+#define DECOMP_TYPE_ISOLATED           6
+#define DECOMP_TYPE_CIRCLE             7
+#define DECOMP_TYPE_SUPER              8
+#define DECOMP_TYPE_SUB                9
+#define DECOMP_TYPE_VERTICAL          10
+#define DECOMP_TYPE_WIDE              11
+#define DECOMP_TYPE_NARROW            12
+#define DECOMP_TYPE_SMALL             13
+#define DECOMP_TYPE_SQUARE            14
+#define DECOMP_TYPE_FRACTION          15
+#define DECOMP_TYPE_COMPAT            16
+
+static struct
+{
+    int   DecompType;
+    char *DecompTypeLet;
+} DecompTypeTable[] =
+{
+    { DECOMP_TYPE_FONT,                "font"     },
+    { DECOMP_TYPE_NOBREAK,             "noBreak"  },
+    { DECOMP_TYPE_INITIAL,             "initial"  },
+    { DECOMP_TYPE_MEDIAL,              "medial"   },
+    { DECOMP_TYPE_FINAL,               "final"    },
+    { DECOMP_TYPE_ISOLATED,            "isolated" },
+    { DECOMP_TYPE_CIRCLE,              "circle"   },
+    { DECOMP_TYPE_SUPER,               "super"    },
+    { DECOMP_TYPE_SUB,                 "sub"      },
+    { DECOMP_TYPE_VERTICAL,            "vertical" },
+    { DECOMP_TYPE_WIDE,                "wide"     },
+    { DECOMP_TYPE_NARROW,              "narrow"   },
+    { DECOMP_TYPE_SMALL,               "small"    },
+    { DECOMP_TYPE_SQUARE,              "square"   },
+    { DECOMP_TYPE_FRACTION,            "fraction" },
+    { DECOMP_TYPE_COMPAT,              "compat"   },
+    { 0, NULL }
+};
+
 class CodePoint
 {
 public:
@@ -288,18 +331,139 @@ public:
     int  GetBiDi(void) { return m_bidi; };
     char *GetBiDiName(void);
 
+    void SetDecompositionType(int dt) { m_DecompType = dt; };
+    int  GetDecompositionType(void) { return m_DecompType; };
+    char *GetDecompositionTypeName(void);
+
+    void SetDecompositionMapping(int nPoints, UTF32 pts[]);
+    int GetDecompositionMapping(UTF32 pts[]);
+
+    void SetDecimalDigitValue(int n);
+    bool GetDecimalDigitValue(int *pn);
+
+    void SetDigitValue(int n);
+    bool GetDigitValue(int *pn);
+
+    void SetNumericValue(char *p);
+    bool GetNumericValue(char **p);
+
+    void SetBidiMirrored(bool b) { m_bBidiMirrored = b; };
+    bool GetBidiMirrored(void) { return m_bBidiMirrored; };
+
+    void SetUnicode1Name(char *p);
+    char *GetUnicode1Name(void) { return m_pUnicode1Name; };
+
+    void SetISOComment(char *p);
+    char *GetISOComment(void) { return m_pISOComment; };
+
+    void SetSimpleUppercaseMapping(UTF32 ptUpper) { m_SimpleUppercaseMapping = ptUpper; };
+    void SetSimpleLowercaseMapping(UTF32 ptLower) { m_SimpleLowercaseMapping = ptLower; };
+    void SetSimpleTitlecaseMapping(UTF32 ptTitle) { m_SimpleTitlecaseMapping = ptTitle; };
+
+    UTF32 GetSimpleUppercaseMapping(void) { return m_SimpleUppercaseMapping; };
+    UTF32 GetSimpleLowercaseMapping(void) { return m_SimpleLowercaseMapping; };
+    UTF32 GetSimpleTitlecaseMapping(void) { return m_SimpleTitlecaseMapping; };
+
 private:
     bool  m_bDefined;
     char *m_pDescription;
     int   m_category;
     int   m_class;
     int   m_bidi;
+    int   m_DecompType;
+    int   m_nDecompMapping;
+    UTF32 m_aDecompMapping[10];
+    int   m_nDecimalDigitValue;
+    bool  m_bHaveDecimalDigitValue;
+    int   m_nDigitValue;
+    bool  m_bHaveDigitValue;
+    char *m_pNumericValue;
+    bool  m_bHaveNumericValue;
+    bool  m_bBidiMirrored;
+    char *m_pUnicode1Name;
+    char *m_pISOComment;
+    UTF32 m_SimpleUppercaseMapping;
+    UTF32 m_SimpleLowercaseMapping;
+    UTF32 m_SimpleTitlecaseMapping;
 };
+
+void CodePoint::SetDecimalDigitValue(int n)
+{
+    m_nDecimalDigitValue = n;
+    m_bHaveDecimalDigitValue = true;
+}
+
+bool CodePoint::GetDecimalDigitValue(int *pn)
+{
+    *pn = m_nDecimalDigitValue;
+    return m_bHaveDecimalDigitValue;
+}
+
+void CodePoint::SetDigitValue(int n)
+{
+    m_nDigitValue = n;
+    m_bHaveDigitValue = true;
+}
+
+bool CodePoint::GetDigitValue(int *pn)
+{
+    *pn = m_nDigitValue;
+    return m_bHaveDigitValue;
+}
+
+void CodePoint::SetNumericValue(char *p)
+{
+    size_t n = strlen(p);
+    m_pNumericValue = new char[n+1];
+    memcpy(m_pNumericValue, p, n+1);
+    m_bHaveNumericValue = true;
+}
+
+bool CodePoint::GetNumericValue(char **p)
+{
+    *p = m_pNumericValue;
+    return m_bHaveNumericValue;
+}
+
+int CodePoint::GetDecompositionMapping(UTF32 pts[])
+{
+    for (int i = 0; i < m_nDecompMapping; i++)
+    {
+        pts[i] = m_aDecompMapping[i];
+    }
+    return m_nDecompMapping;
+}
+
+void CodePoint::SetDecompositionMapping(int nPoints, UTF32 pts[])
+{
+    m_nDecompMapping = nPoints;
+    for (int i = 0; i < nPoints; i++)
+    {
+        m_aDecompMapping[i] = pts[i];
+    }
+}
 
 CodePoint::CodePoint()
 {
     m_bDefined = false;
     m_pDescription = NULL;
+    m_category = CATEGORY_OTHER|SUBCATEGORY_NOT_ASSIGNED;
+    m_class = 0;
+    m_bidi = BIDI_LEFT_TO_RIGHT; // BUG: The default is not the same for all code point values.
+    m_DecompType = DECOMP_TYPE_NONE;
+    m_nDecompMapping = 0;
+    m_nDecimalDigitValue = 0;
+    m_bHaveDecimalDigitValue = false;
+    m_nDigitValue = 0;
+    m_bHaveDigitValue = false;
+    m_pNumericValue = NULL;
+    m_bHaveNumericValue = false;
+    m_bBidiMirrored = false;
+    m_pUnicode1Name = NULL;
+    m_pISOComment = NULL;
+    m_SimpleUppercaseMapping = UNI_EOF;
+    m_SimpleLowercaseMapping = UNI_EOF;
+    m_SimpleTitlecaseMapping = UNI_EOF;
 }
 
 CodePoint::~CodePoint()
@@ -323,6 +487,30 @@ void CodePoint::SetDescription(char *pDescription)
     m_pDescription = new char[n+1];
     memcpy(m_pDescription, pDescription, n+1);
     m_bDefined = true;
+}
+
+void CodePoint::SetUnicode1Name(char *p)
+{
+    if (NULL != m_pUnicode1Name)
+    {
+        delete [] m_pUnicode1Name;
+        m_pUnicode1Name = NULL;
+    }
+    size_t n = strlen(p);
+    m_pUnicode1Name = new char[n+1];
+    memcpy(m_pUnicode1Name, p, n+1);
+}
+
+void CodePoint::SetISOComment(char *p)
+{
+    if (NULL != m_pISOComment)
+    {
+        delete [] m_pISOComment;
+        m_pISOComment = NULL;
+    }
+    size_t n = strlen(p);
+    m_pISOComment = new char[n+1];
+    memcpy(m_pISOComment, p, n+1);
 }
 
 class UniData
@@ -488,14 +676,14 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
     {
         // Description
         //
-        if (2 < nFields)
+        if (2 <= nFields)
         {
             cp[codepoint].SetDescription(aFields[1]);
         }
 
         // Category
         //
-        if (3 < nFields)
+        if (3 <= nFields)
         {
             bool bValid = false;
             int i = 0;
@@ -505,6 +693,7 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
                 {
                     cp[codepoint].SetCategory(CategoryTable[i].cat);
                     bValid = true;
+                    break;
                 }
                 i++;
             }
@@ -518,7 +707,7 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
 
         // Combining Class.
         //
-        if (4 < nFields)
+        if (4 <= nFields)
         {
             int cc = mux_atol(aFields[3]);
             cp[codepoint].SetCombiningClass(cc);
@@ -526,7 +715,7 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
 
         // Bidi algorithm.
         //
-        if (5 < nFields)
+        if (5 <= nFields)
         {
             bool bValid = false;
             int i = 0;
@@ -536,6 +725,7 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
                 {
                     cp[codepoint].SetBiDi(BiDiTable[i].BiDi);
                     bValid = true;
+                    break;
                 }
                 i++;
             }
@@ -546,6 +736,178 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
                 exit(0);
             }
         }
+
+        // Decomposition Type and Mapping.
+        //
+        if (6 <= nFields)
+        {
+            bool bValid = false;
+            char *pDecomposition_Mapping = NULL;
+            char *pDecomposition_Type = NULL;
+            if ('<' == aFields[5][0])
+            {
+               char *p = strchr(aFields[5]+1, '>');
+               if (NULL != p)
+               {
+                   *p++ = '\0';
+                   while (mux_isspace(*p))
+                   {
+                       p++;
+                   }
+                   pDecomposition_Type = aFields[5]+1;
+                   pDecomposition_Mapping = p;
+                   bValid = true;
+               }
+            }
+            else
+            {
+                pDecomposition_Type = "";
+                pDecomposition_Mapping = aFields[5];
+                bValid = true;
+            }
+
+            if (bValid)
+            {
+                if ('\0' != pDecomposition_Type[0])
+                {
+                    bValid = false;
+                    int i = 0;
+                    while (DecompTypeTable[i].DecompType)
+                    {
+                        if (strcmp(pDecomposition_Type, DecompTypeTable[i].DecompTypeLet) == 0)
+                        {
+                            cp[codepoint].SetDecompositionType(DecompTypeTable[i].DecompType);
+                            bValid = true;
+                            break;
+                        }
+                        i++;
+                    }
+                }
+
+                if (!bValid)
+                {
+                    printf("***ERROR: Decomposition Type Name not found (%s).\n", pDecomposition_Type);
+                }
+                else
+                {
+                    int   nPoints;
+                    char *aPoints[10];
+                    UTF32 pts[10];
+                    ParsePoints(pDecomposition_Mapping, 10, nPoints, aPoints);
+                    for (int i = 0; i < nPoints; i++)
+                    {
+                        pts[i] = DecodeCodePoint(aPoints[i]);
+                    }
+
+                    if (0 == nPoints)
+                    {
+                        pts[0] = codepoint;
+                        nPoints = 1;
+                    }
+
+                    cp[codepoint].SetDecompositionMapping(nPoints, pts);
+                }
+            }
+            else
+            {
+                printf("***ERROR: Expression malformed.\n");
+            }
+
+            if (!bValid)
+            {
+                printf("***ERROR: Invalid Decomposition Type, '%s', or Mapping, '%s', for U+%04X\n", pDecomposition_Type, pDecomposition_Mapping, codepoint);
+                exit(0);
+            }
+        }
+
+        // Decimal Digit Value.
+        //
+        if (  7 <= nFields
+           && '\0' != aFields[6][0])
+        {
+            int cc = mux_atol(aFields[6]);
+            cp[codepoint].SetDecimalDigitValue(cc);
+        }
+
+        // Digit Value.
+        //
+        if (  8 <= nFields
+           && '\0' != aFields[7][0])
+        {
+            int cc = mux_atol(aFields[7]);
+            cp[codepoint].SetDigitValue(cc);
+        }
+
+        // Numeric Value.
+        //
+        if (  9 <= nFields
+           && '\0' != aFields[8][0])
+        {
+            cp[codepoint].SetNumericValue(aFields[8]);
+        }
+
+        // Bidi_Mirrored.
+        //
+        if (  10 <= nFields
+           && '\0' != aFields[9][0])
+        {
+            if ('Y' == aFields[9][0])
+            {
+                cp[codepoint].SetBidiMirrored(true);
+            }
+            else if ('N' == aFields[9][0])
+            {
+                cp[codepoint].SetBidiMirrored(false);
+            }
+            else
+            {
+                printf("Bidi_Mirrored '%s'.\n", aFields[9]);
+                exit(0);
+            }
+        }
+
+        // Unicode_1_Name.
+        //
+        if (  11 <= nFields
+           && '\0' != aFields[10][0])
+        {
+            cp[codepoint].SetUnicode1Name(aFields[10]);
+        }
+
+        // ISO Comment.
+        //
+        if (  12 <= nFields
+           && '\0' != aFields[11][0])
+        {
+            cp[codepoint].SetISOComment(aFields[11]);
+        }
+
+        // Simple Uppercase Mapping.
+        //
+        if (  13 <= nFields
+           && '\0' != aFields[12][0])
+        {
+            UTF32 pt = DecodeCodePoint(aFields[12]);
+            cp[codepoint].SetSimpleUppercaseMapping(pt);
+        }
+
+        // Simple Lowercase Mapping.
+        //
+        if (  14 <= nFields
+           && '\0' != aFields[13][0])
+        {
+            UTF32 pt = DecodeCodePoint(aFields[13]);
+            cp[codepoint].SetSimpleLowercaseMapping(pt);
+        }
+
+        // Simple Titlecase Mapping.
+        //
+        if (  15 <= nFields
+           && '\0' != aFields[14][0])
+        {
+            UTF32 pt = DecodeCodePoint(aFields[14]);
+            cp[codepoint].SetSimpleTitlecaseMapping(pt);
+        }
     }
 }
 
@@ -555,8 +917,132 @@ void UniData::SaveMasterFile(void)
     {
         if (cp[pt].IsDefined())
         {
-            printf("%04X;%s;%s;%d;%s\n", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
+            printf("%04X;%s;%s;%d;%s", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
                 cp[pt].GetCombiningClass(), cp[pt].GetBiDiName());
+
+            char DecompBuffer[1024];
+            DecompBuffer[0] = '\0';
+
+            if (cp[pt].GetDecompositionType() != DECOMP_TYPE_NONE)
+            {
+                strcat(DecompBuffer, "<");
+                strcat(DecompBuffer, cp[pt].GetDecompositionTypeName());
+                strcat(DecompBuffer, ">");
+            }
+
+            UTF32 pts[10];
+            int nPoints = cp[pt].GetDecompositionMapping(pts);
+
+            if (nPoints != 1 || pts[0] != pt)
+            {
+                if ('\0' != DecompBuffer[0])
+                {
+                    strcat(DecompBuffer, " ");
+                }
+
+                for (int i = 0; i < nPoints; i++)
+                {
+                    if (0 != i)
+                    {
+                        strcat(DecompBuffer, " ");
+                    }
+
+                    char buf[12];
+                    sprintf(buf, "%04X", pts[i]);
+                    strcat(DecompBuffer, buf);
+                }
+            }
+            printf(";%s", DecompBuffer);
+
+            int n;
+            if (cp[pt].GetDecimalDigitValue(&n))
+            {
+                printf(";%d", n);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            if (cp[pt].GetDigitValue(&n))
+            {
+                printf(";%d", n);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            char *pNumericValue = NULL;
+            if (cp[pt].GetNumericValue(&pNumericValue))
+            {
+                printf(";%s", pNumericValue);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            if (cp[pt].GetBidiMirrored())
+            {
+                printf(";Y");
+            }
+            else
+            {
+                printf(";N");
+            }
+
+            char *pUnicode1Name = cp[pt].GetUnicode1Name();
+            if (pUnicode1Name)
+            {
+                printf(";%s", pUnicode1Name);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            char *pISOComment = cp[pt].GetISOComment();
+            if (pISOComment)
+            {
+                printf(";%s", pISOComment);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
+            if (UNI_EOF != ptUpper)
+            {
+                printf(";%04X", ptUpper);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
+            if (UNI_EOF != ptLower)
+            {
+                printf(";%04X", ptLower);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
+            if (UNI_EOF != ptTitle)
+            {
+                printf(";%04X", ptTitle);
+            }
+            else
+            {
+                printf(";");
+            }
+
+            printf("\n");
         }
     }
 }
@@ -566,7 +1052,7 @@ char *CodePoint::GetCategoryName(void)
     int i = 0;
     while (CategoryTable[i].catlet)
     {
-        if ((CategoryTable[i].cat & m_category) == m_category)
+        if (CategoryTable[i].cat == m_category)
         {
             return CategoryTable[i].catlet;
         }
@@ -580,9 +1066,23 @@ char *CodePoint::GetBiDiName(void)
     int i = 0;
     while (BiDiTable[i].BiDiLet)
     {
-        if ((BiDiTable[i].BiDi & m_bidi) == m_bidi)
+        if (BiDiTable[i].BiDi == m_bidi)
         {
             return BiDiTable[i].BiDiLet;
+        }
+        i++;
+    }
+    return NULL;
+}
+
+char *CodePoint::GetDecompositionTypeName(void)
+{
+    int i = 0;
+    while (DecompTypeTable[i].DecompTypeLet)
+    {
+        if (DecompTypeTable[i].DecompType == m_DecompType)
+        {
+            return DecompTypeTable[i].DecompTypeLet;
         }
         i++;
     }
