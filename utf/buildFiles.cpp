@@ -124,11 +124,11 @@ long mux_atol(const char *pString)
 
 // Korean Hangul Constants.
 //
-const int SBase = 0xAC00;
-const int LBase = 0x1100;
-const int VBase = 0x1161;
-const int TBase = 0x11A7;
-const int SCount = 11172;
+const UTF32 SBase = 0xAC00;
+const UTF32 LBase = 0x1100;
+const UTF32 VBase = 0x1161;
+const UTF32 TBase = 0x11A7;
+const UTF32 SCount = 11172;
 const int LCount = 19;
 const int VCount = 21;
 const int TCount = 28;
@@ -321,7 +321,7 @@ public:
     char *GetDescription(void) { return m_pDescription; };
 
     void SetCategory(int category) { m_category = category; };
-    int  GetCategory(void);
+    int  GetCategory(void) { return m_category; };
     char *GetCategoryName(void);
 
     void SetCombiningClass(int cc) { m_class = cc; };
@@ -372,13 +372,15 @@ private:
     int   m_bidi;
     int   m_DecompType;
     int   m_nDecompMapping;
-    UTF32 m_aDecompMapping[10];
+    UTF32 m_aDecompMapping[30];
+
     int   m_nDecimalDigitValue;
     bool  m_bHaveDecimalDigitValue;
     int   m_nDigitValue;
     bool  m_bHaveDigitValue;
     char *m_pNumericValue;
     bool  m_bHaveNumericValue;
+
     bool  m_bBidiMirrored;
     char *m_pUnicode1Name;
     char *m_pISOComment;
@@ -524,12 +526,47 @@ public:
     void LoadUnicodeHanFile(void);
 
     void SaveMasterFile(void);
+    void SaveTranslateToUpper(void);
+    void SaveTranslateToLower(void);
+    void SaveTranslateToTitle(void);
+    void SaveClassifyPrivateUse(void);
+    void SaveDecompositions(void);
+
+    void GetDecomposition(UTF32 pt, int dt, int &nPoints, UTF32 pts[]);
 
 private:
-    CodePoint cp[codepoints];
+    CodePoint cp[codepoints+1];
 };
 
 UniData *g_UniData = NULL;
+
+void UniData::GetDecomposition(UTF32 pt, int dt, int &nPoints, UTF32 pts[])
+{
+    if (!cp[pt].IsDefined())
+    {
+        exit(0);
+    }
+
+    if (  DECOMP_TYPE_NONE != cp[pt].GetDecompositionType()
+       && dt != cp[pt].GetDecompositionType())
+    {
+        pts[nPoints++] = pt;
+        return;
+    }
+
+    UTF32 pts2[50];
+    int n = cp[pt].GetDecompositionMapping(pts2);
+    if (n == 1 && pts2[0] == pt)
+    {
+        pts[nPoints++] = pt;
+        return;
+    }
+
+    for (UTF32 i = 0; i < n; i++)
+    {
+        GetDecomposition(pts2[i], dt, nPoints, pts);
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -544,6 +581,12 @@ int main(int argc, char *argv[])
     g_UniData->LoadUnicodeHanFile();
 
     g_UniData->SaveMasterFile();
+    g_UniData->SaveTranslateToUpper();
+    g_UniData->SaveTranslateToLower();
+    g_UniData->SaveTranslateToTitle();
+    g_UniData->SaveClassifyPrivateUse();
+    g_UniData->SaveDecompositions();
+
     return 0;
 }
 
@@ -791,9 +834,9 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
                 else
                 {
                     int   nPoints;
-                    char *aPoints[10];
-                    UTF32 pts[10];
-                    ParsePoints(pDecomposition_Mapping, 10, nPoints, aPoints);
+                    char *aPoints[30];
+                    UTF32 pts[30];
+                    ParsePoints(pDecomposition_Mapping, 30, nPoints, aPoints);
                     for (int i = 0; i < nPoints; i++)
                     {
                         pts[i] = DecodeCodePoint(aPoints[i]);
@@ -911,13 +954,122 @@ void UniData::LoadUnicodeDataLine(UTF32 codepoint, int nFields, char *aFields[])
     }
 }
 
-void UniData::SaveMasterFile(void)
+void UniData::SaveDecompositions()
 {
+    FILE *fp = fopen("Decompositions.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
     for (UTF32 pt = 0; pt <= codepoints; pt++)
     {
         if (cp[pt].IsDefined())
         {
-            printf("%04X;%s;%s;%d;%s", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
+            int   nPoints = 0;
+            UTF32 pts[100];
+            GetDecomposition(pt, DECOMP_TYPE_NONE, nPoints, pts);
+
+            if (nPoints != 1 || pts[0] != pt)
+            {
+                fprintf(fp, "%04X;", pt);
+                for (UTF32 pt2 = 0; pt2 < nPoints; pt2++)
+                {
+                    if (pt2 != 0)
+                    {
+                        fprintf(fp, " ");
+                    }
+                    fprintf(fp, "%04X", pts[pt2]);
+                }
+                fprintf(fp, ";%s\n", cp[pt].GetDescription());
+            }
+        }
+    }
+    fclose(fp);
+}
+
+void UniData::SaveTranslateToUpper()
+{
+    FILE *fp = fopen("tr_toupper.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
+            if (UNI_EOF != ptUpper)
+            {
+                char *p = cp[pt].GetUnicode1Name();
+                fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptUpper, cp[pt].GetDescription(), (NULL == p) ? "" : p);
+            }
+        }
+    }
+    fclose(fp);
+}
+
+void UniData::SaveTranslateToLower()
+{
+    FILE *fp = fopen("tr_tolower.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
+            if (UNI_EOF != ptLower)
+            {
+                char *p = cp[pt].GetUnicode1Name();
+                fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptLower, cp[pt].GetDescription(), (NULL == p) ? "" : p);
+            }
+        }
+    }
+    fclose(fp);
+}
+
+void UniData::SaveTranslateToTitle()
+{
+    FILE *fp = fopen("tr_totitle.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
+            if (UNI_EOF != ptTitle)
+            {
+                char *p = cp[pt].GetUnicode1Name();
+                fprintf(fp, "%04X;%04X;%s;%s\n", pt, ptTitle, cp[pt].GetDescription(), (NULL == p) ? "" : p);
+            }
+        }
+    }
+    fclose(fp);
+}
+
+void UniData::SaveMasterFile(void)
+{
+    FILE *fp = fopen("UnicodeMaster.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (cp[pt].IsDefined())
+        {
+            fprintf(fp, "%04X;%s;%s;%d;%s", pt, cp[pt].GetDescription(), cp[pt].GetCategoryName(),
                 cp[pt].GetCombiningClass(), cp[pt].GetBiDiName());
 
             char DecompBuffer[1024];
@@ -930,7 +1082,7 @@ void UniData::SaveMasterFile(void)
                 strcat(DecompBuffer, ">");
             }
 
-            UTF32 pts[10];
+            UTF32 pts[30];
             int nPoints = cp[pt].GetDecompositionMapping(pts);
 
             if (nPoints != 1 || pts[0] != pt)
@@ -952,99 +1104,119 @@ void UniData::SaveMasterFile(void)
                     strcat(DecompBuffer, buf);
                 }
             }
-            printf(";%s", DecompBuffer);
+            fprintf(fp, ";%s", DecompBuffer);
 
             int n;
             if (cp[pt].GetDecimalDigitValue(&n))
             {
-                printf(";%d", n);
+                fprintf(fp, ";%d", n);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             if (cp[pt].GetDigitValue(&n))
             {
-                printf(";%d", n);
+                fprintf(fp, ";%d", n);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             char *pNumericValue = NULL;
             if (cp[pt].GetNumericValue(&pNumericValue))
             {
-                printf(";%s", pNumericValue);
+                fprintf(fp, ";%s", pNumericValue);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             if (cp[pt].GetBidiMirrored())
             {
-                printf(";Y");
+                fprintf(fp, ";Y");
             }
             else
             {
-                printf(";N");
+                fprintf(fp, ";N");
             }
 
             char *pUnicode1Name = cp[pt].GetUnicode1Name();
             if (pUnicode1Name)
             {
-                printf(";%s", pUnicode1Name);
+                fprintf(fp, ";%s", pUnicode1Name);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             char *pISOComment = cp[pt].GetISOComment();
             if (pISOComment)
             {
-                printf(";%s", pISOComment);
+                fprintf(fp, ";%s", pISOComment);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             UTF32 ptUpper = cp[pt].GetSimpleUppercaseMapping();
             if (UNI_EOF != ptUpper)
             {
-                printf(";%04X", ptUpper);
+                fprintf(fp, ";%04X", ptUpper);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             UTF32 ptLower = cp[pt].GetSimpleLowercaseMapping();
             if (UNI_EOF != ptLower)
             {
-                printf(";%04X", ptLower);
+                fprintf(fp, ";%04X", ptLower);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
             UTF32 ptTitle = cp[pt].GetSimpleTitlecaseMapping();
             if (UNI_EOF != ptTitle)
             {
-                printf(";%04X", ptTitle);
+                fprintf(fp, ";%04X", ptTitle);
             }
             else
             {
-                printf(";");
+                fprintf(fp, ";");
             }
 
-            printf("\n");
+            fprintf(fp, "\n");
         }
     }
+    fclose(fp);
+}
+
+void UniData::SaveClassifyPrivateUse()
+{
+    FILE *fp = fopen("cl_PrivateUse.txt", "w+");
+    if (NULL == fp)
+    {
+        return;
+    }
+
+    for (UTF32 pt = 0; pt <= codepoints; pt++)
+    {
+        if (  cp[pt].IsDefined()
+           && (CATEGORY_OTHER|SUBCATEGORY_PRIVATE_USE) == cp[pt].GetCategory())
+        {
+            fprintf(fp, "%04X;%s\n", pt, cp[pt].GetDescription());
+        }
+    }
+    fclose(fp);
 }
 
 char *CodePoint::GetCategoryName(void)
@@ -1097,7 +1269,6 @@ void UniData::LoadUnicodeHanFile(void)
         char buffer[1024];
         while (NULL != ReadLine(fp, buffer, sizeof(buffer)))
         {
-            bool  bValid = false;
             int   nFields;
             char *aFields[2];
 
@@ -1114,12 +1285,17 @@ void UniData::LoadUnicodeHanFile(void)
                 }
                 else
                 {
-                    pt1 = DecodeCodePoint(aFields[0]);
+                    pt2 = DecodeCodePoint(aFields[0]);
                     pt1 = pt2;
                 }
 
                 for (UTF32 pt = pt1; pt <= pt2; pt++)
                 {
+                    if (cp[pt].IsDefined())
+                    {
+                        continue;
+                    }
+
                     char hex[32];
                     char desc[1024];
 
