@@ -13,50 +13,50 @@
 class CRitsuView : public CView
 {
 protected: // create from serialization only
-	CRitsuView();
-	DECLARE_DYNCREATE(CRitsuView)
-
-// Attributes
+    CRitsuView();
+    DECLARE_DYNCREATE(CRitsuView)
+        
+        // Attributes
 public:
-	CRitsuDoc* GetDocument();
-
-// Operations
+    CRitsuDoc* GetDocument();
+    
+    // Operations
 public:
-
-// Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CRitsuView)
-	public:
-	virtual void OnDraw(CDC* pDC);  // overridden to draw this view
-	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
-	protected:
-	virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);
-	virtual void OnBeginPrinting(CDC* pDC, CPrintInfo* pInfo);
-	virtual void OnEndPrinting(CDC* pDC, CPrintInfo* pInfo);
-	//}}AFX_VIRTUAL
-
-// Implementation
+    
+    // Overrides
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(CRitsuView)
 public:
-	virtual ~CRitsuView();
+    virtual void OnDraw(CDC* pDC);  // overridden to draw this view
+    virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+protected:
+    virtual BOOL OnPreparePrinting(CPrintInfo* pInfo);
+    virtual void OnBeginPrinting(CDC* pDC, CPrintInfo* pInfo);
+    virtual void OnEndPrinting(CDC* pDC, CPrintInfo* pInfo);
+    //}}AFX_VIRTUAL
+    
+    // Implementation
+public:
+    virtual ~CRitsuView();
 #ifdef _DEBUG
-	virtual void AssertValid() const;
-	virtual void Dump(CDumpContext& dc) const;
+    virtual void AssertValid() const;
+    virtual void Dump(CDumpContext& dc) const;
 #endif
-
+    
 protected:
-
-// Generated message map functions
+    
+    // Generated message map functions
 protected:
-	//{{AFX_MSG(CRitsuView)
-		// NOTE - the ClassWizard will add and remove member functions here.
-		//    DO NOT EDIT what you see in these blocks of generated code !
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
+    //{{AFX_MSG(CRitsuView)
+    // NOTE - the ClassWizard will add and remove member functions here.
+    //    DO NOT EDIT what you see in these blocks of generated code !
+    //}}AFX_MSG
+    DECLARE_MESSAGE_MAP()
 };
 
 #ifndef _DEBUG  // debug version in ritsuView.cpp
 inline CRitsuDoc* CRitsuView::GetDocument()
-   { return (CRitsuDoc*)m_pDocument; }
+{ return (CRitsuDoc*)m_pDocument; }
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
