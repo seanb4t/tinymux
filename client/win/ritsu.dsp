@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /G6 /Gr /W3 /GX /Ox /Oa /Og /Oi /Os /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "UNICODE" /D "_UNICODE" /YX /FD /c
+# ADD CPP /nologo /G6 /Gr /W3 /GX /Ox /Oa /Og /Oi /Os /Gf /Gy /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "UNICODE" /D "_UNICODE" /YX /FD /c
 # SUBTRACT CPP /Ow
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -103,10 +103,38 @@ SOURCE=.\ritsu.rc
 
 SOURCE=.\stdafx.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\svdhash.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\svdrand.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\timer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\timeutil.cpp
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=.\autoconf.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\config.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\externs.h
+# End Source File
 # Begin Source File
 
 SOURCE=.\resource.h
@@ -118,6 +146,18 @@ SOURCE=.\ritsu.h
 # Begin Source File
 
 SOURCE=.\stdafx.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\svdhash.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\svdrand.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\timeutil.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"
