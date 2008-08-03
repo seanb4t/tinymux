@@ -93,6 +93,10 @@ SOURCE=.\_build.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\alarm.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\alloc.cpp
 # End Source File
 # Begin Source File
@@ -150,6 +154,10 @@ SOURCE=.\flags.cpp
 # Begin Source File
 
 SOURCE=.\funceval.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\funceval2.cpp
 # End Source File
 # Begin Source File
 
@@ -285,7 +293,23 @@ SOURCE=.\timer.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\timeabsolute.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\timedelta.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\timeparser.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\timeutil.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\timezone.cpp
 # End Source File
 # Begin Source File
 
@@ -454,10 +478,6 @@ SOURCE=.\svdhash.h
 # Begin Source File
 
 SOURCE=.\svdrand.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\table.h
 # End Source File
 # Begin Source File
 

@@ -29,6 +29,9 @@ readme.txt
 SGP
 SQL
 SSL
+src/_build.cpp
+src/_build.h
+src/alarm.cpp
 src/alloc.cpp
 src/alloc.h
 src/ansi.h
@@ -56,6 +59,7 @@ src/file_c.h
 src/flags.cpp
 src/flags.h
 src/funceval.cpp
+src/funceval2.cpp
 src/functions.cpp
 src/functions.h
 src/funmath.cpp
@@ -139,11 +143,13 @@ src/svdhash.cpp
 src/svdhash.h
 src/svdrand.cpp
 src/svdrand.h
-src/table.cpp
-src/table.h
 src/timer.cpp
+src/timeabsolute.cpp
+src/timedelta.cpp
+src/timeparser.cpp
 src/timeutil.cpp
 src/timeutil.h
+src/timezone.cpp
 src/unparse.cpp
 src/vattr.cpp
 src/vattr.h
@@ -151,5 +157,3 @@ src/version.cpp
 src/walkdb.cpp
 src/wild.cpp
 src/wiz.cpp
-src/_build.cpp
-src/_build.h
