@@ -34,6 +34,7 @@ game/text/wizhelp.txt
 src/Makefile.in
 src/_build.cpp
 src/_build.h
+src/alarm.cpp
 src/alloc.cpp
 src/alloc.h
 src/ansi.h
@@ -67,6 +68,7 @@ src/file_c.h
 src/flags.cpp
 src/flags.h
 src/funceval.cpp
+src/funceval2.cpp
 src/functions.cpp
 src/functions.h
 src/funmath.cpp
@@ -138,11 +140,13 @@ src/svdhash.cpp
 src/svdhash.h
 src/svdrand.cpp
 src/svdrand.h
-src/table.cpp
-src/table.h
 src/timer.cpp
+src/timeabsolute.cpp
+src/timedelta.cpp
+src/timeparser.cpp
 src/timeutil.cpp
 src/timeutil.h
+src/timezone.cpp
 src/tools/announce.c
 src/tools/dbpuller.c
 src/tools/muxattrs.dat
