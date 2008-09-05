@@ -214,9 +214,6 @@ AC_PROG_CXXCPP
 AC_PROG_CC
 AC_PROG_CPP
 AC_CANONICAL_HOST
-case "$host" in
-*irix*) LIBS="-lm" ;;
-esac
 AC_ISC_POSIX
 AC_AIX
 AC_MINIX
@@ -224,15 +221,18 @@ AC_MINIX
 # Checks for libraries.
 #
 AC_CHECK_LIB(crypt, main)
-AC_CHECK_LIB(resolv, main)
 AC_CHECK_LIB(sun, getpwnam)
 AC_CHECK_LIB(seq, main)
 AC_CHECK_LIB(intl, main)
-AC_CHECK_LIB(nsl, main)
 AC_CHECK_LIB(inet, main)
 AC_CHECK_LIB(socket, main)
 AC_CHECK_LIB(m, main)
+case "$host" in
+*solaris*) AC_CHECK_LIB(nsl, main)
+           ;;
+esac
 AC_MSG_CHECKING(for dlopen)
+LIBS_SAVE=$LIBS
 AC_CHECK_LIB(dl,dlopen)
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
     #include <dlfcn.h>
@@ -254,11 +254,14 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([[
               ;;
     esac
     MUX_LIBS="-lmux"
+    DL_LIB="-ldl"
     ],[])
+LIBS=$LIBS_SAVE
 AC_SUBST(DYNAMICLIB_EXT)
 AC_SUBST(DYNAMICLIB_CPPFLAGS)
 AC_SUBST(DYNAMICLIB_TARGET)
 AC_SUBST(MUX_LIBS)
+AC_SUBST(DL_LIB)
 
 # Checks for header files.
 #
