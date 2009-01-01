@@ -3385,23 +3385,74 @@ bool matches_exit_from_list(const UTF8 *str, const UTF8 *pattern)
     return false;
 }
 
+// In the conversion routines that follow, digits are decoded into a buffer in
+// reverse order with a possible leading '-' if the value was negative.
+//
+static void ReverseDigits(UTF8 *pFirst, UTF8 *pLast)
+{
+    // Stop when we reach or pass the middle.
+    //
+    while (pFirst < pLast)
+    {
+        // Swap characters at *pFirst and *pLast.
+        //
+        UTF8 temp = *pLast;
+        *pLast = *pFirst;
+        *pFirst = temp;
+
+        // Move pFirst and pLast towards the middle.
+        //
+        --pLast;
+        ++pFirst;
+    }
+}
+
+static const UTF8 Digits16U[17] = "0123456789ABCDEF";
+static const UTF8 Digits16L[17] = "0123456789abcdef";
+
+size_t mux_utox(unsigned long uval, UTF8 *buf, bool bUpperCase)
+{
+    UTF8 *p = buf;
+    UTF8 *q = p;
+    const UTF8 *pDigits = bUpperCase ? Digits16U : Digits16L;
+
+    while (uval > 15)
+    {
+        *p++ = pDigits[uval % 16];
+        uval /= 16;
+    }
+    *p++ = pDigits[uval];
+    *p = '\0';
+    ReverseDigits(q, p-1);
+    return p - buf;
+}
+
+size_t mux_ui64tox(UINT64 uval, UTF8 *buf, bool bUpperCase)
+{
+    UTF8 *p = buf;
+    UTF8 *q = p;
+    const UTF8 *pDigits = bUpperCase ? Digits16U : Digits16L;
+
+    while (uval > 15)
+    {
+        *p++ = pDigits[uval % 16];
+        uval /= 16;
+    }
+    *p++ = pDigits[uval];
+    *p = '\0';
+    ReverseDigits(q, p-1);
+    return p - buf;
+}
+
 const UTF8 Digits100[201] =
 "001020304050607080900111213141516171819102122232425262728292\
 031323334353637383930414243444546474849405152535455565758595\
 061626364656667686960717273747576777879708182838485868788898\
 09192939495969798999";
 
-size_t mux_ltoa(long val, UTF8 *buf)
+size_t mux_utoa(unsigned long uval, UTF8 *buf)
 {
     UTF8 *p = buf;
-
-    if (val < 0)
-    {
-        *p++ = '-';
-        val = -val;
-    }
-    unsigned long uval = (unsigned long)val;
-
     UTF8 *q = p;
 
     const UTF8 *z;
@@ -3418,31 +3469,21 @@ size_t mux_ltoa(long val, UTF8 *buf)
     {
         *p++ = *(z+1);
     }
+    *p = '\0';
+    ReverseDigits(q, p-1);
+    return p - buf;
+}
 
-    size_t nLength = p - buf;
-    *p-- = '\0';
-
-    // The digits are in reverse order with a possible leading '-'
-    // if the value was negative. q points to the first digit,
-    // and p points to the last digit.
-    //
-    while (q < p)
+size_t mux_ltoa(long val, UTF8 *buf)
+{
+    UTF8 *p = buf;
+    if (val < 0)
     {
-        // Swap characters are *p and *q
-        //
-        UTF8 temp = *p;
-        *p = *q;
-        *q = temp;
-
-        // Move p and first digit towards the middle.
-        //
-        --p;
-        ++q;
-
-        // Stop when we reach or pass the middle.
-        //
+        *p++ = '-';
+        val = -val;
     }
-    return nLength;
+    p += mux_utoa((unsigned long)val, p);
+    return p - buf;
 }
 
 UTF8 *mux_ltoa_t(long val)
@@ -3459,17 +3500,9 @@ void safe_ltoa(long val, UTF8 *buff, UTF8 **bufc)
     safe_copy_buf(temp, n, buff, bufc);
 }
 
-size_t mux_i64toa(INT64 val, UTF8 *buf)
+size_t mux_ui64toa(UINT64 uval, UTF8 *buf)
 {
     UTF8 *p = buf;
-
-    if (val < 0)
-    {
-        *p++ = '-';
-        val = -val;
-    }
-    UINT64 uval = (UINT64)val;
-
     UTF8 *q = p;
 
     const UTF8 *z;
@@ -3486,30 +3519,25 @@ size_t mux_i64toa(INT64 val, UTF8 *buf)
     {
         *p++ = *(z+1);
     }
+    *p = '\0';
+    ReverseDigits(q, p-1);
+    return p - buf;
+}
+
+size_t mux_i64toa(INT64 val, UTF8 *buf)
+{
+    UTF8 *p = buf;
+
+    if (val < 0)
+    {
+        *p++ = '-';
+        val = -val;
+    }
+    UINT64 uval = (UINT64)val;
+
+    p += mux_ui64toa(uval, p);
 
     size_t nLength = p - buf;
-    *p-- = '\0';
-
-    // The digits are in reverse order with a possible leading '-'
-    // if the value was negative. q points to the first digit,
-    // and p points to the last digit.
-    //
-    while (q < p)
-    {
-        // Swap characters are *p and *q
-        //
-        UTF8 temp = *p;
-        *p = *q;
-        *q = temp;
-
-        // Move p and first digit towards the middle.
-        //
-        --p;
-        ++q;
-
-        // Stop when we reach or pass the middle.
-        //
-    }
     return nLength;
 }
 
@@ -4921,7 +4949,7 @@ UTF8 *mux_strupr(const UTF8 *a, size_t &n)
 // Returns: A number from 0 to count-1 that is the string length of
 // the returned (possibly truncated) buffer.
 //
-size_t DCL_CDECL mux_vsnprintf(UTF8 *buff, size_t count, const char *fmt, va_list va)
+size_t DCL_CDECL mux_vsnprintf(__in_ecount(count) UTF8 *buff, __in size_t count, __in_z const UTF8 *fmt, va_list va)
 {
     // From the manuals:
     //
@@ -4952,16 +4980,16 @@ size_t DCL_CDECL mux_vsnprintf(UTF8 *buff, size_t count, const char *fmt, va_lis
     size_t len;
 #if defined(WIN32)
 #if !defined(__INTEL_COMPILER) && (_MSC_VER >= 1400)
-    int cc = vsnprintf_s((char *)buff, count, _TRUNCATE, fmt, va);
+    int cc = vsnprintf_s((char *)buff, count, _TRUNCATE, (char *)fmt, va);
 #else // _MSC_VER
-    int cc = _vsnprintf((char *)buff, count, fmt, va);
+    int cc = _vsnprintf((char *)buff, count, (char *)fmt, va);
 #endif // _MSC_VER
 #else // WIN32
 #ifdef NEED_VSPRINTF_DCL
     extern char *vsprintf(char *, char *, va_list);
 #endif // NEED_VSPRINTF_DCL
 
-    int cc = vsnprintf((char *)buff, count, fmt, va);
+    int cc = vsnprintf((char *)buff, count, (char *)fmt, va);
 #endif // WIN32
     if (0 <= cc && static_cast<size_t>(cc) <= count-1)
     {
@@ -4984,7 +5012,7 @@ size_t DCL_CDECL mux_vsnprintf(UTF8 *buff, size_t count, const char *fmt, va_lis
     return len;
 }
 
-void DCL_CDECL mux_sprintf(UTF8 *buff, size_t count, const char *fmt, ...)
+void DCL_CDECL mux_sprintf(__in_ecount(count) UTF8 *buff, __in size_t count, __in_z const UTF8 *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -5194,7 +5222,7 @@ CF_HAND(cf_art_rule)
     }
     if (*pCurrent == '\0')
     {
-        cf_log_syntax(player, cmd, "No article or regexp specified.");
+        cf_log_syntax(player, cmd, T("No article or regexp specified."));
         return -1;
     }
 
@@ -5223,7 +5251,7 @@ CF_HAND(cf_art_rule)
     if (!bOkay)
     {
         *pCurrent = '\0';
-        cf_log_syntax(player, cmd, "Invalid article \xE2\x80\x98%s\xE2\x80\x99.", pArticle);
+        cf_log_syntax(player, cmd, T("Invalid article \xE2\x80\x98%s\xE2\x80\x99."), pArticle);
         return -1;
     }
 
@@ -5234,7 +5262,7 @@ CF_HAND(cf_art_rule)
 
     if (*pCurrent == '\0')
     {
-        cf_log_syntax(player, cmd, "No regexp specified.");
+        cf_log_syntax(player, cmd, T("No regexp specified."));
         return -1;
     }
 
@@ -5243,7 +5271,7 @@ CF_HAND(cf_art_rule)
     pcre* reNewRegexp = pcre_compile((char *)pCurrent, PCRE_UTF8, &errptr, &erroffset, NULL);
     if (!reNewRegexp)
     {
-        cf_log_syntax(player, cmd, "Error processing regexp \xE2\x80\x98%s\xE2\x80\x99:.",
+        cf_log_syntax(player, cmd, T("Error processing regexp \xE2\x80\x98%s\xE2\x80\x99:."),
               pCurrent, errptr);
         return -1;
     }
@@ -5279,7 +5307,7 @@ CF_HAND(cf_art_rule)
         {
             MEMFREE(study);
         }
-        cf_log_syntax(player, cmd, "Out of memory.");
+        cf_log_syntax(player, cmd, T("Out of memory."));
         return -1;
     }
 
