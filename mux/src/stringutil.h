@@ -482,9 +482,14 @@ void mux_strtok_ctl(__in MUX_STRTOK_STATE *tts, __in const UTF8 *pControl);
 UTF8 *mux_strtok_parseLEN(__in MUX_STRTOK_STATE *tts, __deref_out size_t *pnLen);
 UTF8 *mux_strtok_parse(__deref_in MUX_STRTOK_STATE *tts);
 
+size_t mux_utox(unsigned long uval, UTF8 *buf, bool bUpperCase);
+size_t mux_ui64tox(unsigned long uval, UTF8 *buf, bool bUpperCase);
+
+size_t mux_utoa(unsigned long uval, UTF8 *buf);
 size_t mux_ltoa(long val, __out UTF8 *buf);
 UTF8 *mux_ltoa_t(long val);
 void safe_ltoa(long val, __inout UTF8 *buff, __deref_inout UTF8 **bufc);
+size_t mux_ui64toa(UINT64 uval, UTF8 *buf);
 size_t mux_i64toa(INT64 val, __out UTF8 *buf);
 UTF8 *mux_i64toa_t(INT64 val);
 void safe_i64toa(INT64 val, __inout UTF8 *buff, __deref_inout UTF8 **bufc);
@@ -598,8 +603,8 @@ bool ItemToList_AddString(ITL *pContext, const UTF8 *pStr);
 bool ItemToList_AddStringLEN(ITL *pContext, size_t nStr, const UTF8 *pStr);
 void ItemToList_Final(ITL *pContext);
 
-size_t DCL_CDECL mux_vsnprintf(UTF8 *buff, size_t count, const char *fmt, va_list va);
-void DCL_CDECL mux_sprintf(UTF8 *buff, size_t count, const char *fmt, ...);
+size_t DCL_CDECL mux_vsnprintf(__in_ecount(count) UTF8 *buff, __in size_t count, __in_z const UTF8 *fmt, va_list va);
+void DCL_CDECL mux_sprintf(__in_ecount(count) UTF8 *buff, __in size_t count, __in_z const UTF8 *fmt, ...);
 size_t GetLineTrunc(UTF8 *Buffer, size_t nBuffer, FILE *fp);
 
 typedef struct
