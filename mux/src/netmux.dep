@@ -1,4 +1,4 @@
-# Microsoft Developer Studio Generated Dependency File, included by netmux.mak
+# Included by netmux.mak
 
 .\_build.cpp : \
 	".\_build.h"\
@@ -22,6 +22,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\alloc.cpp : \
@@ -42,6 +43,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\attrcache.cpp : \
@@ -62,6 +64,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\boolexp.cpp : \
@@ -84,6 +87,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\bsd.cpp : \
@@ -110,6 +114,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\command.cpp : \
@@ -129,6 +134,7 @@
 	".\interface.h"\
 	".\libmux.h"\
 	".\match.h"\
+	".\mathutil.h"\
 	".\mguests.h"\
 	".\modules.h"\
 	".\mudconf.h"\
@@ -138,6 +144,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	".\vattr.h"\
 	
 
@@ -166,6 +173,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\conf.cpp : \
@@ -190,6 +198,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\cque.cpp : \
@@ -215,6 +224,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\create.cpp : \
@@ -239,6 +249,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\db.cpp : \
@@ -266,6 +277,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	".\vattr.h"\
 	
 
@@ -289,6 +301,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	".\vattr.h"\
 	
 
@@ -313,6 +326,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\file_c.cpp : \
@@ -337,6 +351,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\flags.cpp : \
@@ -361,6 +376,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\funceval.cpp : \
@@ -378,6 +394,7 @@
 	".\functions.h"\
 	".\help.h"\
 	".\htab.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\mail.h"\
 	".\match.h"\
@@ -390,6 +407,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\funceval2.cpp : \
@@ -418,6 +436,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\functions.cpp : \
@@ -435,6 +454,7 @@
 	".\funmath.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -447,6 +467,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\funmath.cpp : \
@@ -471,6 +492,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\game.cpp : \
@@ -490,6 +512,7 @@
 	".\help.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mguests.h"\
@@ -502,6 +525,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\help.cpp : \
@@ -524,6 +548,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\htab.cpp : \
@@ -544,6 +569,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\local.cpp : \
@@ -566,6 +592,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\log.cpp : \
@@ -587,6 +614,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\look.cpp : \
@@ -602,6 +630,7 @@
 	".\flags.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -612,6 +641,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\mail.cpp : \
@@ -630,6 +660,7 @@
 	".\libmux.h"\
 	".\mail.h"\
 	".\match.h"\
+	".\mathutil.h"\
 	".\modules.h"\
 	".\mudconf.h"\
 	".\powers.h"\
@@ -637,6 +668,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\match.cpp : \
@@ -650,6 +682,7 @@
 	".\externs.h"\
 	".\flags.h"\
 	".\htab.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\modules.h"\
@@ -659,7 +692,8 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
-
+	".\utf8tables.h"\
+	
 
 .\mathutil.cpp : \
 	".\alloc.h"\
@@ -680,6 +714,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\mguests.cpp : \
@@ -705,6 +740,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\modules.cpp : \
@@ -725,6 +761,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\move.cpp : \
@@ -740,6 +777,7 @@
 	".\flags.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -750,6 +788,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\muxcli.cpp : \
@@ -773,6 +812,7 @@
 	".\functions.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -784,6 +824,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\object.cpp : \
@@ -810,27 +851,34 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
-.\pcre.cpp : \
+.\predicates.cpp : \
 	".\alloc.h"\
 	".\attrcache.h"\
+	".\attrs.h"\
 	".\autoconf.h"\
+	".\command.h"\
 	".\config.h"\
 	".\copyright.h"\
 	".\db.h"\
 	".\externs.h"\
 	".\flags.h"\
 	".\htab.h"\
+	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
+	".\mathutil.h"\
 	".\modules.h"\
 	".\mudconf.h"\
-	".\pcre.h"\
+	".\powers.h"\
 	".\stringutil.h"\
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\player.cpp : \
@@ -859,6 +907,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\player_c.cpp : \
@@ -881,6 +930,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\plusemail.cpp : \
@@ -896,13 +946,13 @@
 	".\htab.h"\
 	".\libmux.h"\
 	".\match.h"\
-	".\mathutil.h"\
 	".\modules.h"\
 	".\mudconf.h"\
 	".\stringutil.h"\
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\powers.cpp : \
@@ -925,31 +975,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
-	
-
-.\predicates.cpp : \
-	".\alloc.h"\
-	".\attrcache.h"\
-	".\attrs.h"\
-	".\autoconf.h"\
-	".\command.h"\
-	".\config.h"\
-	".\copyright.h"\
-	".\db.h"\
-	".\externs.h"\
-	".\flags.h"\
-	".\htab.h"\
-	".\interface.h"\
-	".\libmux.h"\
-	".\match.h"\
-	".\mathutil.h"\
-	".\modules.h"\
-	".\mudconf.h"\
-	".\powers.h"\
-	".\stringutil.h"\
-	".\svdhash.h"\
-	".\svdrand.h"\
-	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\quota.cpp : \
@@ -975,6 +1001,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\rob.cpp : \
@@ -999,6 +1026,29 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\pcre.cpp : \
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\autoconf.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\pcre.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\set.cpp : \
@@ -1022,27 +1072,14 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\sha1.cpp : \
-	".\alloc.h"\
-	".\attrcache.h"\
 	".\autoconf.h"\
 	".\config.h"\
 	".\copyright.h"\
-	".\db.h"\
-	".\externs.h"\
-	".\flags.h"\
-	".\htab.h"\
-	".\libmux.h"\
-	".\match.h"\
-	".\modules.h"\
-	".\mudconf.h"\
 	".\sha1.h"\
-	".\stringutil.h"\
-	".\svdhash.h"\
-	".\svdrand.h"\
-	".\timeutil.h"\
 	
 
 .\speech.cpp : \
@@ -1058,6 +1095,7 @@
 	".\flags.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -1068,6 +1106,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\stringutil.cpp : \
@@ -1091,6 +1130,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\strtod.cpp : \
@@ -1111,6 +1151,28 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\svdrand.cpp : \
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\autoconf.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\svdhash.cpp : \
@@ -1132,87 +1194,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
-	
-
-.\svdrand.cpp : \
-	".\alloc.h"\
-	".\attrcache.h"\
-	".\autoconf.h"\
-	".\config.h"\
-	".\copyright.h"\
-	".\db.h"\
-	".\externs.h"\
-	".\flags.h"\
-	".\htab.h"\
-	".\libmux.h"\
-	".\match.h"\
-	".\modules.h"\
-	".\mudconf.h"\
-	".\stringutil.h"\
-	".\svdhash.h"\
-	".\svdrand.h"\
-	".\timeutil.h"\
-	
-
-.\timeabsolute.cpp : \
-	".\alloc.h"\
-	".\attrcache.h"\
-	".\autoconf.h"\
-	".\config.h"\
-	".\copyright.h"\
-	".\db.h"\
-	".\externs.h"\
-	".\flags.h"\
-	".\htab.h"\
-	".\libmux.h"\
-	".\match.h"\
-	".\modules.h"\
-	".\mudconf.h"\
-	".\stringutil.h"\
-	".\svdhash.h"\
-	".\svdrand.h"\
-	".\timeutil.h"\
-	
-
-.\timedelta.cpp : \
-	".\alloc.h"\
-	".\attrcache.h"\
-	".\autoconf.h"\
-	".\config.h"\
-	".\copyright.h"\
-	".\db.h"\
-	".\externs.h"\
-	".\flags.h"\
-	".\htab.h"\
-	".\libmux.h"\
-	".\match.h"\
-	".\modules.h"\
-	".\mudconf.h"\
-	".\stringutil.h"\
-	".\svdhash.h"\
-	".\svdrand.h"\
-	".\timeutil.h"\
-	
-
-.\timeparser.cpp : \
-	".\alloc.h"\
-	".\attrcache.h"\
-	".\autoconf.h"\
-	".\config.h"\
-	".\copyright.h"\
-	".\db.h"\
-	".\externs.h"\
-	".\flags.h"\
-	".\htab.h"\
-	".\libmux.h"\
-	".\match.h"\
-	".\mathutil.h"\
-	".\modules.h"\
-	".\mudconf.h"\
-	".\stringutil.h"\
-	".\svdhash.h"\
-	".\svdrand.h"\
-	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\timer.cpp : \
@@ -1237,6 +1219,71 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\timeabsolute.cpp : \
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\autoconf.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\timedelta.cpp : \
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\autoconf.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\timeparser.cpp : \
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\autoconf.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\mathutil.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\timeutil.cpp : \
@@ -1258,6 +1305,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\timezone.cpp : \
@@ -1278,6 +1326,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\unparse.cpp : \
@@ -1299,6 +1348,28 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\utf8tables.cpp : \
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\autoconf.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\vattr.cpp : \
@@ -1322,29 +1393,8 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	".\vattr.h"\
-	
-
-.\version.cpp : \
-	".\_build.h"\
-	".\alloc.h"\
-	".\attrcache.h"\
-	".\autoconf.h"\
-	".\command.h"\
-	".\config.h"\
-	".\copyright.h"\
-	".\db.h"\
-	".\externs.h"\
-	".\flags.h"\
-	".\htab.h"\
-	".\libmux.h"\
-	".\match.h"\
-	".\modules.h"\
-	".\mudconf.h"\
-	".\stringutil.h"\
-	".\svdhash.h"\
-	".\svdrand.h"\
-	".\timeutil.h"\
 	
 
 .\walkdb.cpp : \
@@ -1370,6 +1420,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\wild.cpp : \
@@ -1391,6 +1442,7 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
 	
 
 .\wiz.cpp : \
@@ -1417,4 +1469,54 @@
 	".\svdhash.h"\
 	".\svdrand.h"\
 	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\levels.cpp : \
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\attrs.h"\
+	".\autoconf.h"\
+	".\command.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\levels.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\mathutil.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\powers.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\version.cpp : \
+	".\_build.h"\
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\autoconf.h"\
+	".\command.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
 	
