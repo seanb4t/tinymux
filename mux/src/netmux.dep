@@ -109,6 +109,7 @@
 	".\mathutil.h"\
 	".\modules.h"\
 	".\mudconf.h"\
+	".\slave.h"\
 	".\stringutil.h"\
 	".\svdhash.h"\
 	".\svdrand.h"\
@@ -393,6 +394,7 @@
 	".\functions.h"\
 	".\help.h"\
 	".\htab.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\mail.h"\
 	".\match.h"\
@@ -452,6 +454,7 @@
 	".\funmath.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -509,6 +512,7 @@
 	".\help.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mguests.h"\
@@ -626,6 +630,7 @@
 	".\flags.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -677,6 +682,7 @@
 	".\externs.h"\
 	".\flags.h"\
 	".\htab.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\modules.h"\
@@ -771,6 +777,7 @@
 	".\flags.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -805,6 +812,7 @@
 	".\functions.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -859,6 +867,7 @@
 	".\flags.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -1086,6 +1095,7 @@
 	".\flags.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
@@ -1449,6 +1459,32 @@
 	".\flags.h"\
 	".\htab.h"\
 	".\interface.h"\
+	".\libmux.h"\
+	".\match.h"\
+	".\mathutil.h"\
+	".\modules.h"\
+	".\mudconf.h"\
+	".\powers.h"\
+	".\stringutil.h"\
+	".\svdhash.h"\
+	".\svdrand.h"\
+	".\timeutil.h"\
+	".\utf8tables.h"\
+	
+
+.\levels.cpp : \
+	".\alloc.h"\
+	".\attrcache.h"\
+	".\attrs.h"\
+	".\autoconf.h"\
+	".\command.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\db.h"\
+	".\externs.h"\
+	".\flags.h"\
+	".\htab.h"\
+	".\levels.h"\
 	".\libmux.h"\
 	".\match.h"\
 	".\mathutil.h"\
