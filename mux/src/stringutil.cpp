@@ -2767,7 +2767,7 @@ UTF8 *mux_strlwr(const UTF8 *a, size_t &n)
         const string_desc *qDesc = mux_tolower(a, bXor);
         if (NULL == qDesc)
         {
-            m = utf8_FirstByte[Buffer[n]];
+            m = utf8_FirstByte[*a];
             if (LBUF_SIZE-1 < n + m)
             {
                 break;
@@ -2823,7 +2823,63 @@ UTF8 *mux_strupr(const UTF8 *a, size_t &n)
         const string_desc *qDesc = mux_toupper(a, bXor);
         if (NULL == qDesc)
         {
-            m = utf8_FirstByte[Buffer[n]];
+            m = utf8_FirstByte[*a];
+            if (LBUF_SIZE-1 < n + m)
+            {
+                break;
+            }
+
+            for (j = 0; j < m; j++)
+            {
+                Buffer[n+j] = a[j];
+            }
+        }
+        else
+        {
+            m = qDesc->n_bytes;
+            if (LBUF_SIZE-1 < n + m)
+            {
+                break;
+            }
+
+            if (bXor)
+            {
+                for (j = 0; j < m; j++)
+                {
+                    Buffer[n+j] = a[j] ^ qDesc->p[j];
+                }
+            }
+            else
+            {
+                for (j = 0; j < m; j++)
+                {
+                    Buffer[n+j] = qDesc->p[j];
+                }
+            }
+        }
+        n += m;
+        a = utf8_NextCodePoint(a);
+    }
+    Buffer[n] = '\0';
+    return Buffer;
+}
+
+// mux_foldpunc - alias punctuation.
+//
+UTF8 *mux_foldpunc(const UTF8 *a, size_t &n)
+{
+    static UTF8 Buffer[LBUF_SIZE];
+
+    n = 0;
+    while ('\0' != *a)
+    {
+        size_t j;
+        size_t m;
+        bool bXor;
+        const string_desc *qDesc = mux_foldpunc(a, bXor);
+        if (NULL == qDesc)
+        {
+            m = utf8_FirstByte[*a];
             if (LBUF_SIZE-1 < n + m)
             {
                 break;
@@ -2882,7 +2938,7 @@ size_t DCL_CDECL mux_vsnprintf(__in_ecount(nBuffer) UTF8 *pBuffer, __in size_t n
 
     // Rather than copy a character at a time, some copies are deferred and performed in a single request.
     //
-    size_t iFmtDeferred;
+    size_t iFmtDeferred = 0;
     size_t dDeferred = 0;
 
     size_t iBuffer = 0;
@@ -2935,8 +2991,8 @@ size_t DCL_CDECL mux_vsnprintf(__in_ecount(nBuffer) UTF8 *pBuffer, __in size_t n
 
                 size_t cbBuff;
                 size_t cpBuff;
-                size_t nWidth;
-                size_t nPrecision;
+                size_t nWidth = 0;
+                size_t nPrecision = 0;
                 bool bLeft = false;
                 bool bZeroPadded = false;
                 bool bWidth = false;
@@ -5565,6 +5621,37 @@ void mux_string::UpperCaseFirst(void)
 
         bool bXor;
         const string_desc *qDesc = mux_totitle(p, bXor);
+        if (NULL != qDesc)
+        {
+            size_t m = qDesc->n_bytes;
+            if (bXor)
+            {
+                // TODO: In future, the string may need to be expanded or contracted in terms of points.
+                //
+                size_t j;
+                for (j = 0; j < m; j++)
+                {
+                    p[j] ^= qDesc->p[j];
+                }
+            }
+            else
+            {
+                // TODO: The string must be expanded or contracted in terms of points and bytes.
+                //
+            }
+        }
+    }
+}
+
+void mux_string::FoldPunctuation(void)
+{
+    mux_cursor i = CursorMin;
+    if (i < m_iLast)
+    {
+        UTF8 *p = m_autf + i.m_byte;
+
+        bool bXor;
+        const string_desc *qDesc = mux_foldpunc(p, bXor);
         if (NULL != qDesc)
         {
             size_t m = qDesc->n_bytes;
