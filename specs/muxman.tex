@@ -32,7 +32,7 @@
 \setlength{\textwidth}{6in}
 \title{TinyMUX Manual}
 \author{Stephen Dennis (AKA Brazil)}
-\date{2008-JUN-08}
+\date{2009-FEB-16}
 
 \begin{document}
 \frontmatter
@@ -41,14 +41,22 @@
 
 \mainmatter
 \chapter{Introduction}
-TinyMUX is a member of the MUSH family of servers and ultimately
+A TinyMUX server allows a (possibly anonymous) crowd of people from all over
+the world to interact with each other within a persistent, virtual, text-based
+environment.
+Within this environment, players are able change the grid by adding rooms and
+exits, add code in the form of commands and functions, and communicate with
+each other.
+It is a platform for a wide range of game types including combat, simulation,
+loot-and-solve, heavily-coded roleplaying, lightly-coded roleplaying, or pure
+social elements.
+Most MUSH-style games contain an element of roleplaying, but this is not a
+requirement.
+
+TinyMUX is a member of the MUSH family of servers which are all ultimately
 derived from the original TinyMUD.
-As a platform for building text-based, TinyMUX is a generic enough to support
-a wide range of game types that include combat, simulation, loot-and-solve,
-heavily-coded roleplaying, lightly-coded roleplaying, or pure social elements.
-However, once one is familiar with a tool, it tends to be used over and over
-to solve the same types of games.
-Most MUSH-style games contain an element of roleplaying.
+The capabilities and functions of each in their several versions vary, but
+what is learned using one can be carried to another with little effort.
 
 Documentation that is available is both limited and out of date. In order to
 get a good idea of what you're dealing with, you may need to splice together
@@ -89,6 +97,15 @@ for an exception to the type rule.}.
 Once an object is destroyed, its dbref can be re-assigned to a new,
 different object.
 
+\item[Hardcode]
+The term \emph{hardcode} usually means the approximately 120,000 lines of C/C++
+source code that make up the game server itself.
+All of the MUSH-type text-based game servers are written in C except
+TinyMUX 2 which is a combination of C and C++.
+However, the term can also be used more generically to refer to anything
+written in C/C++ or even to anything written in a general purpose programming
+language.
+
 \item[Player]
 This can refer to two things: 1) Someone who reads manuals and
 logs into a MUSH may be referred to as a player, and 2) An object with a type of
@@ -102,6 +119,14 @@ Objects with the PUPPET flag are often used to represent pets and NPCs
 When set on an object, the object will grow eyes and ears and relay everything
 it sees and hears to its owner. The owning Player controls what the Puppet
 says and does.
+
+\item[Softcode]
+\emph{Softcode} is the platform language that TinyMUX provides to users.
+It is also called \emph{MUSHcode}.
+For the purpose of this document, we'll call this platform language
+\emph{softcode} with the understanding that we expect it to run on a
+particular set of closely-related servers and on TinyMUX 2 in
+particular.
 
 \end{description}
 
@@ -118,36 +143,6 @@ Commonly-used abbreviations:
 
 \end{description}
 \section{Frequently Asked Questions (FAQ)}
-\subsection{What is a Text-Based Game Server?}
-It is a program that allows a multitude of people to connect to the same
-text-based environment and interact with each other and with the environment.
-The administrator runs this server on top of an operating system and the server
-in turn allows other people to connect. % See Figure 1 below.
-
-These layers are written in a particular computer language. The hardware
-layers have their own C-like language for describing how a body of gates are
-connected logically, geographical, thermally, etc.  Most operating systems are
-written in C/C++ with some assembly language and some higher-level scripting
-or macro languages. This is also sometimes called hardcode.
-
-The term \emph{hardcode} usually means the approximately 120,000 lines of C/C++
-source code that make up the game server itself.
-All of the MUSH-type text-based game servers are written in C except
-TinyMUX 2 which is a combination of C and C++.
-
-However, the term can also be used more generically to refer to anything
-written in C/C++ or even to anything written in a general purpose programming
-language.
-
-All of the Softcode Global Packages are written in a mostly universal language
-that doesn't have a name. You could call it MUSHcode, but then you are probably
-referring to the commands and functions of a specific version of a specific
-server. You could call
-it softcode, but then you are also probably including non-MUSH family languages
-further away and more incompatible. For the purpose of this document, we'll
-call it softcode with the understanding that we expect it to run on a particular
-set of closely related servers and on TinyMUX 2 in particular.
-
 \subsection{I'm using Windows. Why does the log say it can't find its files?}
 You are probably running the netmux.exe file directly from the GUI by double
 clicking on the icon. The server needs the current directory to be the game
@@ -189,7 +184,74 @@ Support for an external scripting language (usually driven from triggers).
 
 \end{description}
 
-\section{Connecting to an Existing Game}
+\section{Connecting to a Game}
+To open a session with a game, you need its host name (e.g., mygame.com) and
+the port number (e.g., 4011) it is listening on. These two things together are
+called a game's \emph{addy}. Many games allow users to create accounts for
+themselves at the welcome screen, but you may have been given a username and
+password through some other means. Most clients have a dialog for entering
+these four items: 1) hostname, 2) port, 3) username, and 4) password. If you
+don't have a username or password, leave them blank, and you can fill them in
+later after you create your character.
+
+Your client may also ask you the method used connect. TinyMUX uses the following commands at the welcome screen:
+
+\footnotesize{\texttt{
+\begin{verse}
+create $<$username$>$ $<$password$>$\\
+connect $<$username$>$ $<$password$>$
+\end{verse}
+}}
+
+The password can be a phrase of any length and it can contain spaces,
+but be careful to remember it.
+If the username contains a space, surround the name with double quotes
+(e.g., "Mr. Smith").
+Instead of a username, you can also use your \emph{player object}'s dbref
+(e.g., \#12345).
+
+Once connected, your session is associated with a \emph{player object} in the
+game's database.
+It will contain attributes, flags, and powers which you can sometimes change,
+and it will have a location (i.e., a room or thing object which in turn will
+have their own attributes, flags, and powers).
+Rooms are connected to each other with exits, things can be carried by
+players, players and things can be located in rooms.
+How these locations interconnect is call a game's \emph{grid} and can
+represent the layout of roads and rooms of a city, a set of tunnels and
+caverns, a space station, or whatever.
+
+There are a few initial, suggested commands to use before proceeding:
+
+\footnotesize{\texttt{
+\begin{verse}
+@set me=ANSI\\
+@lock me=me\\
+@lock/use me=me\\
+@lock/enter me=me\\
+@sex me=male\\
+@desc me=\%r[space(5)]You see ...
+\end{verse}
+}}
+
+The name, me, is a reference to yourself.
+The ANSI flag enables color to be sent to your client.
+The locks (in this case, default, use, and enter, respectively) prevent
+other players from picking you up or going inside you.
+You can use a softcode function by surrounding it in square brackets; space()
+returns the requested number of spaces which causes your description to
+indent by five space.
+See `help @lock', `help substitutions', `help space', and `help look' for more
+information.
+With these changes in place, the appearance of the room and your appearance have
+changed:
+
+\footnotesize{\texttt{
+\begin{verse}
+look\\
+look me
+\end{verse}
+}}
 
 \chapter{Hosting First Steps}
 \section{How to Begin Running TinyMUX}
@@ -520,5 +582,6 @@ format:
 }}
 The 29 at the end represents the number of significant bits in the base subnet
 address.
+
 \backmatter
 \end{document}
