@@ -11,6 +11,7 @@
 #include "externs.h"
 
 #include "command.h"
+#include "mathutil.h"
 
 NAMETAB logdata_nametab[] =
 {
@@ -18,7 +19,7 @@ NAMETAB logdata_nametab[] =
     {T("location"),        1,  0,  LOGOPT_LOC},
     {T("owner"),           1,  0,  LOGOPT_OWNER},
     {T("timestamp"),       1,  0,  LOGOPT_TIMESTAMP},
-    {(UTF8 *) NULL,             0,  0,  0}
+    {(UTF8 *) NULL,        0,  0,  0}
 };
 
 NAMETAB logoptions_nametab[] =
@@ -41,7 +42,7 @@ NAMETAB logoptions_nametab[] =
     {T("suspect"),         2,  0,  LOG_SUSPECTCMDS},
     {T("time_usage"),      1,  0,  LOG_TIMEUSE},
     {T("wizard"),          1,  0,  LOG_WIZARD},
-    {(UTF8 *) NULL,                     0,  0,  0}
+    {(UTF8 *) NULL,        0,  0,  0}
 };
 
 /* ---------------------------------------------------------------------------
@@ -49,7 +50,7 @@ NAMETAB logoptions_nametab[] =
  * log entry.
  */
 
-bool start_log(const UTF8 *primary, const UTF8 *secondary)
+bool start_log(const UTF8 * primary, const UTF8 * secondary)
 {
     mudstate.logging++;
     if (  1 <= mudstate.logging
@@ -67,9 +68,9 @@ bool start_log(const UTF8 *primary, const UTF8 *secondary)
                 ltaNow.GetLocal();
                 FIELDEDTIME ft;
                 ltaNow.ReturnFields(&ft);
-                mux_sprintf(buffer, sizeof(buffer), T("%d.%02d%02d:%02d%02d%02d "), ft.iYear,
-                    ft.iMonth, ft.iDayOfMonth, ft.iHour, ft.iMinute,
-                    ft.iSecond);
+                mux_sprintf(buffer, sizeof(buffer),
+                    T("%d.%02d%02d:%02d%02d%02d "), ft.iYear, ft.iMonth,
+                    ft.iDayOfMonth, ft.iHour, ft.iMinute, ft.iSecond);
             }
 
             // Write the header to the log.
@@ -105,7 +106,7 @@ bool start_log(const UTF8 *primary, const UTF8 *secondary)
 
 void end_log(void)
 {
-    Log.WriteString((UTF8 *)ENDLINE);
+    Log.WriteString((UTF8 *) ENDLINE);
     Log.Flush();
     mudstate.logging--;
 }
@@ -114,7 +115,8 @@ void end_log(void)
  * log_perror: Write perror message to the log
  */
 
-void log_perror(const UTF8 *primary, const UTF8 *secondary, const UTF8 *extra, const UTF8 *failing_object)
+void log_perror(const UTF8 * primary, const UTF8 * secondary,
+    const UTF8 * extra, const UTF8 * failing_object)
 {
     start_log(primary, secondary);
     if (extra && *extra)
@@ -130,7 +132,7 @@ void log_perror(const UTF8 *primary, const UTF8 *secondary, const UTF8 *extra, c
     Log.WriteString(T(": "));
     Log.WriteString(mux_strerror(errno));
 #ifndef WIN32
-    Log.WriteString((UTF8 *)ENDLINE);
+    Log.WriteString((UTF8 *) ENDLINE);
 #endif // !WIN32
     Log.Flush();
     mudstate.logging--;
@@ -140,7 +142,7 @@ void log_perror(const UTF8 *primary, const UTF8 *secondary, const UTF8 *extra, c
  * log_text, log_number: Write text or number to the log file.
  */
 
-void log_text(const UTF8 *text)
+void log_text(const UTF8 * text)
 {
     Log.WriteString(strip_color(text));
 }
@@ -150,7 +152,7 @@ void log_number(int num)
     Log.WriteInteger(num);
 }
 
-void DCL_CDECL log_printf(__in_z const UTF8 *fmt, ...)
+void DCL_CDECL log_printf(__in_z const UTF8 * fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -244,7 +246,8 @@ static const UTF8 *OBJTYP(dbref thing)
 
 void log_type_and_name(dbref thing)
 {
-    Log.tinyprintf(T("%s #%d(%s)"), OBJTYP(thing), thing, Good_obj(thing) ? PureName(thing) : T(""));
+    Log.tinyprintf(T("%s #%d(%s)"), OBJTYP(thing), thing,
+        Good_obj(thing) ? PureName(thing) : T(""));
     return;
 }
 
@@ -279,12 +282,12 @@ void do_log
     // Restrict filename to a subdirectory to reduce the possibility
     // of a security hole.
     //
-    UTF8 *temp_ptr = (UTF8 *)strrchr((char *)pFilename, '/');
+    UTF8 *temp_ptr = (UTF8 *) strrchr((char *) pFilename, '/');
     if (temp_ptr)
     {
         pFilename = ++temp_ptr;
     }
-    temp_ptr = (UTF8 *)strrchr((char *)pFilename, '\\');
+    temp_ptr = (UTF8 *) strrchr((char *) pFilename, '\\');
     if (temp_ptr)
     {
         pFilename = ++temp_ptr;
@@ -293,9 +296,9 @@ void do_log
     // Check for and disallow leading periods, empty strings
     // and filenames over 30 characters.
     //
-    size_t n = strlen((char *)pFilename);
+    size_t n = strlen((char *) pFilename);
     if (  n == 0
-       || n > 30)
+       || 30 < n)
     {
         bValid = false;
     }
@@ -359,4 +362,324 @@ void do_log
 
     notify(executor, T("Not a valid log file."));
     return;
+}
+
+CLogFile Log;
+void CLogFile::WriteInteger(int iNumber)
+{
+    UTF8 aTempBuffer[I32BUF_SIZE];
+    size_t nTempBuffer = mux_ltoa(iNumber, aTempBuffer);
+    WriteBuffer(nTempBuffer, aTempBuffer);
+}
+
+void CLogFile::WriteBuffer(size_t nString, const UTF8 * pString)
+{
+    if (!bEnabled)
+    {
+        return;
+    }
+
+#if defined(WINDOWS_THREADS)
+    EnterCriticalSection(&csLog);
+#endif // WINDOWS_THREADS
+
+    while (nString > 0)
+    {
+        size_t nAvailable = SIZEOF_LOG_BUFFER - m_nBuffer;
+        if (nAvailable == 0)
+        {
+            Flush();
+            continue;
+        }
+
+        size_t nToMove = nAvailable;
+        if (nString < nToMove)
+        {
+            nToMove = nString;
+        }
+
+        // Move nToMove bytes from pString to aBuffer+nBuffer
+        //
+        memcpy(m_aBuffer + m_nBuffer, pString, nToMove);
+        pString += nToMove;
+        nString -= nToMove;
+        m_nBuffer += nToMove;
+    }
+    Flush();
+
+#if defined(WINDOWS_THREADS)
+    LeaveCriticalSection(&csLog);
+#endif // WINDOWS_THREADS
+}
+
+void CLogFile::WriteString(const UTF8 * pString)
+{
+    size_t nString = strlen((char *) pString);
+    WriteBuffer(nString, pString);
+}
+
+void DCL_CDECL CLogFile::tinyprintf(const UTF8 * fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    UTF8 aTempBuffer[SIZEOF_LOG_BUFFER];
+    size_t nString = mux_vsnprintf(aTempBuffer, SIZEOF_LOG_BUFFER, fmt, ap);
+    va_end(ap);
+    WriteBuffer(nString, aTempBuffer);
+}
+
+static void MakeLogName
+(
+    const UTF8 *pBasename,
+    const UTF8 *szPrefix,
+    CLinearTimeAbsolute lta,
+    UTF8 *szLogName,
+    size_t nLogName
+)
+{
+    UTF8 szTimeStamp[18];
+    lta.ReturnUniqueString(szTimeStamp, sizeof(szTimeStamp));
+    if (  pBasename
+       && pBasename[0] != '\0')
+    {
+        mux_sprintf(szLogName, nLogName, T("%s/%s-%s.log"),
+            pBasename, szPrefix, szTimeStamp);
+    }
+    else
+    {
+        mux_sprintf(szLogName, nLogName, T("%s-%s.log"), szPrefix, szTimeStamp);
+    }
+}
+
+bool CLogFile::CreateLogFile(void)
+{
+    CloseLogFile();
+
+    m_nSize = 0;
+
+    bool bSuccess;
+#if defined(WINDOWS_FILES)
+    size_t nFilename;
+    UTF16 *pFilename = ConvertFromUTF8ToUTF16(m_szFilename, &nFilename);
+    if (NULL == pFilename)
+    {
+        return false;
+    }
+
+    m_hFile = CreateFile(pFilename, GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ, 0, CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL + FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    bSuccess = (INVALID_HANDLE_VALUE != m_hFile);
+#elif defined(UNIX_FILES)
+    bSuccess = mux_open(&m_fdFile, m_szFilename,
+        O_RDWR | O_BINARY | O_CREAT | O_TRUNC);
+#endif // UNIX_FILES
+    return bSuccess;
+}
+
+void CLogFile::AppendLogFile(void)
+{
+    CloseLogFile();
+
+    bool bSuccess;
+#if defined(WINDOWS_FILES)
+    size_t nFilename;
+    UTF16 *pFilename = ConvertFromUTF8ToUTF16(m_szFilename, &nFilename);
+    if (NULL == pFilename)
+    {
+        return;
+    }
+
+    m_hFile = CreateFile(pFilename, GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ, 0, OPEN_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL + FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    bSuccess = (INVALID_HANDLE_VALUE != m_hFile);
+#elif defined(UNIX_FILES)
+    bSuccess = mux_open(&m_fdFile, m_szFilename, O_RDWR | O_BINARY);
+#endif // UNIX_FILES
+
+    if (bSuccess)
+    {
+#if defined(WINDOWS_FILES)
+        SetFilePointer(m_hFile, 0, 0, FILE_END);
+#elif defined(UNIX_FILES)
+        mux_lseek(m_fdFile, 0, SEEK_END);
+#endif // UNIX_FILES
+    }
+}
+
+void CLogFile::CloseLogFile(void)
+{
+#if defined(WINDOWS_FILES)
+    if (INVALID_HANDLE_VALUE != m_hFile)
+    {
+        CloseHandle(m_hFile);
+        m_hFile = INVALID_HANDLE_VALUE;
+    }
+#elif defined(UNIX_FILES)
+    if (MUX_OPEN_INVALID_HANDLE_VALUE != m_fdFile)
+    {
+        mux_close(m_fdFile);
+        m_fdFile = MUX_OPEN_INVALID_HANDLE_VALUE;
+    }
+#endif // UNIX_FILES
+}
+
+#define FILE_SIZE_TRIGGER (512*1024UL)
+
+void CLogFile::Flush(void)
+{
+    if (  m_nBuffer <= 0
+       || !bEnabled)
+    {
+        return;
+    }
+
+    if (bUseStderr)
+    {
+        // There is no recourse if the following fails.
+        //
+        (void) fwrite(m_aBuffer, m_nBuffer, 1, stderr);
+    }
+    else
+    {
+        m_nSize += m_nBuffer;
+#if defined(WINDOWS_FILES)
+        unsigned long nWritten;
+        bool fSuccess = true;
+        if (!WriteFile(m_hFile, m_aBuffer, (DWORD) m_nBuffer, &nWritten, NULL))
+        {
+            fSuccess = false;
+        }
+#elif defined(UNIX_FILES)
+        ssize_t written = mux_write(m_fdFile, m_aBuffer, m_nBuffer);
+        bool fSuccess = (0 < written && m_nBuffer == (size_t) written);
+#endif // UNIX_FILES
+
+        if (!fSuccess)
+        {
+            raw_broadcast(WIZARD,
+                T("GAME: Unable to write to the log.  The disk may be full."));
+        }
+
+        if (m_nSize > FILE_SIZE_TRIGGER)
+        {
+            CloseLogFile();
+
+            m_ltaStarted.GetLocal();
+            MakeLogName(m_pBasename, m_szPrefix, m_ltaStarted, m_szFilename,
+                sizeof(m_szFilename));
+
+            CreateLogFile();
+        }
+    }
+    m_nBuffer = 0;
+}
+
+void CLogFile::SetPrefix(const UTF8 * szPrefix)
+{
+    if (  !bUseStderr
+       && strcmp((char *) szPrefix, (char *) m_szPrefix) != 0)
+    {
+        if (bEnabled)
+        {
+            CloseLogFile();
+        }
+
+        UTF8 szNewName[SIZEOF_PATHNAME];
+        MakeLogName(m_pBasename, szPrefix, m_ltaStarted, szNewName,
+            sizeof(szNewName));
+        if (bEnabled)
+        {
+            ReplaceFile(m_szFilename, szNewName);
+        }
+        mux_strncpy(m_szPrefix, szPrefix, 31);
+        mux_strncpy(m_szFilename, szNewName, SIZEOF_PATHNAME - 1);
+
+        if (bEnabled)
+        {
+            AppendLogFile();
+        }
+    }
+}
+
+void CLogFile::SetBasename(const UTF8 * pBasename)
+{
+    if (m_pBasename)
+    {
+        MEMFREE(m_pBasename);
+        m_pBasename = NULL;
+    }
+
+    if (  pBasename
+       && strcmp((char *) pBasename, "-") == 0)
+    {
+        bUseStderr = true;
+    }
+    else
+    {
+        bUseStderr = false;
+        if (pBasename)
+        {
+            m_pBasename = StringClone(pBasename);
+        }
+        else
+        {
+            m_pBasename = StringClone(T(""));
+        }
+    }
+}
+
+CLogFile::CLogFile(void)
+{
+#if defined(WINDOWS_THREADS)
+    InitializeCriticalSection(&csLog);
+#endif // WINDOWS_THREADS
+
+    m_ltaStarted.GetLocal();
+#if defined(WINDOWS_FILES)
+    m_hFile = INVALID_HANDLE_VALUE;
+#elif defined(UNIX_FILES)
+    m_fdFile = MUX_OPEN_INVALID_HANDLE_VALUE;
+#endif // UNIX_FILES
+    m_nSize = 0;
+    m_nBuffer = 0;
+    bEnabled = false;
+    bUseStderr = true;
+    m_pBasename = NULL;
+    m_szPrefix[0] = '\0';
+    m_szFilename[0] = '\0';
+}
+
+void CLogFile::StartLogging()
+{
+    if (!bUseStderr)
+    {
+        m_ltaStarted.GetLocal();
+        MakeLogName(m_pBasename, m_szPrefix, m_ltaStarted, m_szFilename,
+            sizeof(m_szFilename));
+        CreateLogFile();
+    }
+    bEnabled = true;
+}
+
+void CLogFile::StopLogging(void)
+{
+    Flush();
+    bEnabled = false;
+    if (!bUseStderr)
+    {
+        CloseLogFile();
+        m_szPrefix[0] = '\0';
+        m_szFilename[0] = '\0';
+        SetBasename(NULL);
+    }
+}
+
+CLogFile::~CLogFile(void)
+{
+    StopLogging();
+#if defined(WINDOWS_THREADS)
+    DeleteCriticalSection(&csLog);
+#endif // WINDOWS_THREADS
 }
