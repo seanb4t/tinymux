@@ -323,7 +323,7 @@ NAMETAB lock_sw[] =
     {T("tportlock"),       2,  CA_PUBLIC,  A_LTPORT},
     {T("uselock"),         1,  CA_PUBLIC,  A_LUSE},
     {T("userlock"),        4,  CA_PUBLIC,  A_LUSER},
-    {T("visiblelock"),     1,  CA_PUBLIC,  A_LVISIBILITY},
+    {T("visiblelock"),     1,  CA_PUBLIC,  A_LVISIBLE},
     {(UTF8 *) NULL,        0,          0,  0}
 };
 
@@ -4777,9 +4777,9 @@ void do_hook(dbref executor, dbref caller, dbref enactor, int eval, int key, UTF
 NAMETAB charset_nametab[] =
 {
     {T("ascii"),           5,       0,     ALLOW_CHARSET_ASCII},
-    {T("latin-1"),         5,       0,     ALLOW_CHARSET_8859_1},
-    {T("latin-2"),         5,       0,     ALLOW_CHARSET_8859_2},
-    {T("iso8859-1"),       5,       0,     ALLOW_CHARSET_8859_1},
-    {T("iso8859-2"),       5,       0,     ALLOW_CHARSET_8859_2},
+    {T("latin-1"),         7,       0,     ALLOW_CHARSET_8859_1},
+    {T("latin-2"),         7,       0,     ALLOW_CHARSET_8859_2},
+    {T("iso8859-1"),       9,       0,     ALLOW_CHARSET_8859_1},
+    {T("iso8859-2"),       9,       0,     ALLOW_CHARSET_8859_2},
     {(UTF8 *) NULL,        0,       0,     0}
 };
