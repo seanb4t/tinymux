@@ -1,4 +1,4 @@
-// ritsu.cpp : Entry point for the application is wWinMain().
+// ritsu.cpp : Entry point for this application is wWinMain().
 //
 //
 // Notes about specific messages:
@@ -9,10 +9,7 @@
 //                    child window.  This is a bug in WINE.
 //
 // WM_NCCREATE     -  This is not necessarily the first message to the window
-//                    procedure. WM_GETMINMAXINFO (and probably others) can be
-//                    sent earlier.  We cannot reliably use lpCreateParams to
-//                    pass a CWindow pointer to be associated with the window
-//                    handle.  IME may be interacting to cause this.
+//                    procedure. WM_GETMINMAXINFO can be sent earlier.
 //
 // WM_NCDESTROY    -  This is guaranteed to be the last message sent to the
 //                    window procedure before the window handle is released.
@@ -141,6 +138,7 @@ CRitsuApp::CRitsuApp()
     m_szOutputClass[0]  = L'\0';
     m_szInputClass[0]   = L'\0';
     m_bMsftEdit = false;
+    m_hwndAbout = NULL;
 }
 
 LRESULT CALLBACK CRitsuApp::CBTProc
@@ -323,7 +321,9 @@ WPARAM CRitsuApp::Run(void)
                 {
                     // Translate and dispatch message to Windows Procedure.
                     //
-                    if (  !TranslateMDISysAccel(g_theApp.m_pMainFrame->m_pMDIControl->m_hwnd, &msg)
+                    if (  (  NULL == m_hwndAbout
+                          || !IsDialogMessage(m_hwndAbout, &msg))
+                       && !TranslateMDISysAccel(g_theApp.m_pMainFrame->m_pMDIControl->m_hwnd, &msg)
                        && !TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
                     {
                         TranslateMessage(&msg);
@@ -494,3 +494,26 @@ bool CRitsuApp::UnregisterClasses(void)
 
     return b;
 }
+
+// Mesage handler for about box.
+//
+LRESULT CALLBACK CRitsuApp::AboutProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_INITDIALOG:
+        return TRUE;
+
+    case WM_COMMAND:
+        if (  IDOK     == LOWORD(wParam)
+           || IDCANCEL == LOWORD(wParam))
+        {
+            DestroyWindow(hDlg);
+            g_theApp.m_hwndAbout = NULL;
+            return TRUE;
+        }
+        break;
+    }
+    return FALSE;
+}
+
