@@ -125,27 +125,6 @@ LRESULT CMainFrame::OnCreate(CREATESTRUCT *pcs)
     return 0;
 }
 
-// Mesage handler for about box.
-//
-LRESULT CALLBACK AboutProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return TRUE;
-
-    case WM_COMMAND:
-        if (  IDOK     == LOWORD(wParam)
-           || IDCANCEL == LOWORD(wParam))
-        {
-            ::EndDialog(hDlg, LOWORD(wParam));
-            return TRUE;
-        }
-        break;
-    }
-    return FALSE;
-}
-
 LRESULT CMainFrame::OnCommand(WPARAM wParam, LPARAM lParam)
 {
     // Parse the menu selections:
@@ -155,25 +134,19 @@ LRESULT CMainFrame::OnCommand(WPARAM wParam, LPARAM lParam)
     switch (wmId)
     {
     case IDM_FILE_NEW:
-        (void)m_pMDIControl->CreateNewChild();
+        OnSessionNew();
         break;
 
     case IDM_FILE_OPEN:
-        ;
+        OnSessionOpen();
         break;
 
     case IDM_FILE_CLOSE:
-        {
-            CWindow *pChild = m_pMDIControl->GetActive();
-            if (NULL != pChild)
-            {
-                pChild->SendMessage(WM_CLOSE, 0, 0);
-            }
-        }
+        OnSessionCloseActive();
         break;
 
     case IDM_ABOUT:
-        DialogBox(g_theApp.m_hInstance, (LPCTSTR)IDD_ABOUTBOX, m_hwnd, (DLGPROC)AboutProc);
+        OnAbout();
         break;
 
     case IDM_EXIT:
@@ -194,7 +167,7 @@ LRESULT CMainFrame::OnCommand(WPARAM wParam, LPARAM lParam)
 
     case IDM_WINDOW_CLOSE_ALL:
         {
-            CWindow *pChild = NULL;
+            CSessionFrame *pChild = NULL;
 
             do {
                 pChild = m_pMDIControl->GetActive();
@@ -213,7 +186,7 @@ LRESULT CMainFrame::OnCommand(WPARAM wParam, LPARAM lParam)
         }
         else
         {
-            CWindow *pChild = m_pMDIControl->GetActive();
+            CSessionFrame *pChild = m_pMDIControl->GetActive();
             if (NULL != pChild)
             {
                 pChild->SendMessage(WM_CLOSE, 0, 0);
@@ -221,6 +194,37 @@ LRESULT CMainFrame::OnCommand(WPARAM wParam, LPARAM lParam)
         }
     }
     return 0;
+}
+
+void CMainFrame::OnSessionNew()
+{
+    (void)m_pMDIControl->CreateNewChild();
+}
+
+void CMainFrame::OnSessionOpen()
+{
+}
+
+void CMainFrame::OnSessionCloseActive()
+{
+    CSessionFrame *pChild = m_pMDIControl->GetActive();
+    if (NULL != pChild)
+    {
+        pChild->SendMessage(WM_CLOSE, 0, 0);
+    }
+}
+
+void CMainFrame::OnAbout()
+{
+    if (NULL == g_theApp.m_hwndAbout)
+    {
+        g_theApp.m_hwndAbout = CreateDialog(g_theApp.m_hInstance, (LPCTSTR)IDD_ABOUTBOX, m_hwnd, (DLGPROC)g_theApp.AboutProc);
+        ::ShowWindow(g_theApp.m_hwndAbout, SW_SHOW);
+    }
+    else
+    {
+        SetFocus(g_theApp.m_hwndAbout);
+    }
 }
 
 CMainFrame::CMainFrame()
