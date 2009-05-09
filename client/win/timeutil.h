@@ -1,7 +1,7 @@
 /*! \file timeutil.h
  * \brief CLinearTimeAbsolute and CLinearTimeDelta modules.
  *
- * $Id: timeutil.h 3048 2007-12-28 01:08:40Z brazilofmux $
+ * $Id: timeutil.h 3851 2008-09-07 04:58:22Z brazilofmux $
  *
  * Date/Time code based on algorithms presented in "Calendrical Calculations",
  * Cambridge Press, 1998.
@@ -41,7 +41,7 @@ class CLinearTimeAbsolute
 private:
     INT64  m_tAbsolute;
     static int m_nCount;
-    static TCHAR m_Buffer[I64BUF_SIZE*2];
+    static UTF8 m_Buffer[I64BUF_SIZE*2];
 
 public:
     //CLinearTimeAbsolute(int tInitial);
@@ -87,7 +87,7 @@ class CLinearTimeDelta
 
 private:
     INT64 m_tDelta;
-    static WCHAR m_Buffer[I64BUF_SIZE*2];
+    static UTF8 m_Buffer[I64BUF_SIZE*2];
 
 public:
     CLinearTimeDelta(void);
@@ -118,6 +118,7 @@ private:
     bool bAlarmSet;
 #if defined(WINDOWS_THREADS)
     HANDLE hThread;
+static DWORD WINAPI AlarmProc(LPVOID lpParameter);
 #endif // WINDOWS_THREADS
 
 public:
@@ -151,6 +152,8 @@ extern CMuxAlarm MuxAlarm;
 #define LATEST_VALID_DATE         INT64_C(9222834959999999999)
 #define TIMEUTIL_TIME_T_MIN_VALUE INT64_C(-922283539200)
 #define TIMEUTIL_TIME_T_MAX_VALUE INT64_C(910638979199)
+extern const INT64 FACTOR_MS_PER_SECOND;
+extern const INT64 FACTOR_US_PER_SECOND;
 extern const INT64 FACTOR_100NS_PER_SECOND;
 extern const INT64 FACTOR_100NS_PER_MINUTE;
 extern const INT64 FACTOR_100NS_PER_HOUR;
@@ -169,7 +172,7 @@ const CLinearTimeDelta time_15m   = 15*FACTOR_100NS_PER_MINUTE;
 const CLinearTimeDelta time_30m   = 30*FACTOR_100NS_PER_MINUTE;
 const CLinearTimeDelta time_1w    = FACTOR_100NS_PER_WEEK;
 
-extern void TIME_Initialize(void);
+void TIME_Initialize(void);
 
 #ifdef SMALLEST_INT_GTE_NEG_QUOTIENT
 INT64 i64Mod(INT64 x, INT64 y);
@@ -190,7 +193,18 @@ inline int iFloorDivisionMod(int x, int y, int *piMod) \
 
 #endif // SMALLEST_INT_GTE_NEG_QUOTIENT
 
-extern bool isLeapYear(long iYear);
-extern int  iMod(int x, int y);
+int iMod(int x, int y);
+int iFloorDivision(int x, int y);
+INT64 i64FloorDivisionMod(INT64 x, INT64 y, INT64 *piMod);
+
+bool isLeapYear(long iYear);
+void GetUTCLinearTime(INT64 *plt);
+CLinearTimeDelta QueryLocalOffsetAtUTC
+(
+    const CLinearTimeAbsolute &lta,
+    bool *pisDST
+);
+
+extern const char daystab[12];
 
 #endif // TIMEUTIL_H
