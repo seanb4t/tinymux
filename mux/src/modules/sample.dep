@@ -1,0 +1,9 @@
+# Included by sample.mak
+
+.\sample.cpp : \
+	"..\autoconf.h"\
+	"..\config.h"\
+	"..\libmux.h"\
+	"..\modules.h"\
+	".\sample.h"\
+	

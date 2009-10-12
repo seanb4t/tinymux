@@ -1,0 +1,9 @@
+# Included by sqlproxy.mak
+
+.\sqlproxy.cpp : \
+	"..\autoconf.h"\
+	"..\config.h"\
+	"..\libmux.h"\
+	"..\modules.h"\
+	".\sql.h"\
+	

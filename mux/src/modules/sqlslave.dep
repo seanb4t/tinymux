@@ -1,0 +1,10 @@
+# Included by sqlslave.mak
+
+.\sqlslave.cpp : \
+	"..\autoconf.h"\
+	"..\config.h"\
+	"..\libmux.h"\
+	"..\modules.h"\
+	".\autoconf.h"\
+	".\sql.h"\
+	

@@ -1,0 +1,8 @@
+# Included by libmux.mak
+
+.\libmux.cpp : \
+	".\autoconf.h"\
+	".\config.h"\
+	".\copyright.h"\
+	".\libmux.h"\
+	
