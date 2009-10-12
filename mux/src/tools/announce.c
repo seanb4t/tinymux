@@ -1,7 +1,7 @@
 /*! \file announce.c
  * \brief Port announcer.
  *
- * $Id: announce.c 654 2007-01-05 04:18:02Z brazilofmux $
+ * $Id$
  *
  * \verbatim
  *      announce - sits listening on a port, and whenever anyone connects

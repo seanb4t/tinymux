@@ -1,7 +1,7 @@
 /*! \file muxcli.cpp
  * \brief MUX command-line option parser.
  *
- * $Id: muxcli.cpp 2664 2007-10-06 16:36:54Z brazilofmux $
+ * $Id$
  *
  */
 

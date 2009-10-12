@@ -1,7 +1,7 @@
 /*! \file comsys.h
  * \brief Channel Communication System.
  *
- * $Id: comsys.h 3751 2008-06-29 05:47:21Z brazilofmux $
+ * $Id$
  *
  */
 

@@ -1,7 +1,7 @@
 /*! \file db.h
  * \brief Attribute interface, some flatfile and object declarations.
  *
- * $Id: db.h 3046 2007-12-27 19:18:58Z brazilofmux $
+ * $Id$
  *
  */
 

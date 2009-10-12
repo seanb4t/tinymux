@@ -1,7 +1,7 @@
 /*! \file sha1.h
  * \brief Header for SHA1 hash implementation.
  *
- * $Id: sha1.h 4021 2008-12-10 14:41:11Z brazilofmux $
+ * $Id$
  *
  */
 

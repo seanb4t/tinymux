@@ -1,7 +1,7 @@
 /*! \file _build.h
  * \brief Build identification and version info.
  *
- * $Id: _build.h 4358 2009-06-14 18:51:18Z brazilofmux $
+ * $Id$
  *
  */
 

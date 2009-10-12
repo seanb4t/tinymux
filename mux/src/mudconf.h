@@ -1,7 +1,7 @@
 /*! \file mudconf.h
  * \brief Definitions of global state and configuration structures.
  *
- * $Id: mudconf.h 4343 2009-05-20 15:04:16Z brazilofmux $
+ * $Id$
  *
  */
 

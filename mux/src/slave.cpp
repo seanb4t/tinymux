@@ -1,7 +1,7 @@
 /*! \file slave.cpp
  * \brief This slave does iptoname conversions, and identquery lookups.
  *
- * $Id: slave.cpp 4248 2009-03-04 15:14:30Z brazilofmux $
+ * $Id$
  *
  * The philosophy is to keep this program as simple/small as possible.  It
  * routinely performs non-vfork forks()s, so the conventional wisdom is that

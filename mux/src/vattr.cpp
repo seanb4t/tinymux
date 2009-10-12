@@ -1,7 +1,7 @@
 /*! \file vattr.cpp
  * \brief Manages the user-defined attributes.
  *
- * $Id: vattr.cpp 4087 2009-01-05 14:56:00Z brazilofmux $
+ * $Id$
  *
  */
 

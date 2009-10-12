@@ -1,7 +1,7 @@
 /*! \file libmux.cpp
  * \brief Base-level module support
  *
- * $Id: libmux.cpp 4198 2009-02-12 05:51:39Z brazilofmux $
+ * $Id$
  *
  */
 

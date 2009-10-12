@@ -1,7 +1,7 @@
 /*! \file attrs.h
  * \brief Attribute definitions.
  *
- * $Id: attrs.h 4266 2009-03-12 12:03:12Z brazilofmux $
+ * $Id$
  *
  */
 

@@ -1,7 +1,7 @@
 /*! \file help.h
  * \brief In-game help system.
  *
- * $Id: help.h 1411 2007-03-14 17:37:23Z brazilofmux $
+ * $Id$
  *
  */
 

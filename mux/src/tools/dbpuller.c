@@ -1,7 +1,7 @@
 /*! \file dbpuller.c
  * \brief Offline flatfile-to-softcode converter.
  *
- * $Id: dbpuller.c 2890 2007-12-13 20:11:19Z brazilofmux $
+ * $Id$
  *
  * Db puller - used to pull data from a TinyMUX flatfile and dump it into a
  * file in \@decompile format.

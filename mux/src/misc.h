@@ -1,7 +1,7 @@
 /*! \file misc.h
  * \brief miscellaneous structures that are needed in more than one file.
  *
- * $Id: misc.h 1411 2007-03-14 17:37:23Z brazilofmux $
+ * $Id$
  *
  */
 

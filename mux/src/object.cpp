@@ -1,7 +1,7 @@
 /*! \file object.cpp
  * \brief Low-level object manipulation routines.
  *
- * $Id: object.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  */
 

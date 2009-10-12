@@ -1,7 +1,7 @@
 /*! \file alloc.h
  * \brief External definitions for memory allocation subsystem.
  *
- * $Id: alloc.h 4189 2009-02-10 07:36:55Z brazilofmux $
+ * $Id$
  *
  */
 

@@ -1,7 +1,7 @@
 /*! \file flags.h
  * \brief Object flags.
  *
- * $Id: flags.h 2770 2007-11-19 06:24:19Z brazilofmux $
+ * $Id$
  *
  */
 

@@ -1,7 +1,7 @@
 /*! \file command.cpp
  * \brief Command parser and support routines.
  *
- * $Id: command.cpp 4266 2009-03-12 12:03:12Z brazilofmux $
+ * $Id$
  *
  * The functions here crack command lists into commands, decode switches, and
  * match commands to built-in and softcoded commands.  This is one of the

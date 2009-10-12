@@ -1,7 +1,7 @@
 /*! \file mathutil.h
  * \brief Declarations for math-related helper functions.
  *
- * $Id: mathutil.h 4108 2009-01-18 17:26:18Z brazilofmux $
+ * $Id$
  *
  */
 

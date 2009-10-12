@@ -1,7 +1,7 @@
 /*! \file stringutil.h
  * \brief string utilities.
  *
- * $Id: stringutil.h 4391 2009-10-10 03:18:06Z brazilofmux $
+ * $Id$
  *
  */
 

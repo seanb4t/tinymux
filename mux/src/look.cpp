@@ -1,7 +1,7 @@
 /*! \file look.cpp
  * \brief Commands which look at things.
  *
- * $Id: look.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  */
 

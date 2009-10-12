@@ -1,7 +1,7 @@
 /*! \file levels.h
  * \brief Reality levels
  *
- * $Id: levels.h 2700 2007-10-17 03:59:22Z brazilofmux $
+ * $Id$
  *
  */
 

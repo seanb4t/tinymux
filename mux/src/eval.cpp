@@ -1,7 +1,7 @@
 /*! \file eval.cpp
  * \brief Expression and function evaluation.
  *
- * $Id: eval.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  * The functions here crack expressions into function calls and arguments,
  * perform %-substitutions, locate matching close-parens and so forth.

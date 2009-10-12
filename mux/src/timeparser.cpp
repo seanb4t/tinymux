@@ -1,7 +1,7 @@
 /*! \file timeparser.cpp
  * \brief General Date Parser.
  *
- * $Id: timeparser.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  * This file contains code related to parsing date strings.
  */

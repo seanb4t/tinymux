@@ -1,7 +1,7 @@
 /*! \file copyright.h
  * \brief Copyright notice in comments.
  *
- * $Id: copyright.h 4020 2008-12-10 14:40:52Z brazilofmux $
+ * $Id$
  *
  */
 

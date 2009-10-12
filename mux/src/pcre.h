@@ -1,7 +1,7 @@
 /*! \file pcre.h
  * \brief Perl-Compatible Regular Expressions
  *
- * $Id: pcre.h 3084 2008-01-04 04:54:33Z brazilofmux $
+ * $Id$
  *
  * \verbatim
            Copyright (c) 1997-2004 University of Cambridge

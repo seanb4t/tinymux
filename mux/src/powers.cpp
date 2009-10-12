@@ -1,7 +1,7 @@
 /*! \file powers.cpp
  * \brief Power manipulation routines.
  *
- * $Id: powers.cpp 4087 2009-01-05 14:56:00Z brazilofmux $
+ * $Id$
  *
  */
 

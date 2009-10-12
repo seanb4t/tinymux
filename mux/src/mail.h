@@ -1,7 +1,7 @@
 /*! \file mail.h
  * \brief In-game \@mail system.
  *
- * $Id: mail.h 3330 2008-02-10 17:14:55Z brazilofmux $
+ * $Id$
  *
  */
 

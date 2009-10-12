@@ -1,7 +1,7 @@
 /*! \file svdhash.cpp
  * \brief CHashPage, CHashFile, CHashTable modules.
  *
- * $Id: svdhash.cpp 4254 2009-03-06 15:45:02Z brazilofmux $
+ * $Id$
  *
  */
 

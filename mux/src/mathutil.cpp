@@ -1,7 +1,7 @@
 /*! \file mathutil.cpp
  * \brief TinyMUX math-related helper functions.
  *
- * $Id: mathutil.cpp 4108 2009-01-18 17:26:18Z brazilofmux $
+ * $Id$
  *
  */
 

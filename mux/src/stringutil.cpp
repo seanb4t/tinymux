@@ -1,7 +1,7 @@
 /*! \file stringutil.cpp
  * \brief String utility functions.
  *
- * $Id: stringutil.cpp 4391 2009-10-10 03:18:06Z brazilofmux $
+ * $Id$
  *
  */
 

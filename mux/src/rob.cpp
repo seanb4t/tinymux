@@ -1,7 +1,7 @@
 /*! \file rob.cpp
  * \brief Commands dealing with giving/taking/killing things or money.
  *
- * $Id: rob.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  */
 

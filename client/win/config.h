@@ -1,7 +1,7 @@
 /*! \file config.h
  * \brief Compile-time options.
  *
- * $Id: config.h 4327 2009-05-14 14:10:49Z brazilofmux $
+ * $Id$
  *
  * Some of these might be okay to change, others aren't really
  * options, and some are portability-related.

@@ -1,7 +1,7 @@
 /*! \file player.cpp
  * \brief Player-related routines.
  *
- * $Id: player.cpp 4145 2009-02-02 15:44:54Z brazilofmux $
+ * $Id$
  *
  * As opposed to other types of objects, players have passwords, have more
  * limited names, can log in, etc.

@@ -1,7 +1,7 @@
 /*! \file plusemail.cpp
  * \brief Quicky module implementing Firan-like \@email function.
  *
- * $Id: plusemail.cpp 4087 2009-01-05 14:56:00Z brazilofmux $
+ * $Id$
  *
  * \author Rachel Blackman <sparks@noderunner.net>
  *

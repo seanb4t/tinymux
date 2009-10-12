@@ -1,7 +1,7 @@
 /*! \file mail.cpp
  * \brief In-game \@mail system.
  *
- * $Id: mail.cpp 4157 2009-02-06 12:42:13Z brazilofmux $
+ * $Id$
  *
  * This code was taken from Kalkin's DarkZone code, which was
  * originally taken from PennMUSH 1.50 p10, and has been heavily modified

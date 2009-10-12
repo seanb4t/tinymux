@@ -1,7 +1,7 @@
 /*! \file comsys.cpp
  * \brief Channel Communication System.
  *
- * $Id: comsys.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  * The functions here manage channels, channel membership, the comsys.db, and
  * the interaction of players and other objects with channels.

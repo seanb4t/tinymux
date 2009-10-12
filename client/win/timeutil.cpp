@@ -1,7 +1,7 @@
 /*! \file timeutil.cpp
  * \brief Time-related helper functions.
  *
- * $Id: timeutil.cpp 4327 2009-05-14 14:10:49Z brazilofmux $
+ * $Id$
  *
  * Date/Time code based on algorithms presented in "Calendrical Calculations",
  * Cambridge Press, 1998.

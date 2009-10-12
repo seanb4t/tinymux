@@ -1,7 +1,7 @@
 /*! \file stubslave.cpp
  * \brief This slave hosts modules in a separate process.
  *
- * $Id: stubslave.cpp 3249 2008-01-29 20:20:14Z brazilofmux $
+ * $Id$
  *
  */
 

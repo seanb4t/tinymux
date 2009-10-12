@@ -1,7 +1,7 @@
 /*! \file functions.cpp
  * \brief MUX function handlers
  *
- * $Id: functions.cpp 4284 2009-04-02 04:25:07Z brazilofmux $
+ * $Id$
  *
  */
 

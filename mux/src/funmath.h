@@ -1,7 +1,7 @@
 /*! \file funmath.h
  * \brief declarations for math-related functions.
  *
- * $Id: funmath.h 654 2007-01-05 04:18:02Z brazilofmux $
+ * $Id$
  *
  */
 

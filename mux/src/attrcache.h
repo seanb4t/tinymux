@@ -1,7 +1,7 @@
 /*! \file attrcache.h
  * \brief Attribute caching module.
  *
- * $Id: attrcache.h 1411 2007-03-14 17:37:23Z brazilofmux $
+ * $Id$
  *
  */
 

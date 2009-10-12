@@ -1,7 +1,7 @@
 /*! \file utf8tables.cpp
  * \brief Static tables with UTF-8 state machines.
  *
- * $Id: utf8tables.cpp 4198 2009-02-12 05:51:39Z brazilofmux $
+ * $Id$
  *
  */
 

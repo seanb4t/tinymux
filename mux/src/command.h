@@ -1,7 +1,7 @@
 /*! \file command.h
  * \brief declarations used by the command processor.
  *
- * $Id: command.h 2954 2007-12-22 07:13:44Z brazilofmux $
+ * $Id$
  *
  */
 

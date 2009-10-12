@@ -4,7 +4,7 @@
  * Interfaces and classes declared here are built into the netmux server and
  * are available to netmux itself and to dynamically-loaded external modules.
  *
- * $Id: modules.h 4087 2009-01-05 14:56:00Z brazilofmux $
+ * $Id$
  *
  */
 

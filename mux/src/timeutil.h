@@ -1,7 +1,7 @@
 /*! \file timeutil.h
  * \brief CLinearTimeAbsolute and CLinearTimeDelta modules.
  *
- * $Id: timeutil.h 3868 2008-09-10 14:43:47Z brazilofmux $
+ * $Id$
  *
  * Date/Time code based on algorithms presented in "Calendrical Calculations",
  * Cambridge Press, 1998.

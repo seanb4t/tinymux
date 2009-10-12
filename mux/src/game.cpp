@@ -1,7 +1,7 @@
 /*! \file game.cpp
  * \brief Main program and misc functions.
  *
- * $Id: game.cpp 4266 2009-03-12 12:03:12Z brazilofmux $
+ * $Id$
  *
  */
 

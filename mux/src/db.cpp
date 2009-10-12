@@ -1,7 +1,7 @@
 /*! \file db.cpp
  * \brief Attribute interface, some flatfile and object routines.
  *
- * $Id: db.cpp 4266 2009-03-12 12:03:12Z brazilofmux $
+ * $Id$
  *
  * This file mainly has to do with attributes and objects in memory,
  * but it is somewhat bloated.  Contents now include: the list of

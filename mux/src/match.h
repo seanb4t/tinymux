@@ -1,7 +1,7 @@
 /*! \file match.h
  * \brief Routines for parsing arguments that may refer to objects.
  *
- * $Id: match.h 1916 2007-04-10 15:27:12Z brazilofmux $
+ * $Id$
  *
  */
 

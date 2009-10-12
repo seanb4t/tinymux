@@ -1,7 +1,7 @@
 /*! \file attrcache.cpp
  * \brief Attribute caching module.
  *
- * $Id: attrcache.cpp 4094 2009-01-13 04:48:02Z brazilofmux $
+ * $Id$
  *
  * The functions here manage the upper-level attribute value cache for
  * disk-based mode. It's not used in memory-based builds. The lower-level

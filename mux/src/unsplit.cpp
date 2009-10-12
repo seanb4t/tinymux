@@ -1,7 +1,7 @@
 /*! \file unsplit.cpp
  * \brief Filter for re-combining continuation lines.
  *
- * $Id: unsplit.cpp 654 2007-01-05 04:18:02Z brazilofmux $
+ * $Id$
  *
  */
 

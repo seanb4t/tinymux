@@ -1,7 +1,7 @@
 /*! \file levels.cpp
  * \brief Reality levels stuff.
  *
- * $Id: levels.cpp 4123 2009-01-23 17:31:27Z brazilofmux $
+ * $Id$
  *
  * See mux/REALITY.SETUP in the distribution.
  */

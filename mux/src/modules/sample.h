@@ -1,7 +1,7 @@
 /*! \file sample.h
  * \brief Sample Module
  *
- * $Id: sample.h 3046 2007-12-27 19:18:58Z brazilofmux $
+ * $Id$
  *
  */
 

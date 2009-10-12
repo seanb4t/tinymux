@@ -1,7 +1,7 @@
 /*! \file match.cpp
  * \brief Routines for parsing arguments that may refer to objects.
  *
- * $Id: match.cpp 3368 2008-03-06 23:03:41Z brazilofmux $
+ * $Id$
  *
  */
 

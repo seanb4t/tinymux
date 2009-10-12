@@ -1,7 +1,7 @@
 /*! \file vattr.h
  * \brief Definitions for user-defined attributes.
  *
- * $Id: vattr.h 1411 2007-03-14 17:37:23Z brazilofmux $
+ * $Id$
  *
  */
 

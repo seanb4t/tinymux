@@ -1,7 +1,7 @@
 /*! \file funceval.cpp
  * \brief MUX function handlers.
  *
- * $Id: funceval.cpp 4145 2009-02-02 15:44:54Z brazilofmux $
+ * $Id$
  *
  * This file began as a place to put function handlers ported from other
  * MU* servers, but has also become home to miscellaneous new functions.

@@ -1,7 +1,7 @@
 /*! \file svdrand.cpp
  * \brief Random Numbers.
  *
- * $Id: svdrand.cpp 3060 2008-01-01 01:25:57Z brazilofmux $
+ * $Id$
  *
  * Random Numbers from Makoto Matsumoto and Takuji Nishimura.
  */

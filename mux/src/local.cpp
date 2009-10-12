@@ -1,7 +1,7 @@
 /*! \file local.cpp
  * \brief Stub area for local extensions.
  *
- * $Id: local.cpp 2410 2007-09-05 14:39:18Z brazilofmux $
+ * $Id$
  *
  * Inspired by Penn's local extensions; implemented for TinyMUX by
  * M. Hassman (June 2005)

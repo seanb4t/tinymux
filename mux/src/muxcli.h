@@ -1,7 +1,7 @@
 /*! \file muxcli.h
  * \brief MUX command-line option system.
  *
- * $Id: muxcli.h 2502 2007-09-17 22:14:44Z brazilofmux $
+ * $Id$
  *
  */
 

@@ -1,7 +1,7 @@
 /*! \file file_c.cpp
  * \brief File cache management.
  *
- * $Id: file_c.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  * These functions load, cache, and display text files for the
  * connect screen, motd, and similar uses.

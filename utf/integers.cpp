@@ -18,7 +18,7 @@
  * reason, to advance to the next code requires a method separate from the
  * state machine produced here.
  *
- * $Id: integers.cpp 4157 2009-02-06 12:42:13Z brazilofmux $
+ * $Id$
  *
  */
 #include <stdio.h>

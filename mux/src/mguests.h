@@ -1,7 +1,7 @@
 /*! \file mguests.h
  * \brief Multiguest system.
  *
- * $Id: mguests.h 1411 2007-03-14 17:37:23Z brazilofmux $
+ * $Id$
  *
  */
 

@@ -1,7 +1,7 @@
 /*! \file functions.h
  * \brief declarations for functions & function processing.
  *
- * $Id: functions.h 4145 2009-02-02 15:44:54Z brazilofmux $
+ * $Id$
  *
  */
 

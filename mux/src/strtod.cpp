@@ -1,7 +1,7 @@
 /*! \file strtod.cpp
  * \brief String to double conversion.
  *
- * $Id: strtod.cpp 3297 2008-02-02 04:50:51Z brazilofmux $
+ * $Id$
  *
  * \verbatim
  ****************************************************************

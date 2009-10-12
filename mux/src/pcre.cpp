@@ -1,7 +1,7 @@
 /*! \file pcre.cpp
  * \brief Perl-Compatible Regular Expressions
  *
- * $Id: pcre.cpp 3330 2008-02-10 17:14:55Z brazilofmux $
+ * $Id$
  *
  * This is a library of functions to support regular expressions whose syntax
  * and semantics are as close as possible to those of the Perl 5 language. See

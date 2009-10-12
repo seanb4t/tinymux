@@ -1,7 +1,7 @@
 /*! \file move.cpp
  * \brief Routines for moving about.
  *
- * $Id: move.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  */
 

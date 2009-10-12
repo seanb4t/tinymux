@@ -1,7 +1,7 @@
 /*! \file wild.cpp
  * \brief Wildcard routines.
  *
- * $Id: wild.cpp 4346 2009-05-21 05:38:56Z brazilofmux $
+ * $Id$
  *
  * Written by T. Alexander Popiel, 24 June 1993
  * Last modified by T. Alexander Popiel, 19 August 1993

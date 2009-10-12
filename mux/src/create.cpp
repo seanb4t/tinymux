@@ -1,7 +1,7 @@
 /*! \file create.cpp
  * \brief Commands that create new objects.
  *
- * $Id: create.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  * This affects creation and destruction of all object types as well as their
  * initial and final relationships with other objects.

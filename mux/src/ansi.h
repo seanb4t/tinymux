@@ -1,7 +1,7 @@
 /*! \file ansi.h
  * \brief ANSI control codes for various neat-o terminal effects
  *
- * $Id: ansi.h 1728 2007-03-25 16:24:46Z brazilofmux $
+ * $Id$
  *
  */
 

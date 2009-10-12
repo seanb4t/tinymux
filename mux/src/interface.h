@@ -1,7 +1,7 @@
 /*! \file interface.h
  * \brief Declarations relating to network connections.
  *
- * $Id: interface.h 4266 2009-03-12 12:03:12Z brazilofmux $
+ * $Id$
  *
  */
 

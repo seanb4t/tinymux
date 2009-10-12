@@ -1,7 +1,7 @@
 /*! \file sha1.cpp
  * \brief Implementation of SHA1 hash.
  *
- * $Id: sha1.cpp 4032 2008-12-14 23:53:16Z brazilofmux $
+ * $Id$
  *
  */
 

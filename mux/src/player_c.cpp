@@ -1,7 +1,7 @@
 /*! \file player_c.cpp
  * \brief Player cache routines.
  *
- * $Id: player_c.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  * Frequently-used items which appear on every object generally find a
  * home in the db[] structure managed in db.cpp.  However, there are a

@@ -1,7 +1,7 @@
 /*! \file powers.h
  * \brief Object powers.
  *
- * $Id: powers.h 1411 2007-03-14 17:37:23Z brazilofmux $
+ * $Id$
  *
  */
 

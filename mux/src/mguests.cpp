@@ -1,7 +1,7 @@
 /*! \file mguests.cpp
  * \brief Multiguest system.
  *
- * $Id: mguests.cpp 4087 2009-01-05 14:56:00Z brazilofmux $
+ * $Id$
  *
  * Multiguest code originally ported from DarkZone.
  * Multiguest code rewritten by Matthew J. Leavitt (zenty).

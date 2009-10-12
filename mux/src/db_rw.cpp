@@ -1,7 +1,7 @@
 /*! \file db_rw.cpp
  * \brief Flatfile implementation.
  *
- * $Id: db_rw.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  */
 
 #include "copyright.h"

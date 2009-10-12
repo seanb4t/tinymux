@@ -1,7 +1,7 @@
 /*! \file netcommon.cpp
  * \brief Network-independent networking routines.
  *
- * $Id: netcommon.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  * This file contains routines used by the networking code that do not
  * depend on the implementation of the networking code.  The network-specific

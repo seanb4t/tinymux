@@ -1,7 +1,7 @@
 /*! \file sample.cpp
  * \brief Sample Module
  *
- * $Id: sample.cpp 4087 2009-01-05 14:56:00Z brazilofmux $
+ * $Id$
  *
  */
 

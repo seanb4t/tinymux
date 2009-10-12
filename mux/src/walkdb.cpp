@@ -1,7 +1,7 @@
 /*! \file walkdb.cpp
  * \brief Support for commands that walk the entire db.
  *
- * $Id: walkdb.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  */
 

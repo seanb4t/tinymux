@@ -1,7 +1,7 @@
 /*! \file help.cpp
  * \brief In-game help system.
  *
- * $Id: help.cpp 4087 2009-01-05 14:56:00Z brazilofmux $
+ * $Id$
  *
  */
 

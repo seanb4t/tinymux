@@ -1,7 +1,7 @@
 /*! \file set.cpp
  * \brief Commands which modify objects.
  *
- * $Id: set.cpp 4087 2009-01-05 14:56:00Z brazilofmux $
+ * $Id$
  *
  * These functions primarily implement commands like \@set and
  * \@name that modify attributes or basic properties of an object,

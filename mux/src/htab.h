@@ -1,7 +1,7 @@
 /*! \file htab.h
  * \brief Structures and declarations needed for table hashing.
  *
- * $Id: htab.h 2947 2007-12-22 06:27:28Z brazilofmux $
+ * $Id$
  *
  */
 

@@ -1,7 +1,7 @@
 /*! \file boolexp.cpp
  * \brief Boolean Expressions for \@locks
  *
- * $Id: boolexp.cpp 4107 2009-01-18 17:24:43Z brazilofmux $
+ * $Id$
  *
  * The functions here evaluate and organize boolean expressions used in
  * locks.  Lock evaluation contains one of server's the three parsers.  The
