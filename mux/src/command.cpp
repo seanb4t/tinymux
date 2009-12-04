@@ -692,15 +692,15 @@ static CMDENT_TWO_ARG command_table_two_arg[] =
     {T("@attribute"),   attrib_sw,  CA_GOD,                                           0,           CS_TWO_ARG|CS_INTERP, 0, do_attribute},
     {T("@break"),       NULL,       CA_PUBLIC,                                        0,           CS_TWO_ARG|CS_CMDARG|CS_NOINTERP|CS_STRIP_AROUND, 0, do_break},
     {T("@cboot"),       cboot_sw,   CA_NO_SLAVE|CA_NO_GUEST,                          0,           CS_TWO_ARG,           0, do_chboot},
-    {T("@ccharge"),     NULL,       CA_NO_SLAVE|CA_NO_GUEST,                          1,           CS_TWO_ARG,           0, do_editchannel},
-    {T("@cchown"),      NULL,       CA_NO_SLAVE|CA_NO_GUEST,                          0,           CS_TWO_ARG,           0, do_editchannel},
+    {T("@ccharge"),     NULL,       CA_NO_SLAVE|CA_NO_GUEST,       EDIT_CHANNEL_CCHARGE,           CS_TWO_ARG,           0, do_editchannel},
+    {T("@cchown"),      NULL,       CA_NO_SLAVE|CA_NO_GUEST,        EDIT_CHANNEL_CCHOWN,           CS_TWO_ARG,           0, do_editchannel},
     {T("@cemit"),       cemit_sw,   CA_NO_SLAVE|CA_NO_GUEST,                          0,           CS_TWO_ARG,           0, do_cemit},
     {T("@chown"),       chown_sw,   CA_NO_SLAVE|CA_NO_GUEST|CA_GBL_BUILD,             CHOWN_ONE,   CS_TWO_ARG|CS_INTERP, 0, do_chown},
     {T("@chownall"),    chown_sw,   CA_WIZARD|CA_GBL_BUILD,                           CHOWN_ALL,   CS_TWO_ARG|CS_INTERP, 0, do_chownall},
     {T("@chzone"),      NULL,       CA_NO_SLAVE|CA_NO_GUEST|CA_GBL_BUILD,             0,           CS_TWO_ARG|CS_INTERP, 0, do_chzone},
     {T("@clone"),       clone_sw,   CA_NO_SLAVE|CA_GBL_BUILD|CA_CONTENTS|CA_NO_GUEST, 0,           CS_TWO_ARG|CS_INTERP, 0, do_clone},
-    {T("@coflags"),     NULL,       CA_NO_SLAVE,                                      4,           CS_TWO_ARG,           0, do_editchannel},
-    {T("@cpflags"),     NULL,       CA_NO_SLAVE,                                      3,           CS_TWO_ARG,           0, do_editchannel},
+    {T("@coflags"),     NULL,       CA_NO_SLAVE,                   EDIT_CHANNEL_COFLAGS,           CS_TWO_ARG,           0, do_editchannel},
+    {T("@cpflags"),     NULL,       CA_NO_SLAVE,                   EDIT_CHANNEL_CPFLAGS,           CS_TWO_ARG,           0, do_editchannel},
     {T("@create"),      NULL,       CA_NO_SLAVE|CA_GBL_BUILD|CA_CONTENTS|CA_NO_GUEST, 0,           CS_TWO_ARG|CS_INTERP, 0, do_create},
     {T("@cset"),        cset_sw,    CA_NO_SLAVE,                                      0,           CS_TWO_ARG|CS_INTERP, 0, do_chopen},
     {T("@decompile"),   decomp_sw,  CA_PUBLIC,                                        0,           CS_TWO_ARG|CS_INTERP, 0, do_decomp},
@@ -928,20 +928,17 @@ void cache_prefix_cmds(void)
 
 inline bool is_prefix_cmd(const UTF8 *pCommand, size_t *pnPrefix, CMDENT **ppcmd)
 {
+    bool fReturn = false;
+    size_t nPrefix = 0;
+    CMDENT *pcmd = NULL;
+
     if (NULL != pCommand)
     {
-        CMDENT *pcmd = g_prefix_cmds[(unsigned char)pCommand[0]];
+        pcmd = g_prefix_cmds[(unsigned char)pCommand[0]];
         if (NULL != pcmd)
         {
-            if (NULL != pnPrefix)
-            {
-                *pnPrefix = 1;
-            }
-            if (NULL != ppcmd)
-            {
-                *ppcmd = pcmd;
-            }
-            return true;
+            nPrefix = 1;
+            fReturn = true;
         }
         else if (  0xE2 == pCommand[0]
                 && 0x80 == pCommand[1]
@@ -952,27 +949,22 @@ inline bool is_prefix_cmd(const UTF8 *pCommand, size_t *pnPrefix, CMDENT **ppcmd
             pcmd = g_prefix_cmds[(unsigned char)'"'];
             if (NULL != pcmd)
             {
-                if (NULL != pnPrefix)
-                {
-                    *pnPrefix = 3;
-                }
-                if (NULL != ppcmd)
-                {
-                    *ppcmd = pcmd;
-                }
-                return true;
+                nPrefix = 3;
+                fReturn = true;
             }
         }
     }
+
     if (NULL != pnPrefix)
     {
-        *pnPrefix = 0;
+        *pnPrefix = nPrefix;
     }
+
     if (NULL != ppcmd)
     {
-        *ppcmd = NULL;
+        *ppcmd = pcmd;
     }
-    return false;
+    return fReturn;
 }
 
 // ---------------------------------------------------------------------------
@@ -1435,7 +1427,6 @@ static void process_cmdent(CMDENT *cmdp, UTF8 *switchp, dbref executor, dbref ca
             buf1 = parse_to(&arg, '\0', interp | EV_TOP);
         }
 
-
         // Call the correct handler.
         //
         if (cmdp->callseq & CS_ADDED)
@@ -1810,7 +1801,7 @@ UTF8 *process_command
     {
         pOriginalCommand++;
     }
-    mux_strncpy(preserve_cmd, pOriginalCommand, LBUF_SIZE-1);
+    mux_strncpy(preserve_cmd, pOriginalCommand, sizeof(preserve_cmd)-1);
     mudstate.debug_cmd = pOriginalCommand;
     mudstate.curr_cmd = preserve_cmd;
 
