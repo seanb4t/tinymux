@@ -1267,7 +1267,7 @@ static void BuildChannelMessage
             // Evaluate the comtitle as code.
             //
             UTF8 TempToEval[LBUF_SIZE];
-            mux_strncpy(TempToEval, user->title, LBUF_SIZE-1);
+            mux_strncpy(TempToEval, user->title, sizeof(TempToEval)-1);
             mux_exec(TempToEval, LBUF_SIZE-1, *messNormal, &mnptr, user->who, user->who, user->who,
                 EV_FCHECK | EV_EVAL | EV_TOP, NULL, 0);
         }
@@ -2492,7 +2492,6 @@ static void do_listchannels(dbref player, UTF8 *pattern)
            || (ch->type & CHANNEL_PUBLIC)
            || Controls(player, ch->charge_who))
         {
-
             if (  !bWild
                || quick_wild(pattern, ch->name))
             {
@@ -3057,12 +3056,14 @@ void do_editchannel
         raw_notify(executor, T("Comsys disabled."));
         return;
     }
+
     struct channel *ch = select_channel(arg1);
     if (!ch)
     {
         raw_notify(executor, tprintf(T("Unknown channel %s."), arg1));
         return;
     }
+
     if ( !(  Comm_All(executor)
           || Controls(executor, ch->charge_who)))
     {
@@ -3077,14 +3078,17 @@ void do_editchannel
         add_remove = false;
         s++;
     }
+
     switch (flag)
     {
-    case 0:
+    case EDIT_CHANNEL_CCHOWN:
         {
-            dbref who = lookup_player(executor, arg2, true);
+            init_match(executor, arg2, NOTYPE);
+            match_everything(0);
+            dbref who = match_result();
             if (Good_obj(who))
             {
-                ch->charge_who = Owner(who);
+                ch->charge_who = who;
                 raw_notify(executor, T("Set."));
             }
             else
@@ -3094,7 +3098,7 @@ void do_editchannel
         }
         break;
 
-    case 1:
+    case EDIT_CHANNEL_CCHARGE:
         {
             int c_charge = mux_atol(arg2);
             if (  0 <= c_charge
@@ -3110,7 +3114,7 @@ void do_editchannel
         }
         break;
 
-    case 3:
+    case EDIT_CHANNEL_CPFLAGS:
         {
             int access = 0;
             if (strcmp((char *)s, "join") == 0)
@@ -3146,7 +3150,7 @@ void do_editchannel
         }
         break;
 
-    case 4:
+    case EDIT_CHANNEL_COFLAGS:
         {
             int access = 0;
             if (strcmp((char *)s, "join") == 0)

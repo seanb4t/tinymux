@@ -86,7 +86,7 @@ void cf_init(void)
     mudconf.guest_nuker = GOD;
     mudconf.number_guests = 30;
     mudconf.min_guests = 1;
-    mux_strncpy(mudconf.guest_prefix, T("Guest"), 31);
+    mux_strncpy(mudconf.guest_prefix, T("Guest"), sizeof(mudconf.guest_prefix)-1);
     mudconf.guest_file     = StringClone(T("text/guest.txt"));
     mudconf.conn_file      = StringClone(T("text/connect.txt"));
     mudconf.creg_file      = StringClone(T("text/register.txt"));
@@ -105,13 +105,13 @@ void cf_init(void)
     mudconf.fullmotd_msg[0] = '\0';
     mudconf.dump_msg[0] = '\0';
     mudconf.postdump_msg[0] = '\0';
-    mux_strncpy(mudconf.fixed_home_msg, T("You are fixed in place and cannot move."), 128);
-    mux_strncpy(mudconf.fixed_tel_msg, T("You are fixed in place and cannot teleport."), 128);
-    mux_strncpy(mudconf.public_channel, T("Public"), 31);
-    mux_strncpy(mudconf.public_channel_alias, T("pub"), 31);
-    mux_strncpy(mudconf.guests_channel, T("Guests"), 31);
-    mux_strncpy(mudconf.guests_channel_alias, T("g"), 31);
-    mux_strncpy(mudconf.pueblo_msg, T("</xch_mudtext><img xch_mode=html>"), GBUF_SIZE-1);
+    mux_strncpy(mudconf.fixed_home_msg, T("You are fixed in place and cannot move."), sizeof(mudconf.fixed_home_msg)-1);
+    mux_strncpy(mudconf.fixed_tel_msg, T("You are fixed in place and cannot teleport."), sizeof(mudconf.fixed_tel_msg)-1);
+    mux_strncpy(mudconf.public_channel, T("Public"), sizeof(mudconf.public_channel)-1);
+    mux_strncpy(mudconf.public_channel_alias, T("pub"), sizeof(mudconf.public_channel_alias)-1);
+    mux_strncpy(mudconf.guests_channel, T("Guests"), sizeof(mudconf.guests_channel)-1);
+    mux_strncpy(mudconf.guests_channel_alias, T("g"), sizeof(mudconf.guests_channel_alias)-1);
+    mux_strncpy(mudconf.pueblo_msg, T("</xch_mudtext><img xch_mode=html>"), sizeof(mudconf.pueblo_msg)-1);
 #if defined(FIRANMUX)
     mux_strncpy(mudconf.immobile_msg, T("You have been set immobile."), sizeof(mudconf.immobile_msg)-1);
 #endif // FIRANMUX
@@ -259,9 +259,9 @@ void cf_init(void)
          | HEAD_FLAG | SLAVE | STAFF | SUSPECT | UNINSPECTED;
 
     mudconf.vattr_flags = AF_ODARK;
-    mux_strncpy(mudconf.mud_name, T("MUX"), 31);
-    mux_strncpy(mudconf.one_coin, T("penny"), 31);
-    mux_strncpy(mudconf.many_coins, T("pennies"), 31);
+    mux_strncpy(mudconf.mud_name, T("MUX"), sizeof(mudconf.mud_name)-1);
+    mux_strncpy(mudconf.one_coin, T("penny"), sizeof(mudconf.one_coin)-1);
+    mux_strncpy(mudconf.many_coins, T("pennies"), sizeof(mudconf.many_coins)-1);
     mudconf.timeslice.SetSeconds(1);
     mudconf.cmd_quota_max = 100;
     mudconf.cmd_quota_incr = 1;
@@ -325,7 +325,7 @@ void cf_init(void)
     mudstate.attr_next = A_USER_START;
     mudstate.debug_cmd = T("< init >");
     mudstate.curr_cmd  = T("< none >");
-    mux_strncpy(mudstate.doing_hdr, T("Doing"), SIZEOF_DOING_STRING-1);
+    mux_strncpy(mudstate.doing_hdr, T("Doing"), sizeof(mudstate.doing_hdr)-1);
     mudstate.access_list = NULL;
     mudstate.suspect_list = NULL;
     mudstate.badname_head = NULL;
@@ -868,7 +868,7 @@ static CF_HAND(cf_name)
 
         size_t bCased = nCased;
         UTF8 Buffer[LBUF_SIZE];
-        mux_strncpy(Buffer, pCased, LBUF_SIZE-1);
+        mux_strncpy(Buffer, pCased, sizeof(Buffer)-1);
         pCased = mux_strupr(newname, nCased);
         if (!hashfindLEN(pCased, nCased, (CHashTable *) vp))
         {
@@ -1465,20 +1465,14 @@ static bool isValidSubnetMask(in_addr_t ulMask)
     return false;
 }
 
-// ---------------------------------------------------------------------------
-// cf_site: Update site information
-
-static CF_HAND(cf_site)
+// Parse IPv4/netmask notation in either standard or CIDR prefix notation
+//
+bool ParseIPv4Subnet(UTF8 *str, dbref player, UTF8 *cmd, struct in_addr *pAddress, struct in_addr *pMask)
 {
-    UNUSED_PARAMETER(pExtra);
-
-    SITE **ppv = (SITE **)vp;
-    struct in_addr addr_num, mask_num;
     in_addr_t ulMask, ulNetBits;
-
     UTF8 *addr_txt;
     UTF8 *mask_txt = (UTF8 *)strchr((char *)str, '/');
-    if (!mask_txt)
+    if (NULL == mask_txt)
     {
         // Standard IP range and netmask notation.
         //
@@ -1486,23 +1480,27 @@ static CF_HAND(cf_site)
         mux_strtok_src(&tts, str);
         mux_strtok_ctl(&tts, T(" \t=,"));
         addr_txt = mux_strtok_parse(&tts);
-        mask_txt = NULL;
-        if (addr_txt)
+        if (NULL != addr_txt)
         {
             mask_txt = mux_strtok_parse(&tts);
         }
-        if (!addr_txt || !*addr_txt || !mask_txt || !*mask_txt)
+
+        if (  NULL == addr_txt
+           || '\0' == *addr_txt
+           || NULL == mask_txt
+           || '\0' == *mask_txt)
         {
             cf_log_syntax(player, cmd, T("Missing host address or mask."));
-            return -1;
+            return false;
         }
+
         if (  !MakeCanonicalIPv4(mask_txt, &ulNetBits)
            || !isValidSubnetMask(ulMask = ntohl(ulNetBits)))
         {
             cf_log_syntax(player, cmd, T("Malformed mask address: %s"), mask_txt);
-            return -1;
+            return false;
         }
-        mask_num.s_addr = ulNetBits;
+        pMask->s_addr = ulNetBits;
     }
     else
     {
@@ -1513,14 +1511,15 @@ static CF_HAND(cf_site)
         if (!is_integer(mask_txt, NULL))
         {
             cf_log_syntax(player, cmd, T("Mask field (%s) in CIDR IP prefix is not numeric."), mask_txt);
-            return -1;
+            return false;
         }
+
         int mask_bits = mux_atol(mask_txt);
         if (  mask_bits < 0
            || 32 < mask_bits)
         {
             cf_log_syntax(player, cmd, T("Mask bits (%d) in CIDR IP prefix out of range."), mask_bits);
-            return -1;
+            return false;
         }
         else
         {
@@ -1531,16 +1530,17 @@ static CF_HAND(cf_site)
             {
                 ulMask = (0xFFFFFFFFUL << (32 - mask_bits)) & 0xFFFFFFFFUL;
             }
-            mask_num.s_addr = htonl(ulMask);
+            pMask->s_addr = htonl(ulMask);
         }
     }
+
     if (!MakeCanonicalIPv4(addr_txt, &ulNetBits))
     {
         cf_log_syntax(player, cmd, T("Malformed host address: %s"), addr_txt);
-        return -1;
+        return false;
     }
-    addr_num.s_addr = ulNetBits;
-    in_addr_t ulAddr = ntohl(addr_num.s_addr);
+    pAddress->s_addr = ulNetBits;
+    in_addr_t ulAddr = ntohl(pAddress->s_addr);
 
     if (ulAddr & ~ulMask)
     {
@@ -1551,9 +1551,26 @@ static CF_HAND(cf_site)
         //
         cf_log_syntax(player, cmd, T("Non-zero host address bits outside the subnet mask (fixed): %s %s"), addr_txt, mask_txt);
         ulAddr &= ulMask;
-        addr_num.s_addr = htonl(ulAddr);
+        pAddress->s_addr = htonl(ulAddr);
     }
 
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// cf_site: Update site information
+
+static CF_HAND(cf_site)
+{
+    UNUSED_PARAMETER(pExtra);
+
+    struct in_addr addr_num, mask_num;
+    if (!ParseIPv4Subnet(str, player, cmd, &addr_num, &mask_num))
+    {
+        return -1;
+    }
+
+    SITE **ppv = (SITE **)vp;
     SITE *head = *ppv;
 
     // Parse the access entry and allocate space for it.
@@ -1791,7 +1808,7 @@ static CF_HAND(cf_hook)
 
     int retval = -1;
     memset(playbuff, '\0', sizeof(playbuff));
-    mux_strncpy(playbuff, str, 200);
+    mux_strncpy(playbuff, str, sizeof(playbuff));
     MUX_STRTOK_STATE tts;
     mux_strtok_src(&tts, playbuff);
     mux_strtok_ctl(&tts, T(" \t"));
@@ -1810,7 +1827,7 @@ static CF_HAND(cf_hook)
     }
 
     *vp = cmdp->hookmask;
-    mux_strncpy(playbuff, str, 200);
+    mux_strncpy(playbuff, str, sizeof(playbuff)-1);
     hookptr = mux_strtok_parse(&tts);
     while (hookptr != NULL)
     {
