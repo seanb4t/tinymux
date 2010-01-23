@@ -5993,6 +5993,8 @@ CRC32()
     > think crc32(MUX)
     629126998
 
+  Related Topics: digest(), sha1(), unpack().
+
 & CREATE()
 CREATE()
 
@@ -6207,6 +6209,21 @@ DIE()
   generating a result in the range 2-12.
 
   Related Topics: lrand(), pickrand(), rand(), shuffle()
+
+& DIGEST()
+DIGEST()
+
+  FUNCTION: digest(<algorithm>[, <string>])
+
+  Returns a checksum (hash, digest, etc.) of <string> using the given
+  <algorithm>. While the exact list of algorithms varies when SSL support is
+  enabled, the following is a representative sample:
+
+    md2 md4 md5 sha sha1 sha224 sha256 sha384 sha512 dss1 mdc2 ripemd160
+
+  Without SSL, only the sha1 algorithm is enabled.
+
+  Related Topics: crc32(), sha1()
 
 & DIGITTIME()
 DIGITTIME()
@@ -7147,9 +7164,10 @@ FULLNAME()
 FUNCTION CLASSES
 
   Arithmetic:                ABS ADD BAND BNAND BOR BXOR CEIL CRC32 DEC DIE
-                             DISTRIBUTE FDIV FLOORDIV FMOD IABS IADD IDIV IMUL
-                             INC ISIGN ISUB MOD MUL PACK POWER RAND REMAINDER
-                             SHA1 SHL SHR SIGN SUB SUCCESSES SQRT UNPACK
+                             DIGEST DISTRIBUTE FDIV FLOORDIV FMOD IABS IADD
+                             IDIV IMUL INC ISIGN ISUB MOD MUL PACK POWER RAND
+                             REMAINDER SHA1 SHL SHR SIGN SUB SUCCESSES SQRT
+                             UNPACK
 
   Comsystem Information:     CHANNELS CHANOBJ COMALIAS COMTITLE CWHO
 
@@ -7252,13 +7270,13 @@ FUNCTION LIST
     CONNNUM()   CONNRECORD()CONNTOTAL() CONTROLS()  CONVSECS()  CONVTIME()
     COR()       CORBOOL()   COS()       CPAD()      CRC32()     CREATE()
     CTIME()     CTU()       CWHO()      DEC()       DECRYPT()   DEFAULT()
-    DELETE()    DESTROY()   DIE()       DIGITTIME() DIST2D()    DIST3D()
-    DISTRIBUTE()DOING()     DUMPING()   E()         EDEFAULT()  EDIT()
-    ELEMENTS()  ELOCK()     EMIT()      ENCRYPT()   ENTRANCES() EQ()
-    ERROR()     ESCAPE()    ETIMEFMT()  EVAL()      EXIT()      EXP()
-    EXPTIME()   EXTRACT()   FCOUNT()    FDEPTH()    FDIV()      FILTER()
-    FILTERBOOL()FINDABLE()  FIRST()     FLAGS()     FLOOR()     FLOORDIV()
-    FMOD()      FOLD()      FOREACH()   FULLNAME()
+    DELETE()    DESTROY()   DIE()       DIGEST()    DIGITTIME() DIST2D()
+    DIST3D()    DISTRIBUTE()DOING()     DUMPING()   E()         EDEFAULT()
+    EDIT()      ELEMENTS()  ELOCK()     EMIT()      ENCRYPT()   ENTRANCES()
+    EQ()        ERROR()     ESCAPE()    ETIMEFMT()  EVAL()      EXIT()
+    EXP()       EXPTIME()   EXTRACT()   FCOUNT()    FDEPTH()    FDIV()
+    FILTER()    FILTERBOOL()FINDABLE()  FIRST()     FLAGS()     FLOOR()
+    FLOORDIV()  FMOD()      FOLD()      FOREACH()   FULLNAME()
 
 ("help function list2" for more)
 
@@ -12356,7 +12374,7 @@ SHA1()
     > think sha1(abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq)
     84983E441C3BD26EBAAE4AA1F95129E5E54670F1
 
-  Related Topics: crc32(), unpack().
+  Related Topics: crc32(), digest(), unpack().
 
 & SHL()
 SHL()
