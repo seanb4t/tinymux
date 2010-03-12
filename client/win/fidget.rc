@@ -81,9 +81,9 @@ END
 //
 
 IDD_ABOUTBOX DIALOGEX 22, 17, 182, 44
-STYLE DS_SETFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
+STYLE DS_SHELLFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
-FONT 8, "System", 0, 0, 0x0
+FONT 8, "MS Shell Dlg 2"
 BEGIN
     ICON            IDI_FIDGET,IDC_MYICON,14,9,16,16
     LTEXT           "Fidget Version 1.0",IDC_STATIC,49,10,57,8,SS_NOPREFIX
@@ -92,15 +92,15 @@ BEGIN
 END
 
 IDD_SESSIONBOX DIALOGEX 22, 17, 182, 64
-STYLE DS_SETFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
+STYLE DS_SHELLFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
 CAPTION "Session"
-FONT 8, "System", 0, 0, 0x0
+FONT 8, "MS Shell Dlg 2"
 BEGIN
     RTEXT           "TCP/IP Address",IDC_STATIC,9,10,51,8,SS_NOPREFIX
-    RTEXT           "Port Number",IDC_STATIC,9,21,51,8
+    RTEXT           "Port Number",IDC_STATIC,9,21,51,8,SS_NOPREFIX
+    EDITTEXT        IDC_TCPIP_HOST,66,7,55,12,ES_AUTOHSCROLL
+    EDITTEXT        IDC_TCPIP_PORT,66,18,55,12,ES_AUTOHSCROLL|ES_NUMBER
     DEFPUSHBUTTON   "OK",IDOK,138,42,33,14,WS_GROUP
-    EDITTEXT        IDC_EDIT1,66,7,55,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT2,66,18,55,12,ES_AUTOHSCROLL
 END
 
 
@@ -131,6 +131,44 @@ BEGIN
 END
 
 #endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x0L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "FileDescription", "Fidget Client"
+            VALUE "FileVersion", "1, 0, 0, 1"
+            VALUE "InternalName", "fidget"
+            VALUE "LegalCopyright", "Copyright (C) 2010 Stephen Dennis. All rights reserved."
+            VALUE "OriginalFilename", "fidget.exe"
+            VALUE "ProductName", "Fidget Client"
+            VALUE "ProductVersion", "1, 0, 0, 1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
 
 
 /////////////////////////////////////////////////////////////////////////////
