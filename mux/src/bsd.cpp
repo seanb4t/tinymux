@@ -16,7 +16,7 @@
 #include <sys/ioctl.h>
 #endif // HAVE_SYS_IOCTL_H
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
 #include <openssl/ssl.h>
 #endif
 
@@ -38,7 +38,7 @@ extern const int _sys_nsig;
 #define NSIG _sys_nsig
 #endif // SOLARIS
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
 SSL_CTX  *ssl_ctx = NULL;
 SSL_CTX  *tls_ctx = NULL;
 PortInfo aMainGamePorts[MAX_LISTEN_PORTS * 2];
@@ -988,7 +988,7 @@ Done:
 #endif // HAVE_WORKING_FORK
 #endif // UNIX_NETWORKING
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
 int pem_passwd_callback(char *buf, int size, int rwflag, void *userdata)
 {
     const char *passwd = (const char *)userdata;
@@ -997,7 +997,7 @@ int pem_passwd_callback(char *buf, int size, int rwflag, void *userdata)
     return ((passwdLen > size) ? size : passwdLen);
 }
 
-int initialize_ssl()
+bool initialize_ssl()
 {
     SSL_load_error_strings();
     OpenSSL_add_ssl_algorithms();
@@ -1015,7 +1015,7 @@ int initialize_ssl()
         SSL_CTX_free(tls_ctx);
         ssl_ctx = NULL;
         tls_ctx = NULL;
-        return 0;
+        return false;
     }
     if (!SSL_CTX_use_certificate_file (tls_ctx, (char *)mudconf.ssl_certificate_file, SSL_FILETYPE_PEM))
     {
@@ -1027,7 +1027,7 @@ int initialize_ssl()
         SSL_CTX_free(tls_ctx);
         ssl_ctx = NULL;
         tls_ctx = NULL;
-        return 0;
+        return false;
     }
 
     SSL_CTX_set_default_passwd_cb(ssl_ctx, pem_passwd_callback);
@@ -1045,7 +1045,7 @@ int initialize_ssl()
         SSL_CTX_free(tls_ctx);
         ssl_ctx = NULL;
         tls_ctx = NULL;
-        return 0;
+        return false;
     }
 
     /* Since we're reusing settings, we only need to check the key once.
@@ -1057,7 +1057,7 @@ int initialize_ssl()
         ENDLOG;
         SSL_CTX_free(ssl_ctx);
         ssl_ctx = NULL;
-        return 0;
+        return false;
     }
 
 
@@ -1073,7 +1073,7 @@ int initialize_ssl()
     log_text(T("initialize_ssl: SSL engine initialized successfully."));
     ENDLOG;
 
-    return 1;
+    return true;
 }
 
 void shutdown_ssl()
@@ -1109,7 +1109,7 @@ int mux_socket_write(DESC *d, const char *buffer, size_t nBytes, int flags)
 {
     int result;
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
     if (d->ssl_session)
     {
         result = SSL_write(d->ssl_session, buffer, nBytes);
@@ -1127,7 +1127,7 @@ int mux_socket_read(DESC *d, char *buffer, size_t nBytes, int flags)
 {
     int result;
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
     if (d->ssl_session)
     {
         result = SSL_read(d->ssl_session, buffer, nBytes);
@@ -1294,8 +1294,8 @@ static void make_socket(PortInfo *Port, const UTF8 *ip_address)
 
     listen(s, SOMAXCONN);
     Port->socket = s;
-#ifdef SSL_ENABLED
-    Log.tinyprintf(T("Listening on port %d (%s)" ENDLINE), Port->port, Port->ssl ? "SSL" : "plaintext");
+#ifdef UNIX_SSL
+    Log.tinyprintf(T("Listening on port %d (%s)" ENDLINE), Port->port, Port->fSSL ? "SSL" : "plaintext");
 #else
     Log.tinyprintf(T("Listening on port %d" ENDLINE), Port->port);
 #endif
@@ -1334,7 +1334,7 @@ void SetupPorts(int *pnPorts, PortInfo aPorts[], IntArray *pia, IntArray *piaSSL
             }
         }
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
         if (!bFound && piaSSL && ssl_ctx)
         {
             for (j = 0; j < piaSSL->n; j++)
@@ -1387,8 +1387,8 @@ void SetupPorts(int *pnPorts, PortInfo aPorts[], IntArray *pia, IntArray *piaSSL
         {
             k = *pnPorts;
             aPorts[k].port = pia->pi[j];
-#ifdef SSL_ENABLED
-            aPorts[k].ssl = 0;
+#ifdef UNIX_SSL
+            aPorts[k].fSSL = false;
 #endif
             make_socket(aPorts+k, ip_address);
             if (  !IS_INVALID_SOCKET(aPorts[k].socket)
@@ -1408,7 +1408,7 @@ void SetupPorts(int *pnPorts, PortInfo aPorts[], IntArray *pia, IntArray *piaSSL
         }
     }
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
     if (piaSSL && ssl_ctx)
     {
         for (j = 0; j < piaSSL->n; j++)
@@ -1427,7 +1427,7 @@ void SetupPorts(int *pnPorts, PortInfo aPorts[], IntArray *pia, IntArray *piaSSL
             {
                 k = *pnPorts;
                 aPorts[k].port = piaSSL->pi[j];
-                aPorts[k].ssl = 1;
+                aPorts[k].fSSL = true;
                 make_socket(aPorts+k, ip_address);
                 if (  !IS_INVALID_SOCKET(aPorts[k].socket)
 #if defined(UNIX_NETWORKING)
@@ -1453,7 +1453,7 @@ void SetupPorts(int *pnPorts, PortInfo aPorts[], IntArray *pia, IntArray *piaSSL
     //
     if (  0 == *pnPorts
        && (  0 != pia->n
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
           || 0 != piaSSL->n
 #endif
          ))
@@ -2269,10 +2269,10 @@ DESC *new_connection(PortInfo *Port, int *piSocketError)
         free_mbuf(pBuffM3);
         ENDLOG;
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
         SSL *ssl_session = NULL;
 
-        if (Port->ssl && ssl_ctx)
+        if (Port->fSSL && ssl_ctx)
         {
             ssl_session = SSL_new(ssl_ctx);
             SSL_set_fd(ssl_session, newsock);
@@ -2300,7 +2300,7 @@ DESC *new_connection(PortInfo *Port, int *piSocketError)
 
         d = initializesock(newsock, &addr);
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
         d->ssl_session = ssl_session;
 #endif
 
@@ -2587,7 +2587,7 @@ void shutdownsock(DESC *d, int reason)
         }
 #endif // WINDOWS_NETWORKING
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
         if (d->ssl_session)
         {
             SSL_shutdown(d->ssl_session);
@@ -2775,7 +2775,7 @@ DESC *initializesock(SOCKET s, struct sockaddr_in *a)
     d->retries_left = mudconf.retry_limit;
     d->command_count = 0;
     d->timeout = mudconf.idle_timeout;
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
     d->ssl_session = NULL;
 #endif
 
@@ -3022,7 +3022,7 @@ void process_output_unix(void *dvoid, int bHandleShutdown)
             int cnt = mux_socket_write(d, (char *)tb->hdr.start, tb->hdr.nchars, 0);
             if (IS_SOCKET_ERROR(cnt))
             {
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
                 int iSocketError;
                 if (d->ssl_session)
                 {
@@ -3041,7 +3041,7 @@ void process_output_unix(void *dvoid, int bHandleShutdown)
 #ifdef SOCKET_EAGAIN
                    || SOCKET_EAGAIN        == iSocketError
 #endif
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
                    || SSL_ERROR_WANT_WRITE == iSocketError
                    || SSL_ERROR_WANT_READ  == iSocketError
 #endif
@@ -3427,7 +3427,7 @@ static bool DesiredHimOption(DESC *d, unsigned char chOption)
        || TELNET_SGA     == chOption
        || TELNET_ENV     == chOption
        || TELNET_BINARY  == chOption
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
        || TELNET_STARTTLS== chOption
 #endif
        || TELNET_CHARSET == chOption)
@@ -3606,7 +3606,7 @@ void TelnetSetup(DESC *d)
     EnableHim(d, TELNET_ENV);
 //    EnableHim(d, TELNET_OLDENV);
     EnableHim(d, TELNET_CHARSET);
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
     if (!d->ssl_session)
     {
         EnableHim(d, TELNET_STARTTLS);
@@ -4049,7 +4049,7 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
                     }
                     break;
 
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
                 case TELNET_STARTTLS:
                     if (TELNETSB_FOLLOWS == d->aOption[1])
                     {
@@ -4305,7 +4305,7 @@ void close_sockets(bool emergency, const UTF8 *message)
             {
                 log_perror(T("NET"), T("FAIL"), NULL, T("shutdown"));
             }
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
             if (d->ssl_session)
             {
                 SSL_shutdown(d->ssl_session);

@@ -3608,8 +3608,8 @@ void dump_restart_db(void)
     {
         putref(f, aMainGamePorts[i].port);
         putref(f, aMainGamePorts[i].socket);
-#ifdef SSL_ENABLED
-        putref(f, aMainGamePorts[i].ssl);
+#ifdef UNIX_SSL
+        putref(f, aMainGamePorts[i].fSSL ? 1 : 0);
 #else
         putref(f, 0);
 #endif
@@ -3692,10 +3692,11 @@ void load_restart_db(void)
 
             if (3 <= version)
             {
-#ifdef SSL_ENABLED
-                aMainGamePorts[i].ssl = getref(f);
+#ifdef UNIX_SSL
+                aMainGamePorts[i].fSSL = (0 != getref(f));
 #else
-                getref(f); // Eat meaningless field
+                // Eat meaningless field.
+                (void)getref(f);
 #endif
             }
         }
@@ -3753,7 +3754,7 @@ void load_restart_db(void)
         d->raw_codepoint_length = 0;
         d->ttype = NULL;
         d->encoding = CHARSET_LATIN1;
-#ifdef SSL_ENABLED
+#ifdef UNIX_SSL
         d->ssl_session = NULL;
 #endif
         if (3 <= version)
