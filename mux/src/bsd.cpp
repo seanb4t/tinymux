@@ -3184,17 +3184,17 @@ static void SendSb
     DESC *d,
     unsigned char chOption,
     unsigned char chRequest,
-    char  *pPayload,
+    unsigned char *pPayload,
     size_t nPayload
 )
 {
     size_t nMaximum = 6 + 2*nPayload;
 
-    char buffer[100];
-    char *pSB = buffer;
+    unsigned char buffer[100];
+    unsigned char *pSB = buffer;
     if (sizeof(buffer) < nMaximum)
     {
-        pSB = (char *)MEMALLOC(nMaximum);
+        pSB = (unsigned char *)MEMALLOC(nMaximum);
         if (NULL == pSB)
         {
             return;
@@ -3206,7 +3206,7 @@ static void SendSb
     pSB[2] = chOption;
     pSB[3] = chRequest;
 
-    char *p = &pSB[4];
+    unsigned char *p = &pSB[4];
 
     for (size_t loop = 0; loop < nPayload; loop++)
     {
@@ -3220,7 +3220,7 @@ static void SendSb
     *(p++) = NVT_SE;
 
     size_t length = p - pSB;
-    queue_write_LEN(d, pSB, length);
+    queue_write_LEN(d, (char *)pSB, length);
 
     if (pSB != buffer)
     {
@@ -3322,19 +3322,25 @@ int UsState(DESC *d, unsigned char chOption)
     return d->nvt_us_state[chOption];
 }
 
-void SendCharsetRequest(DESC *d)
+void SendCharsetRequest(DESC *d, bool fDefacto = false)
 {
-    if (OPTION_YES == d->nvt_him_state[(unsigned char)TELNET_CHARSET])
+    if (  OPTION_YES == d->nvt_us_state[(unsigned char)TELNET_CHARSET]
+       || (  fDefacto
+          && OPTION_YES == d->nvt_him_state[(unsigned char)TELNET_CHARSET]))
     {
-        char aCharsets[26] =
-        {
-            ';',
-            'U', 'T', 'F', '-', '8', ';',
-            'I', 'S', 'O', '-', '8', '8', '5', '9', '-', '1', ';',
-            'U', 'S', '-', 'A', 'S', 'C', 'I', 'I'
-        };
+        unsigned char aCharsets[] = ";UTF-8;ISO-8859-1;US-ASCII";
+        SendSb(d, TELNET_CHARSET, TELNETSB_REQUEST, aCharsets, sizeof(aCharsets)-1);
+    }
+}
 
-        SendSb(d, TELNET_CHARSET, TELNETSB_REQUEST, &aCharsets[0], 26);
+void DefactoCharsetCheck(DESC *d)
+{
+    if (  NULL != d->ttype
+       && OPTION_NO == d->nvt_us_state[(unsigned char)TELNET_CHARSET]
+       && OPTION_YES == d->nvt_him_state[(unsigned char)TELNET_CHARSET]
+       && mux_stricmp(d->ttype, T("mushclient")) == 0)
+    {
+        SendCharsetRequest(d, true);
     }
 }
 
@@ -3360,12 +3366,8 @@ static void SetHimState(DESC *d, unsigned char chOption, int iHimState)
         {
             // Request environment variables.
             //
-            char aEnvReq[2] = { TELNETSB_VAR, TELNETSB_USERVAR };
+            unsigned char aEnvReq[2] = { TELNETSB_VAR, TELNETSB_USERVAR };
             SendSb(d, chOption, TELNETSB_SEND, aEnvReq, 2);
-        }
-        else if (TELNET_CHARSET == chOption)
-        {
-            SendCharsetRequest(d);
         }
         else if (TELNET_STARTTLS == chOption)
         {
@@ -3374,6 +3376,10 @@ static void SetHimState(DESC *d, unsigned char chOption, int iHimState)
         else if (TELNET_BINARY == chOption)
         {
             EnableUs(d, TELNET_BINARY);
+        }
+        else if (TELNET_CHARSET == chOption)
+        {
+            DefactoCharsetCheck(d);
         }
     }
     else if (OPTION_NO == iHimState)
@@ -3397,15 +3403,26 @@ static void SetUsState(DESC *d, unsigned char chOption, int iUsState)
 {
     d->nvt_us_state[chOption] = iUsState;
 
-    if (TELNET_EOR == chOption)
+    if (OPTION_YES == iUsState)
     {
-        if (OPTION_YES == iUsState)
+        if (TELNET_EOR == chOption)
         {
             EnableUs(d, TELNET_SGA);
         }
-        else if (OPTION_NO == iUsState)
+        else if (TELNET_CHARSET == chOption)
+        {
+            SendCharsetRequest(d);
+        }
+    }
+    else if (OPTION_NO == iUsState)
+    {
+        if (TELNET_EOR == chOption)
         {
             DisableUs(d, TELNET_SGA);
+        }
+        else if (TELNET_CHARSET == chOption)
+        {
+            DefactoCharsetCheck(d);
         }
     }
 }
@@ -3453,6 +3470,7 @@ static bool DesiredUsOption(DESC *d, unsigned char chOption)
 {
     if (  TELNET_EOR    == chOption
        || TELNET_BINARY == chOption
+       || TELNET_CHARSET == chOption
        || (  TELNET_SGA == chOption
           && OPTION_YES == UsState(d, TELNET_EOR)))
     {
@@ -3605,6 +3623,7 @@ void TelnetSetup(DESC *d)
     EnableHim(d, TELNET_NAWS);
     EnableHim(d, TELNET_ENV);
 //    EnableHim(d, TELNET_OLDENV);
+    EnableUs(d, TELNET_CHARSET);
     EnableHim(d, TELNET_CHARSET);
 #ifdef UNIX_SSL
     if (!d->ssl_session)
@@ -3633,6 +3652,13 @@ void TelnetSetup(DESC *d)
 
 static void process_input_helper(DESC *d, char *pBytes, int nBytes)
 {
+    char szUTF8[] = "UTF-8";
+    char szISO8859_1[] = "ISO-8859-1";
+    char szUSASCII[] = "US-ASCII";
+    const size_t nUTF8 = sizeof(szUTF8) - 1;
+    const size_t nISO8859_1 = sizeof(szISO8859_1) - 1;
+    const size_t nUSASCII = sizeof(szUSASCII) - 1;
+    
     if (!d->raw_input)
     {
         d->raw_input = (CBLK *) alloc_lbuf("process_input.raw");
@@ -4051,78 +4077,131 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
 
 #ifdef UNIX_SSL
                 case TELNET_STARTTLS:
-                    if (TELNETSB_FOLLOWS == d->aOption[1])
+                    if (  2 == m
+                       && TELNETSB_FOLLOWS == d->aOption[1])
                     {
                        d->ssl_session = SSL_new(tls_ctx);
                        SSL_set_fd(d->ssl_session, d->descriptor);
                        SSL_accept(d->ssl_session);
                     }
+                    break;
 #endif
 
                 case TELNET_TTYPE:
-                    if (TELNETSB_IS == d->aOption[1])
+                    if (  2 <= m
+                       && TELNETSB_IS == d->aOption[1])
                     {
-                        if (d->ttype)
-                        {
-                            MEMFREE(d->ttype);
-                            d->ttype = NULL;
-                        }
-
-                        // Skip past the TTYPE and TELQUAL_IS bytes.
+                        // Skip past the TTYPE and TELQUAL_IS bytes validating
+                        // that terminal type information is an NVT ASCII
+                        // string.
                         //
                         size_t nTermType = m-2;
-                        unsigned char *pTermType = &d->aOption[2];
-                        d->ttype = (UTF8 *)MEMALLOC(nTermType+1);
-                        memcpy(d->ttype, pTermType, nTermType);
-                        d->ttype[nTermType] = '\0';
+                        UTF8 *pTermType = &d->aOption[2];
+
+                        bool fASCII = true;
+                        for (size_t i = 0; i < nTermType; i++)
+                        {
+                            if (!mux_isprint_ascii(pTermType[i]))
+                            {
+                                fASCII = false;
+                                break;
+                            }
+                        }
+                        
+                        if (fASCII)
+                        {
+                            if (NULL != d->ttype)
+                            {
+                                MEMFREE(d->ttype);
+                                d->ttype = NULL;
+                            }
+                            d->ttype = (UTF8 *)MEMALLOC(nTermType+1);
+                            memcpy(d->ttype, pTermType, nTermType);
+                            d->ttype[nTermType] = '\0';
+
+                            DefactoCharsetCheck(d);
+                        }
                     }
                     break;
 
                 case TELNET_ENV:
                 case TELNET_OLDENV:
-                    if (TELNETSB_IS == d->aOption[1])
+                    if (  2 <= m
+                       && (  TELNETSB_IS == d->aOption[1]
+                          || TELNETSB_INFO == d->aOption[1]))
                     {
-                        unsigned char *envPtr;
-
-                        envPtr = &d->aOption[2];
-
+                        unsigned char *envPtr = &d->aOption[2];
                         while (envPtr < &d->aOption[m])
                         {
-                            if (  TELNETSB_USERVAR == *envPtr
-                               || TELNETSB_VAR     == *envPtr)
+                            unsigned char ch = *envPtr++;
+                            if (  TELNETSB_USERVAR == ch
+                               || TELNETSB_VAR     == ch)
                             {
-                                unsigned char *pVarname = ++envPtr;
-                                unsigned char *pVarval = NULL;
+                                unsigned char *pVarnameStart = envPtr;
+                                unsigned char *pVarnameEnd = NULL;
+                                unsigned char *pVarvalStart = NULL;
+                                unsigned char *pVarvalEnd = NULL;
 
-                                while (  TELNETSB_VALUE != *envPtr
-                                      && envPtr < &d->aOption[m])
+                                while (envPtr < &d->aOption[m])
                                 {
-                                    envPtr++;
+                                    ch = *envPtr++;
+                                    if (TELNETSB_VALUE == ch)
+                                    {
+                                        pVarnameEnd = envPtr - 1;
+                                        pVarvalStart = envPtr;
+
+                                        while (envPtr < &d->aOption[m])
+                                        {
+                                            ch = *envPtr++;
+                                            if (  TELNETSB_USERVAR == ch
+                                               || TELNETSB_VAR == ch)
+                                            {
+                                                pVarvalEnd = envPtr - 1;
+                                                break;
+                                            }
+                                        }
+
+                                        if (envPtr == &d->aOption[m])
+                                        {
+                                            pVarvalEnd = envPtr;
+                                        }
+                                        break;
+                                    }
                                 }
 
-                                if (envPtr < &d->aOption[m])
+                                if (  envPtr == &d->aOption[m]
+                                   && NULL == pVarnameEnd)
                                 {
-                                    pVarval = ++envPtr;
+                                    pVarnameEnd = envPtr;
                                 }
 
-                                while (  TELNETSB_USERVAR != *envPtr
-                                      && TELNETSB_VAR     != *envPtr
-                                      && envPtr < &d->aOption[m])
+                                size_t nVarname = 0;
+                                size_t nVarval = 0;
+
+                                if (  NULL != pVarnameStart
+                                   && NULL != pVarnameEnd)
                                 {
-                                    envPtr++;
+                                    nVarname = pVarnameEnd - pVarnameStart;
                                 }
 
-                                if (  pVarval - pVarname < 1023
-                                   && envPtr - pVarval < 1023)
+                                if (  NULL != pVarvalStart
+                                   && NULL != pVarvalEnd)
                                 {
-                                    UTF8 varname[1024];
-                                    UTF8 varval[1024];
+                                    nVarval = pVarvalEnd - pVarvalStart;
+                                }
 
-                                    memset(varname, 0, 1024);
-                                    memset(varval, 0, 1024);
-
-                                    memcpy(varname, pVarname, pVarval - pVarname - 1);
-                                    memcpy(varval, pVarval, envPtr - pVarval);
+                                UTF8 varname[1024];
+                                UTF8 varval[1024];
+                                if (  NULL != pVarvalStart
+                                   && 0 < nVarname
+                                   && nVarname < sizeof(varname) - 1
+                                   && 0 < nVarval
+                                   && nVarval < sizeof(varval) - 1)
+                                {
+                                    memcpy(varname, pVarnameStart, nVarname);
+                                    varname[nVarname] = '\0';
+                                    memcpy(varval, pVarvalStart, nVarval);
+                                    varval[nVarval] = '\0';
 
                                     // This is a horrible, horrible nasty hack
                                     // to try and detect UTF8.  We do not even
@@ -4130,11 +4209,12 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
                                     // this way, and just default to Latin1 if
                                     // we can't get a UTF8 locale.
                                     //
-                                    if (  0 == mux_stricmp(varname, T("LC_CTYPE"))
-                                       || 0 == mux_stricmp(varname, T("LC_ALL")))
+                                    if (  mux_stricmp(varname, T("LC_CTYPE")) == 0
+                                       || mux_stricmp(varname, T("LC_ALL")) == 0
+                                       || mux_stricmp(varname, T("LANG")) == 0)
                                     {
                                         UTF8 *pEncoding = (UTF8 *)strchr((char *)varval, '.');
-                                        if (pEncoding)
+                                        if (NULL != pEncoding)
                                         {
                                             pEncoding++;
                                         }
@@ -4143,7 +4223,7 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
                                             pEncoding = &varval[0];
                                         }
 
-                                        if (  0 == mux_stricmp(pEncoding, T("utf-8"))
+                                        if (  mux_stricmp(pEncoding, T("utf-8")) == 0
                                            && CHARSET_UTF8 != d->encoding)
                                         {
                                             // Since we are changing to the
@@ -4159,11 +4239,9 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
                                             EnableHim(d, TELNET_BINARY);
                                         }
                                     }
-
-                                    if (0 == mux_stricmp(varname, T("USER")))
+                                    else if (mux_stricmp(varname, T("USER")) == 0)
                                     {
-                                        memset(d->username, 0, 11);
-                                        memcpy(d->username, varval, 10);
+                                        memcpy(d->username, varval, nVarval + 1);
                                     }
 
                                     // We can also get 'DISPLAY' here if we were
@@ -4171,63 +4249,149 @@ static void process_input_helper(DESC *d, char *pBytes, int nBytes)
                                     // Xterm functionality.
                                 }
                             }
-                            else
-                            {
-                                envPtr++;
-                            }
                         }
                     }
                     break;
 
                 case TELNET_CHARSET:
-                    if (TELNETSB_ACCEPT == d->aOption[1])
+                    if (2 <= m)
                     {
-                        unsigned char *pCharset = &d->aOption[2];
-                        if (0 == strncmp((char *)pCharset, "UTF-8", m - 2))
+                        if (TELNETSB_ACCEPT == d->aOption[1])
                         {
-                            if (CHARSET_UTF8 != d->encoding)
+                            unsigned char *pCharset = &d->aOption[2];
+                            
+                            if (  nUTF8 == m - 2
+                               && memcmp((char *)pCharset, szUTF8, nUTF8) == 0)
                             {
-                                // Since we are changing to the UTF-8
-                                // character set, the printable state machine
-                                // needs to be initialized.
-                                //
-                                d->encoding = CHARSET_UTF8;
-                                d->negotiated_encoding = CHARSET_UTF8;
-                                d->raw_codepoint_state = CL_PRINT_START_STATE;
+                                if (CHARSET_UTF8 != d->encoding)
+                                {
+                                    // Since we are changing to the UTF-8
+                                    // character set, the printable state machine
+                                    // needs to be initialized.
+                                    //
+                                    d->encoding = CHARSET_UTF8;
+                                    d->negotiated_encoding = CHARSET_UTF8;
+                                    d->raw_codepoint_state = CL_PRINT_START_STATE;
+
+                                    EnableUs(d, TELNET_BINARY);
+                                    EnableHim(d, TELNET_BINARY);
+                                }
+                            }
+                            else if (  nISO8859_1 == m - 2
+                                    && memcmp((char *)pCharset, szISO8859_1, nISO8859_1) == 0)
+                            {
+                                d->encoding = CHARSET_LATIN1;
+                                d->negotiated_encoding = CHARSET_LATIN1;
 
                                 EnableUs(d, TELNET_BINARY);
                                 EnableHim(d, TELNET_BINARY);
                             }
-                        }
-                        else if (0 == strncmp((char *)pCharset, "ISO-8859-1", m-2))
-                        {
-                            d->encoding = CHARSET_LATIN1;
-                            d->negotiated_encoding = CHARSET_LATIN1;
+                            else if (  nUSASCII == m - 2
+                                    && memcmp((char *)pCharset, szUSASCII, nUSASCII) == 0)
+                            {
+                                d->encoding = CHARSET_ASCII;
+                                d->negotiated_encoding = CHARSET_ASCII;
 
-                            EnableUs(d, TELNET_BINARY);
-                            EnableHim(d, TELNET_BINARY);
+                                DisableUs(d, TELNET_BINARY);
+                                DisableHim(d, TELNET_BINARY);
+                            }
                         }
-                        else if (0 == strncmp((char *)pCharset, "US-ASCII", m-2))
+                        else if (TELNETSB_REJECT == d->aOption[1])
                         {
+                            // The client has replied that it doesn't even support
+                            // Latin1/ISO-8859-1 accented characters.  Thus, we
+                            // should probably record this to strip out any
+                            // accents.
+                            //
                             d->encoding = CHARSET_ASCII;
                             d->negotiated_encoding = CHARSET_ASCII;
 
                             DisableUs(d, TELNET_BINARY);
                             DisableHim(d, TELNET_BINARY);
                         }
-                    }
-                    else if (TELNETSB_REJECT == d->aOption[1])
-                    {
-                        // The client has replied that it doesn't even support
-                        // Latin1/ISO-8859-1 accented characters.  Thus, we
-                        // should probably record this to strip out any
-                        // accents.
-                        //
-                        d->encoding = CHARSET_ASCII;
-                        d->negotiated_encoding = CHARSET_ASCII;
+                        else if (TELNETSB_REQUEST == d->aOption[1])
+                        {
+                            bool fRequestAcknowledged = false;
+                            unsigned char *reqPtr = &d->aOption[2];
+                            if (reqPtr < &d->aOption[m])
+                            {
+                                // NVT_IAC is not permitted as a separator.
+                                // '[' might be the beginning of "[TTABLE]"
+                                // <version>, but we don't support parsing
+                                // and ignoring that.
+                                //
+                                unsigned char chSep = *reqPtr++;
+                                if (  NVT_IAC != chSep
+                                   && '[' != chSep)
+                                {
+                                    unsigned char *pTermStart = reqPtr;
+                                    
+                                    while (reqPtr < &d->aOption[m])
+                                    {
+                                        unsigned char ch = *reqPtr++;
+                                        if (  chSep == ch
+                                           || reqPtr == &d->aOption[m])
+                                        {
+                                            size_t nTerm = reqPtr - pTermStart - 1;
 
-                        DisableUs(d, TELNET_BINARY);
-                        DisableHim(d, TELNET_BINARY);
+                                            // Process [pTermStart, pTermStart+nTermEnd)
+                                            // We let the client determine priority by its order of the list.
+                                            //
+                                            if (  nUTF8 == nTerm
+                                               && memcmp((char *)pTermStart, szUTF8, nUTF8) == 0)
+                                            {
+                                                SendSb(d, TELNET_CHARSET, TELNETSB_ACCEPT, pTermStart, nTerm);
+                                                fRequestAcknowledged = true;
+                                                if (CHARSET_UTF8 != d->encoding)
+                                                {
+                                                    // Since we are changing to the UTF-8
+                                                    // character set, the printable state machine
+                                                    // needs to be initialized.
+                                                    //
+                                                    d->encoding = CHARSET_UTF8;
+                                                    d->negotiated_encoding = CHARSET_UTF8;
+                                                    d->raw_codepoint_state = CL_PRINT_START_STATE;
+
+                                                    EnableUs(d, TELNET_BINARY);
+                                                    EnableHim(d, TELNET_BINARY);
+                                                }
+                                                break;
+                                            }
+                                            else if (  nISO8859_1 == nTerm
+                                                    && memcmp((char *)pTermStart, szISO8859_1, nISO8859_1) == 0)
+                                            {
+                                                SendSb(d, TELNET_CHARSET, TELNETSB_ACCEPT, pTermStart, nTerm);
+                                                fRequestAcknowledged = true;
+                                                d->encoding = CHARSET_LATIN1;
+                                                d->negotiated_encoding = CHARSET_LATIN1;
+
+                                                EnableUs(d, TELNET_BINARY);
+                                                EnableHim(d, TELNET_BINARY);
+                                                break;
+                                            }
+                                            else if (  nUSASCII== nTerm
+                                                    && memcmp((char *)pTermStart, szUSASCII, nUSASCII) == 0)
+                                            {
+                                                fRequestAcknowledged = true;
+                                                SendSb(d, TELNET_CHARSET, TELNETSB_ACCEPT, pTermStart, nTerm);
+                                                d->encoding = CHARSET_ASCII;
+                                                d->negotiated_encoding = CHARSET_ASCII;
+
+                                                DisableUs(d, TELNET_BINARY);
+                                                DisableHim(d, TELNET_BINARY);
+                                                break;
+                                            }
+                                            pTermStart = reqPtr;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (!fRequestAcknowledged)
+                            {
+                                SendSb(d, TELNET_CHARSET, TELNETSB_REJECT, NULL, 0);
+                            }
+                        }
                     }
                 }
             }
