@@ -1,21 +1,25 @@
-This project holds test cases for TinyMUX. The code is formatted and must be
-unformatted before being quoted into a game.
+This project holds the TinyMUX test cases.  The code is formatted and must be
+unformatted and quoted into a game.
 
-The unformat.pl program is located in the tool sub-directory. This requires
-Perl.
+After building netmux from ./mux/src, the smoke test database, smoke.flat, is
+built with:
 
-Steps to create:
+    ./tools/Makesmoke
 
- 1. Use './tools/unformat.pl *.mux > out' to create a quotable installer.
- 2. Start a non-SGP minimal database by removing netmux.db before ./Startmux
- 3. /quote out into the new database.
- 4. @shutdown
- 5. ./db_unload netmux netmux.db.new smoke.flat
- 6. mv smoke.flat ../../../testcases/smoke.flat
+This above script depends on Sed, Perl, Telnet, and Expect.  It also starts
+and stops a server instance on port 2860.  The test cases are unformated with
+unformat.pl, a Perl script.  The resulting quotable installer is uploaded into
+a running server running on port 2860 using upload.tcl, a Expect script.
+Finally, the resulting database is unloaded and scrubbed with scrubflat.sed,
+a Sed script.
 
-Steps to use (from ./game):
+The resulting smoke.flat database automatically runs all the tests and then
+shuts itself down.  No clients connections are needed to initiate or manage
+this.
 
- 1. touch .scissors
- 2. ./Smoke
+After building the server from ./mux/src, the smoke test data, smoke.flat, is
+used with:
+
+    ./tools/Smoke
 
 The results of the test will be in smoke.log.
