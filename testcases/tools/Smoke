@@ -7,16 +7,9 @@ PATH=/usr/ucb:/bin:/usr/bin:.; export PATH
 #
 #	Verify that file dependencies are in a pristine state.
 #
-if [ ! -r .scissors ]; then
-	echo "This developer tool for automated testing is not safe when running a real game from the same location." 
-        echo "It will temporarily create smoke.conf and smoke.d.  It also requires game/logs and port 2860."
-	echo "To accept the risk and continue, 'touch .scissors', and run the script again."
-	exit 1
-fi
-#
 GAMENAME=smoke
 PIDFILE=$GAMENAME.pid
-BIN=./bin
+BIN=../mux/game/bin
 TEXT=./text
 DATA=./$GAMENAME.d
 LOGDIR=$DATA
@@ -48,12 +41,19 @@ fi
 #
 #	Create necessary environment.
 #
+echo "Creating $DATA directory."
 mkdir $DATA
 if [ ! -r logs ]; then
-    echo "Creating logs directory."
+    echo "Creating ./logs directory."
     mkdir logs
 fi
-cp ../../testcases/smoke.flat $DATA/$INPUT_DB
+if [ ! -r text ]; then
+    echo "Creating ./text directory."
+    mkdir text
+fi
+cp smoke.flat $DATA/$INPUT_DB
+cp ../mux/game/alias.conf .
+cp ../mux/game/compat.conf .
 touch logs/M-smoke.log
 cat > smoke.conf <<\_EOF
 # smoke.conf - TinyMUX configuration file for smoke testing.
@@ -104,4 +104,7 @@ mv logs/M-smoke.log smoke.log
 rm smoke.conf
 rm $PIDFILE
 rm shutdown.status
-rm -rf $DATA
+echo "Deleting $DATA, logs, and text directories."
+rm -rf $DATA ./logs ./text
+rm alias.conf
+rm compat.conf
