@@ -1,0 +1,34 @@
+TinyMUX 2.1:  DISTRIBUTIONS
+Last Update:  May 2002
+
+Where you can get TinyMUX 2.1:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TinyMUX 2.1 is developed by Stephen Dennis (sdennis@svdltd.com) and a small 
+group of enthusiastic volunteers.  The server is simultaneously developed on 
+Win32 and Unix platforms.  The MUX 2.1 Website contains the latest news about
+the server, developments, discussions, and help for users.  It is found at:
+
+  http://www.tinymux.com
+
+
+Release Information:
+~~~~~~~~~~~~~~~~~~~
+
+Server development for TinyMUX is done by the scheme as listed below.
+These numbers will be reflected by the result of typing 'VERSION' on 
+the game
+
+2.x.x       Major Release level, where the first number in the series 
+            denotes a major change in the way the server works, or such 
+            sweeping changes to language that the server will be 
+            fundamentally changed.  
+
+2.1.x       Feature Release, where features are added, changed, removed.  
+
+2.x.1       Bug Release, where bugs are fixed and all previous patchlevels 
+            are included in the update
+
+2.x.x.px    Patch to an existing release.  These will be released as code 
+            to be applied using the 'patch' utility and will be released 
+            on an as needed basis.
