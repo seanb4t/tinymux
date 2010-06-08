@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.61)
+AC_PREREQ(2.62)
 AC_INIT([TinyMUX],[2.10],[tinymux@googlegroups.com])
 AC_CONFIG_SRCDIR([game.cpp])
 AC_CONFIG_HEADER([autoconf.h])
@@ -249,16 +249,16 @@ AC_PROG_CXXCPP
 AC_PROG_CC
 AC_PROG_CPP
 AC_CANONICAL_HOST
-AC_ISC_POSIX
-AC_AIX
-AC_MINIX
+AC_USE_SYSTEM_EXTENSIONS
 
 # Checks for libraries.
 #
-AC_CHECK_LIB(crypt, main)
-AC_CHECK_LIB(sun, getpwnam)
-AC_CHECK_LIB(seq, main)
-AC_CHECK_LIB(intl, main)
+# The following may be removeable:
+#   -lcposix: ISC is obsolete as of 2006-07-23.
+#   -lsun: We don't use getpwnam() and friends.
+AC_SEARCH_LIBS([strerror],[cposix])
+AC_SEARCH_LIBS([crypt],[crypt],AC_DEFINE([HAVE_LIBCRYPT], [1], [Define to 1 if you have the `crypt' library (-lcrypt).]))
+AC_SEARCH_LIBS([getpwnam],[sun],AC_DEFINE([HAVE_LIBSUN], [1], [Define to 1 if you have the `sun' library (-lsun) for IRIX.]))
 AC_CHECK_LIB(inet, main)
 AC_CHECK_LIB(socket, main)
 AC_CHECK_LIB(m, main)
