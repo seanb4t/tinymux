@@ -818,6 +818,21 @@ extern int anum_alc_top;
 #define ALLOW_CHARSET_8859_1 2
 #define ALLOW_CHARSET_8859_2 4
 
+/* Password Encryption Methods */
+
+#define CRYPT_DEFAULT     0x00000000UL  // The default is SHA1
+#define CRYPT_FAIL        0x00000001UL  // Failure -- not a request.
+#define CRYPT_SHA1        0x00000002UL
+#define CRYPT_DES         0x00000004UL
+#define CRYPT_DES_EXT     0x00000008UL  // Not requested.
+#define CRYPT_CLEARTEXT   0x00000010UL  // Not requested.
+#define CRYPT_MD5         0x00000020UL
+#define CRYPT_SHA256      0x00000040UL
+#define CRYPT_SHA512      0x00000080UL
+#define CRYPT_OTHER       0x00000100UL  // Not recognized.
+
+extern NAMETAB method_nametab[];
+
 /* Hush codes for movement messages */
 
 #define HUSH_ENTER      1   /* xENTER/xEFAIL */
