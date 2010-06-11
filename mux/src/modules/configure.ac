@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_PREREQ(2.61)
+AC_PREREQ(2.62)
 AC_INIT([TinyMUX],[2.10],[tinymux@googlegroups.com])
 AC_CONFIG_SRCDIR([sample.cpp])
 AC_CONFIG_HEADER([autoconf.h])
@@ -58,15 +58,18 @@ AC_PROG_CXXCPP
 AC_PROG_CC
 AC_PROG_CPP
 AC_CANONICAL_HOST
-case "$host" in
-*irix*) LIBS="-lm" ;;
-esac
-AC_ISC_POSIX
-AC_AIX
-AC_MINIX
+AC_USE_SYSTEM_EXTENSIONS
 
 # Checks for libraries.
 #
+# The following may be removeable:
+#   -lcposix: ISC is obsolete as of 2006-07-23.
+AC_SEARCH_LIBS([strerror],[cposix])
+
+case "$host" in
+*irix*) LIBS="-lm" ;;
+esac
+
 save_LDFLAGS="$LDFLAGS"
 save_LIBS="$LIBS"
 LDFLAGS="$save_LDFLAGS $SQL_LIBPATH"
@@ -110,7 +113,7 @@ AC_HEADER_STDC
 AC_HEADER_TIME
 save_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$save_CPPFLAGS $SQL_INCLUDE"
-AC_TRY_COMPILE([#include <mysql.h>], [int x = 1;], AC_DEFINE([HAVE_MYSQL_H], [], [Define if mysql.h exists.]))
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <mysql.h>]], [[int x = 1;]])],[AC_DEFINE([HAVE_MYSQL_H], [], [Define if mysql.h exists.])],[])
 CPPFLAGS="$save_CPPFLAGS"
 
 AC_CONFIG_FILES([Makefile])
