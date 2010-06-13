@@ -554,10 +554,11 @@ const int g_trimoffset[4][4] =
 
 const char *ConvertToLatin(const UTF8 *pString)
 {
-    static char buffer[LBUF_SIZE];
+    static char buffer[2*LBUF_SIZE];
     char *q = buffer;
 
-    while ('\0' != *pString)
+    while (  '\0' != *pString
+          && q < buffer + sizeof(buffer) - 1)
     {
         const UTF8 *p = pString;
         int iState = TR_LATIN1_START_STATE;
@@ -580,7 +581,7 @@ const char *ConvertToLatin(const UTF8 *pString)
                     }
                     else
                     {
-                        iColumn -= y;
+                        iColumn = static_cast<unsigned char>(iColumn - y);
                         iOffset += 2;
                     }
                 }
@@ -596,8 +597,8 @@ const char *ConvertToLatin(const UTF8 *pString)
                     }
                     else
                     {
-                        iColumn -= y;
-                        iOffset += y + 1;
+                        iColumn = static_cast<unsigned char>(iColumn - y);
+                        iOffset = static_cast<unsigned short>(iOffset + y + 1);
                     }
                 }
             }
@@ -643,7 +644,7 @@ const char *ConvertToAscii(const UTF8 *pString)
                     }
                     else
                     {
-                        iColumn -= y;
+                        iColumn = static_cast<unsigned char>(iColumn - y);
                         iOffset += 2;
                     }
                 }
@@ -659,8 +660,8 @@ const char *ConvertToAscii(const UTF8 *pString)
                     }
                     else
                     {
-                        iColumn -= y;
-                        iOffset += y + 1;
+                        iColumn = static_cast<unsigned char>(iColumn - y);
+                        iOffset = static_cast<unsigned short>(iOffset + y + 1);
                     }
                 }
             }
@@ -3119,7 +3120,7 @@ size_t DCL_CDECL mux_vsnprintf(__in_ecount(nBuffer) UTF8 *pBuffer, __in size_t n
                             //
                             union
                             {
-                                UINT_PTR ui;
+                                MUX_UINT_PTR ui;
                                 void *pv;
                             } u;
                             u.pv = va_arg(va, void *);
@@ -3131,7 +3132,7 @@ size_t DCL_CDECL mux_vsnprintf(__in_ecount(nBuffer) UTF8 *pBuffer, __in size_t n
 #error Size of pointer is larger size of largest known integer.
 #endif
                             bWidth = true;
-                            nWidth = 2*sizeof(UINT_PTR);
+                            nWidth = 2*sizeof(MUX_UINT_PTR);
                             bZeroPadded = true;
                         }
                         else
@@ -3308,7 +3309,7 @@ size_t DCL_CDECL mux_vsnprintf(__in_ecount(nBuffer) UTF8 *pBuffer, __in size_t n
                         {
                             goto done;
                         }
-                        pBuffer[iBuffer] = ch;
+                        pBuffer[iBuffer] = static_cast<UTF8>(ch);
                         iBuffer++;
 
                         iFmt++;
@@ -5745,11 +5746,11 @@ LBUF_OFFSET mux_words::find_Words(const UTF8 *pDelim, bool bFavorEmptyList)
        return nWords;
     }
 
-    pDelim = strip_color(pDelim);
-    mux_cursor nDelim = CursorMin;
-    utf8_strlen(pDelim, nDelim);
+    UTF8 *pDelimNoColor = StringClone(strip_color(pDelim));
+    mux_cursor nDelimNoColor = CursorMin;
+    utf8_strlen(pDelimNoColor, nDelimNoColor);
 
-    bool fSpaceDelim = (1 == nDelim.m_byte && ' ' == pDelim[0]);
+    bool fSpaceDelim = (1 == nDelimNoColor.m_byte && ' ' == pDelimNoColor[0]);
 
     mux_cursor iPos = CursorMin;
     mux_cursor iStart = CursorMin;
@@ -5761,7 +5762,7 @@ LBUF_OFFSET mux_words::find_Words(const UTF8 *pDelim, bool bFavorEmptyList)
             iStart = iStart + curAscii;
         }
     }
-    bool bSucceeded = m_s->search(pDelim, &iPos, iStart);
+    bool bSucceeded = m_s->search(pDelimNoColor, &iPos, iStart);
 
     while (  bSucceeded
           && nWords + 1 < MAX_WORDS)
@@ -5779,10 +5780,12 @@ LBUF_OFFSET mux_words::find_Words(const UTF8 *pDelim, bool bFavorEmptyList)
         }
         else
         {
-            iStart = iPos + nDelim;
+            iStart = iPos + nDelimNoColor;
         }
-        bSucceeded = m_s->search(pDelim, &iPos, iStart);
+        bSucceeded = m_s->search(pDelimNoColor, &iPos, iStart);
     }
+    MEMFREE(pDelimNoColor);
+    pDelimNoColor = NULL;
 
     if (  !fSpaceDelim
        || m_s->m_iLast != iStart)
