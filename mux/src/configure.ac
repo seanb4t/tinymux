@@ -255,23 +255,19 @@ AC_USE_SYSTEM_EXTENSIONS
 #
 # The following may be removeable:
 #   -lcposix: ISC is obsolete as of 2006-07-23.
-#   -lsun: We don't use getpwnam() and friends.
 AC_SEARCH_LIBS([strerror],[cposix])
-AC_SEARCH_LIBS([crypt],[crypt],AC_DEFINE([HAVE_LIBCRYPT], [1], [Define to 1 if you have the `crypt' library (-lcrypt).]))
-AC_SEARCH_LIBS([getpwnam],[sun],AC_DEFINE([HAVE_LIBSUN], [1], [Define to 1 if you have the `sun' library (-lsun) for IRIX.]))
-AC_CHECK_LIB(inet, main)
-AC_CHECK_LIB(socket, main)
-AC_CHECK_LIB(m, main)
-case "$host" in
-*solaris*) AC_CHECK_LIB(nsl, main)
-           ;;
-esac
+AC_SEARCH_LIBS([crypt],[crypt])
+AC_SEARCH_LIBS([socket],[socket inet])
+AC_SEARCH_LIBS([gethostbyname],[socket nsl bind])
+AC_SEARCH_LIBS([inet_addr],[nsl])
+AC_SEARCH_LIBS([sqrt],[m])
+
 AC_MSG_CHECKING(for dlopen)
 LIBS_SAVE=$LIBS
-AC_CHECK_LIB(dl,dlopen,[
-    AC_DEFINE([HAVE_LIBDL], [1], [Define to 1 if you have the `dl' library (-ldl).])
-    LIBS="-ldl $LIBS"
-    DL_LIB="-ldl"
+AC_SEARCH_LIBS([dlopen],[dl],[
+    if test "$ac_cv_search_dlopen" != "none required"; then
+      DL_LIB="$ac_cv_search_dlopen"
+    fi
 ])
 AC_LINK_IFELSE([AC_LANG_PROGRAM([[
     #include <dlfcn.h>
