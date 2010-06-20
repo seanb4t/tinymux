@@ -8699,7 +8699,7 @@ static void centerjustcombo
     {
         mux_cursor iEnd;
         sPad->cursor_from_point(iEnd, nLeading - nPos);
-        nPos += nPad;
+        nPos = static_cast<LBUF_OFFSET>(nPos + nPad);
         s->append(*sPad, CursorMin, iEnd);
     }
     nPos = nLeading;
@@ -8707,7 +8707,7 @@ static void centerjustcombo
     // Output string.
     //
     s->append(*sStr, CursorMin, nStr);
-    nPos += nStr.m_point;
+    nPos = static_cast<LBUF_OFFSET>(nPos + nStr.m_point);
 
     // Output first part of trailing padding.
     //
@@ -8725,7 +8725,7 @@ static void centerjustcombo
             mux_cursor iStart, iEnd;
             sPad->cursor_from_point(iStart, nPadStart);
             sPad->cursor_from_point(iEnd, nPadStart+nPadPart);
-            nPos += nPadPart;
+            nPos = static_cast<LBUF_OFFSET>(nPos + nPadPart);
             s->append(*sPad, iStart, iEnd);
         }
     }
@@ -8736,7 +8736,7 @@ static void centerjustcombo
     {
         mux_cursor iEnd;
         sPad->cursor_from_point(iEnd, nWidth-nPos);
-        nPos += nPad;
+        nPos = static_cast<LBUF_OFFSET>(nPos + nPad);
         s->append(*sPad, CursorMin, iEnd);
     }
 
@@ -10824,6 +10824,7 @@ static FUN builtin_function_list[] =
     {T("ART"),         fun_art,        MAX_ARG, 1,       1,         0, CA_PUBLIC},
     {T("ASIN"),        fun_asin,       MAX_ARG, 1,       2,         0, CA_PUBLIC},
     {T("ATAN"),        fun_atan,       MAX_ARG, 1,       2,         0, CA_PUBLIC},
+    {T("ATAN2"),       fun_atan2,      MAX_ARG, 2,       3,         0, CA_PUBLIC},
     {T("ATTRCNT"),     fun_attrcnt,    MAX_ARG, 1,       1,         0, CA_PUBLIC},
     {T("BAND"),        fun_band,       MAX_ARG, 1, MAX_ARG,         0, CA_PUBLIC},
     {T("BEEP"),        fun_beep,       MAX_ARG, 0,       0,         0, CA_WIZARD},
