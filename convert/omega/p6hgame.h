@@ -1,6 +1,21 @@
 #ifndef _P6HGAME_H_
 #define _P6HGAME_H_
 
+#define P6H_OLD_TYPE_ROOM       0x0
+#define P6H_OLD_TYPE_THING      0x1
+#define P6H_OLD_TYPE_EXIT       0x2
+#define P6H_OLD_TYPE_PLAYER     0x3
+#define P6H_OLD_TYPE_GARBAGE    0x6
+#define P6H_OLD_NOTYPE          0x7
+#define P6H_OLD_TYPE_MASK       0x7
+
+#define P6H_TYPE_ROOM           0x1
+#define P6H_TYPE_THING          0x2
+#define P6H_TYPE_EXIT           0x4
+#define P6H_TYPE_PLAYER         0x8
+#define P6H_TYPE_GARBAGE        0x10
+#define P6H_NOTYPE              0xFFFF
+
 class P6H_FLAGINFO
 {
 public:
@@ -19,7 +34,11 @@ public:
     char *m_pNegatePerms;
     void SetNegatePerms(char *p);
 
+    void Validate();
+
     void Merge(P6H_FLAGINFO *pfi);
+
+    void Write(FILE *fp);
 
     P6H_FLAGINFO()
     {
@@ -55,6 +74,8 @@ public:
     void SetAlias(char *p);
 
     void Merge(P6H_FLAGALIASINFO *pfi);
+
+    void Write(FILE *fp);
 
     P6H_FLAGALIASINFO()
     {
@@ -96,6 +117,10 @@ public:
     void SetFlags(int iFlags)  { m_fFlags = true; m_iFlags = iFlags; }
 
     void Merge(P6H_LOCKINFO *pli);
+
+    void Write(FILE *fp, bool fLabels) const;
+
+    void Upgrade();
 
     P6H_LOCKINFO()
     {
@@ -142,6 +167,10 @@ public:
     void SetFlags(int iFlags)  { m_fFlags = true; m_iFlags = iFlags; }
 
     void Merge(P6H_ATTRINFO *pai);
+
+    void Write(FILE *fp, bool fLabels) const;
+
+    void Upgrade();
 
     P6H_ATTRINFO()
     {
@@ -220,8 +249,20 @@ public:
     char *m_pFlags;
     void SetFlags(char *pFlags);
 
+    bool m_fFlags;
+    int  m_iFlags;
+    void SetFlags(int iFlags) { m_fFlags = true; m_iFlags = iFlags; }
+
+    bool m_fToggles;
+    int  m_iToggles;
+    void SetToggles(int iToggles) { m_fToggles = true; m_iToggles = iToggles; }
+
     char *m_pPowers;
     void SetPowers(char *pPowers);
+
+    bool m_fPowers;
+    int  m_iPowers;
+    void SetPowers(int iPowers) { m_fPowers = true; m_iPowers = iPowers; }
 
     char *m_pWarnings;
     void SetWarnings(char *pWarnings);
@@ -237,8 +278,10 @@ public:
     void SetAttrs(int nAttrCount, vector<P6H_ATTRINFO *> *pvai);
 
     void Merge(P6H_OBJECTINFO *poi);
-    void WriteLock(FILE *fp, const P6H_LOCKINFO &li) const;
-    void WriteAttr(FILE *fp, const P6H_ATTRINFO &ai) const;
+
+    void Write(FILE *fp, bool fLabels);
+
+    void Upgrade();
 
     P6H_OBJECTINFO()
     {
@@ -258,7 +301,10 @@ public:
         m_fModified = false;
         m_fType = false;
         m_pFlags = NULL;
+        m_fFlags = false;
+        m_fToggles = false;
         m_pPowers = NULL;
+        m_fPowers = false;
         m_pWarnings = NULL;
         m_fLockCount = false;
         m_pvli = NULL;
@@ -300,15 +346,6 @@ public:
 class P6H_GAME
 {
 public:
-    void Validate();
-    void ValidateFlags();
-    void ValidateSavedTime();
-
-    void Write(FILE *fp);
-    void WriteFlag(FILE *fp, const P6H_FLAGINFO &fi);
-    void WriteFlagAlias(FILE *fp, const P6H_FLAGALIASINFO &fai);
-    void WriteObject(FILE *fp, const P6H_OBJECTINFO &oi);
-
     int m_flags;
     void SetFlags(int flags) { m_flags = flags; }
     int  GetFlags()          { return m_flags;  }
@@ -344,19 +381,29 @@ public:
     vector<P6H_FLAGALIASINFO *> *m_pvPowerAliases;
     void SetPowerAliasList(vector<P6H_FLAGALIASINFO *> *pvpai) { m_pvPowerAliases = pvpai; }
   
-    bool m_fObjects;
-    int  m_nObjects;
-    void SetObjectCount(int nObjects) { m_fObjects = true; m_nObjects = nObjects; }
+    bool m_fSizeHint;
+    int  m_nSizeHint;
+    void SetSizeHint(int nSizeHint) { m_fSizeHint = true; m_nSizeHint = nSizeHint; }
 
     vector<P6H_OBJECTINFO *> m_vObjects;
     void AddObject(P6H_OBJECTINFO *poi);
+
+    void Validate();
+    void ValidateFlags();
+    void ValidateSavedTime();
+
+    void Write(FILE *fp);
+
+    void Upgrade();
+
+    void ResetPassword();
 
     P6H_GAME()
     {
         m_flags = 0;
         m_pSavedTime = NULL;
-        m_fObjects = false;
-        m_nObjects = 0;
+        m_fSizeHint = false;
+        m_nSizeHint = 0;
         m_fFlags = false;
         m_nFlags = 0;
         m_pvFlags = NULL;
