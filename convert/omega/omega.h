@@ -7,10 +7,19 @@
 #include <memory.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <time.h>
 
 #include <vector>
+#include <map>
 using namespace std;
 
 char *StringClone(const char *str);
+char *StringCloneLen(const char *str, size_t nStr);
+
+typedef struct
+{
+    const char *pName;
+    const int  mask;
+} NameMask;
 
 #endif
