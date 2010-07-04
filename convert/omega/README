@@ -1,5 +1,5 @@
 Omega: README
-Last Update: June 2010
+Last Update: July 2010
 
 This is intended to be the 'last' flatfile convertor.  It currently consumes
 and produces PennMUSH and TinyMUX 2.7 flatfiles, but the plan is to add
@@ -8,7 +8,7 @@ parsers for other formats.
 This can eventually be used to validate backups (lint for your flatfile) --
 including which server version should be able to consume it.  It can also
 be used to extract a @decomp of specific objects for re-quoting into games.
-Finally, it can be used to convert from one format to another in a lossly
+Finally, it can be used to convert from one format to another in a lossy
 fashion.
 
 Tested:
@@ -27,3 +27,14 @@ Tested:
              memory leaks in p6h and t5x paths.
 
              Round-trip tested the TinyMUX 2.6 SGP minimal database.
+
+2010-06-29 - Round-trip an older PennMUSH flatfile (1.7.5p0 or after, but
+             before 1.7.7p40).
+
+             Added ability to convert a from pre-1.7.7p40 flatfile to 1.7.7p40
+             flatfile.
+
+2010-07-01 - While locks, attribute flags, attribute owners do not yet pass
+             through, the conversion produces a loadable flatfile which passes
+             the server tests.  There is also some addition work that can be
+             done with variable exits and optimal renaming of attribute names.
