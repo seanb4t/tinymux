@@ -2,6 +2,7 @@
 #include "omega.h"
 #include "t5xgame.h"
 #include "t5x.tab.hpp"
+static int  iLockNest;
 %}
 
 %option 8bit 
@@ -10,6 +11,7 @@
 %option prefix="t5x"
 
 %s afterhdr object
+%x lock
 %x str
 %%
 
@@ -39,10 +41,10 @@
                  }
   ^\+A[0-9]+     {
                      t5xlval.i = atoi(t5xtext+2);
-                     return ATTRNAME;
+                     return ATTRNUM;
                  }
   -?[0-9]+       {
-                     t5xlval.i = atoi(yytext);
+                     t5xlval.i = atoi(t5xtext);
                      return INTEGER;
                  }
   ![0-9]+        {
@@ -50,34 +52,25 @@
                      BEGIN(object);
                      return OBJECT;
                  }
-}
-
-<object>{
-  ![0-9]+        {
-                     t5xlval.i = atoi(t5xtext+1);
-                     return OBJECT;
-                 }
-  \#-?[0-9]+     {
-                     t5xlval.i = atoi(yytext+1);
-                     return DBREF;
-                 }
-  -?[0-9]+       {
-                     t5xlval.i = atoi(yytext);
-                     return INTEGER;
-                 }
   "***END OF DUMP***" {
                      return EOD;
                  }
- \>              {
-                     return '>';
-                 }
- \<              {
-                     return '<';
+}
+
+<lock>{
+  -?[0-9]+       {
+                     t5xlval.i = atoi(t5xtext);
+                     return INTEGER;
                  }
  \(              {
+                     iLockNest++;
                      return '(';
                  }
  \)              {
+                     if (0 == --iLockNest)
+                     {
+                         BEGIN(object);
+                     }
                      return ')';
                  }
  \=              {
@@ -106,6 +99,34 @@
                  }
  \/              {
                      return '/';
+                 }
+ [^()=+@$&|!:/\n\t ]+  {
+                     t5xlval.p = StringClone(t5xtext);
+                     return LTEXT;
+                 }
+ [\n\t ]+        /* ignore whitespace */ ;
+}
+
+<object>{
+  ![0-9]+        {
+                     t5xlval.i = atoi(t5xtext+1);
+                     return OBJECT;
+                 }
+  -?[0-9]+       {
+                     t5xlval.i = atoi(t5xtext);
+                     return INTEGER;
+                 }
+ \>              {
+                     return '>';
+                 }
+ \<              {
+                     BEGIN(afterhdr);
+                     return '<';
+                 }
+ \(              {
+                     iLockNest = 1;
+                     BEGIN(lock);
+                     return '(';
                  }
 }
 
