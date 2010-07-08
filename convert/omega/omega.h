@@ -8,10 +8,14 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <vector>
 #include <map>
 using namespace std;
+
+#define LBUF_SIZE    65536
+#define ESC_CHAR     '\x1b'
 
 char *StringClone(const char *str);
 char *StringCloneLen(const char *str, size_t nStr);
@@ -22,6 +26,6 @@ typedef struct
     const int  mask;
 } NameMask;
 
-#define OMEGA_VERSION "1.0.0.0"
+#define OMEGA_VERSION "1.0.1.2"
 
 #endif
