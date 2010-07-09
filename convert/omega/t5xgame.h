@@ -31,6 +31,10 @@
 #define T5X_NOTYPE        0x7
 #define T5X_TYPE_MASK     0x7
 
+#define ATR_INFO_CHAR 0x01
+
+typedef unsigned char UTF8;
+
 class P6H_LOCKEXP;
 
 class T5X_LOCKEXP
@@ -151,6 +155,9 @@ public:
 
     void Write(FILE *fp, bool fExtraEscapes);
 
+    void Upgrade();
+    void Downgrade();
+
     T5X_ATTRNAMEINFO()
     {
         m_fNumAndName = false;
@@ -174,9 +181,12 @@ public:
     bool m_fIsLock;
     T5X_LOCKEXP *m_pKeyTree;
 
+    void Validate();
+
     void Write(FILE *fp, bool fExtraEscapes) const;
 
-    void Validate();
+    void Upgrade();
+    void Downgrade();
 
     T5X_ATTRINFO()
     {
@@ -266,11 +276,14 @@ public:
     void SetAttrs(int nAttrCount, vector<T5X_ATTRINFO *> *pvai);
 
     T5X_LOCKEXP *m_ple;
-    void SetUseLock(T5X_LOCKEXP *p) { free(m_ple); m_ple = p; }
+    void SetDefaultLock(T5X_LOCKEXP *p) { free(m_ple); m_ple = p; }
+
+    void Validate();
 
     void Write(FILE *fp, bool bWriteLock, bool fExtraEscapes);
 
-    void Validate();
+    void Upgrade();
+    void Downgrade();
 
     T5X_OBJECTINFO()
     {
@@ -337,6 +350,11 @@ public:
     void ValidateObjects();
 
     void Write(FILE *fp);
+ 
+    void Upgrade3();
+    void Upgrade2();
+    void Downgrade1();
+    void Downgrade2();
 
     void ConvertFromP6H();
 
@@ -365,6 +383,8 @@ public:
 };
 
 extern T5X_GAME g_t5xgame;
+extern int t5xparse();
+extern FILE *t5xin;
 
 char *t5x_ConvertAttributeName(const char *);
 
