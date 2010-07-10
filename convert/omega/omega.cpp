@@ -1,6 +1,8 @@
 #include "omega.h"
 #include "p6hgame.h"
 #include "t5xgame.h"
+#include "t6hgame.h"
+#include "r7hgame.h"
 
 // --------------------------------------------------------------------------
 // StringCloneLen: allocate memory and copy string
@@ -33,8 +35,8 @@ void Usage()
     fprintf(stderr, "Version: %s\n", OMEGA_VERSION);
     fprintf(stderr, "omega <options> <infile> <outfile>\n");
     fprintf(stderr, "Supported options:\n");
-    fprintf(stderr, "  -i <type>      Input file type (p6h, r6h, t5x, t6h)\n");
-    fprintf(stderr, "  -o <type>      Output file type (p6h, r6h, t5x, t6h)\n");
+    fprintf(stderr, "  -i <type>      Input file type (p6h, r7h, t5x, t6h)\n");
+    fprintf(stderr, "  -o <type>      Output file type (p6h, r7h, t5x, t6h)\n");
     fprintf(stderr, "  -v <ver>       Output version\n");
     fprintf(stderr, "  -c <charset>   Input charset\n");
     fprintf(stderr, "  -d <charset>   Output charset\n");
@@ -44,6 +46,7 @@ void Usage()
 
 typedef enum
 {
+    eAuto,
     ePennMUSH,
     eTinyMUX,
     eRhostMUSH,
@@ -73,7 +76,7 @@ int main(int argc, char *argv[])
     FILE *fpout = NULL;
 
     bool fResetPassword = false;
-    ServerType eInputType = eServerUnknown;
+    ServerType eInputType = eAuto;
     ServerType eOutputType = eServerUnknown;
     ServerVersion eOutputVersion = eSame;
     Charset eInputCharset = eCharsetUnknown;
@@ -99,7 +102,7 @@ int main(int argc, char *argv[])
             {
                 eInputType = eTinyMUX;
             }
-            else if (  strcasecmp(optarg, "r6h") == 0
+            else if (  strcasecmp(optarg, "r7h") == 0
                     || strcasecmp(optarg, "rhostmush") == 0)
             {
                 eInputType = eRhostMUSH;
@@ -111,7 +114,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                fprintf(stderr, "Input type not recognized.  Expected pennmush (p6h), tinymux (t5x), rhostmush (r6h), or tinymush (t6h).\n");
+                fprintf(stderr, "Input type not recognized.  Expected pennmush (p6h), tinymux (t5x), rhostmush (r7h), or tinymush (t6h).\n");
                 Usage();
                 return 1;
             }
@@ -128,7 +131,7 @@ int main(int argc, char *argv[])
             {
                 eOutputType = eTinyMUX;
             }
-            else if (  strcasecmp(optarg, "r6h") == 0
+            else if (  strcasecmp(optarg, "r7h") == 0
                     || strcasecmp(optarg, "rhostmush") == 0)
             {
                 eOutputType = eRhostMUSH;
@@ -140,7 +143,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                fprintf(stderr, "Output type not recognized.  Expected pennmush (p6h), tinymux (t5x), rhostmush (r6h), or tinymush (t6h).\n");
+                fprintf(stderr, "Output type not recognized.  Expected pennmush (p6h), tinymux (t5x), rhostmush (r7h), or tinymush (t6h).\n");
                 Usage();
                 return 1;
             }
@@ -244,32 +247,73 @@ int main(int argc, char *argv[])
     argc -= optind;
     argv += optind;
 
-    if (eServerUnknown == eInputType)
+    // We should have two remaining arguments (input and output file).
+    //
+    if (2 != argc)
     {
-        fprintf(stderr, "Server type not specified.\n");
+        fprintf(stderr, "After options, there should be only two command-line arguments left.\n");
         Usage();
+        return 1;
+    }
+
+    fpin = fopen(argv[0], "rb");
+    if (NULL == fpin)
+    {
+        fprintf(stderr, "Input file, %s, not found.\n", argv[0]);
+        return 1;
+    }
+    fpout = fopen(argv[1], "wb");
+    if (NULL == fpout)
+    {
+        fclose(fpin);
+        fprintf(stderr, "Output file, %s, not found.\n", argv[1]);
+        return 1;
+    }
+
+    if (eAuto == eInputType)
+    {
+        // PennMUSH is +Vn where (n & 0xFF) == 2
+        // TinyMUX is +Xn
+        // TinyMUSH is +Tn
+        // RhostMUSH is +Vn where (n & 0xFF) >= 7
+        //
+        char buffer[100];
+        fgets(buffer, sizeof(buffer), fpin);
+        fseek(fpin, 0, SEEK_SET);
+        if ('+' == buffer[0])
+        {
+            if ('V' == buffer[1])
+            {
+                int n = 255 & atoi(buffer+2);
+                if (2 == n)
+                {
+                    eInputType = ePennMUSH;
+                }
+                else if (7 <= n)
+                {
+                    eInputType = eRhostMUSH;
+                }
+            }
+            else if ('T' == buffer[1])
+            {
+                eInputType = eTinyMUSH;
+            }
+            else if ('X' == buffer[1])
+            {
+                eInputType = eTinyMUX;
+            }
+        }
+    }
+
+    if (eAuto == eInputType)
+    {
+        fprintf(stderr, "Could not automatically determine flatfile type.\n");
         return 1;
     }
 
     if (eServerUnknown == eOutputType)
     {
         eOutputType = eInputType;
-    }
-
-    if (  eTinyMUSH == eInputType
-       || eTinyMUSH == eOutputType)
-    {
-        fprintf(stderr, "TinyMUSH is not currently supported by this convertor. Use the tm3tomux converter under tinymux/convert/tinymush instead.\n");
-        Usage();
-        return 1;
-    }
-
-    if (  eRhostMUSH == eInputType
-       || eRhostMUSH == eOutputType)
-    {
-        fprintf(stderr, "RhostMUSH is not currently supported by this convertor. Ashen-Shugar will need to provide some input.\n");
-        Usage();
-        return 1;
     }
 
     if (  eOutputVersion == eLegacyTwo
@@ -302,30 +346,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // We should have two remaining arguments (input and output file).
-    //
-    if (2 != argc)
-    {
-        fprintf(stderr, "After options, there should be only two command-line arguments left.\n");
-        Usage();
-        return 1;
-    }
-
-
-    fpin = fopen(argv[0], "rb");
-    if (NULL == fpin)
-    {
-        fprintf(stderr, "Input file, %s, not found.\n", argv[0]);
-        return 1;
-    }
-    fpout = fopen(argv[1], "wb");
-    if (NULL == fpout)
-    {
-        fclose(fpin);
-        fprintf(stderr, "Output file, %s, not found.\n", argv[1]);
-        return 1;
-    }
-
     // Input handling. After this, we will have the specific flatfile version.
     //
     if (ePennMUSH == eInputType)
@@ -342,128 +362,60 @@ int main(int argc, char *argv[])
         t5xin = NULL;
         g_t5xgame.Validate();
     }
+    else if (eTinyMUSH == eInputType)
+    {
+        t6hin = fpin;
+        t6hparse();
+        t6hin = NULL;
+        g_t6hgame.Validate();
+    }
+    else if (eRhostMUSH == eInputType)
+    {
+        r7hin = fpin;
+        r7hparse();
+        r7hin = NULL;
+        g_r7hgame.Validate();
+    }
     else
     {
         fprintf(stderr, "Requested input type is not currently supported.\n");
         return 1;
     }
 
-    // Conversions, upgrades, and downgrades.
+    // Conversions
     //
-    if (eInputType == eOutputType)
-    {
-        if (ePennMUSH == eInputType)
-        {
-            bool fLabels = g_p6hgame.HasLabels();
-            if (fLabels)
-            {
-                switch (eOutputVersion)
-                {
-                case eSame:
-                case eLatest:
-                    break;
-
-                case eLegacyOne:
-                    fprintf(stderr, "Downgrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
-                    return 1;
-                    break;
-                   
-                case eLegacyTwo:
-                    fprintf(stderr, "There is no parser for PennMUSH flaDowngrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
-                    return 1;
-                    break;
-                }
-            }
-            else
-            {
-                switch (eOutputVersion)
-                {
-                case eLatest:
-                    g_p6hgame.Upgrade();
-                    g_p6hgame.Validate();
-                    break;
-
-                case eSame:
-                case eLegacyOne:
-                    break;
-                   
-                case eLegacyTwo:
-                    fprintf(stderr, "There is no parser for PennMUSH flaDowngrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
-                    return 1;
-                    break;
-                }
-            }
-        }
-        else if (eTinyMUX == eInputType)
-        {
-            int ver = (g_t5xgame.m_flags & V_MASK);
-            switch (ver)
-            {
-            case 3:
-                switch (eOutputVersion)
-                {
-                case eSame:
-                case eLatest:
-                    break;
-
-                case eLegacyOne:
-                    g_t5xgame.Downgrade2();
-                    g_t5xgame.Validate();
-                    break;
-                   
-                case eLegacyTwo:
-                    g_t5xgame.Downgrade1();
-                    g_t5xgame.Validate();
-                    break;
-                }
-                break;
-
-            case 2:
-                switch (eOutputVersion)
-                {
-                case eLatest:
-                    g_t5xgame.Upgrade3();
-                    g_t5xgame.Validate();
-                    break;
-
-                case eSame:
-                case eLegacyOne:
-                    break;
-                   
-                case eLegacyTwo:
-                    g_t5xgame.Downgrade1();
-                    g_t5xgame.Validate();
-                    break;
-                }
-                break;
-
-            case 1:
-                switch (eOutputVersion)
-                {
-                case eLatest:
-                    g_t5xgame.Upgrade3();
-                    g_t5xgame.Validate();
-                    break;
-
-                case eLegacyOne:
-                    g_t5xgame.Upgrade2();
-                    g_t5xgame.Validate();
-                    break;
-                   
-                case eSame:
-                case eLegacyTwo:
-                    break;
-                }
-                break;
-            }
-        }
-    }
-    else
+    if (eInputType != eOutputType)
     {
         if (  ePennMUSH == eInputType
            && eTinyMUX == eOutputType)
         {
             g_t5xgame.ConvertFromP6H();
+            g_t5xgame.Validate();
+        }
+        else if (  eTinyMUX == eInputType
+                && ePennMUSH == eOutputType)
+        {
+            // It's easier to convert from 2.6 to Penn.
+            //
+            if (  g_t5xgame.Downgrade2()
+               || g_t5xgame.Upgrade2())
+            {
+                g_t5xgame.Validate();
+            }
+            g_p6hgame.ConvertFromT5X();
+            g_p6hgame.Validate();
+        }
+        else if (  ePennMUSH == eInputType
+                && eTinyMUSH == eOutputType)
+        {
+            g_t6hgame.ConvertFromP6H();
+            g_t6hgame.Validate();
+        }
+        else if (  eTinyMUSH == eInputType
+                && eTinyMUX  == eOutputType)
+        {
+            g_t5xgame.ConvertFromT6H();
+            g_t5xgame.Validate();
         }
         else
         {
@@ -472,6 +424,113 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Upgrades and downgrades.
+    //
+    if (ePennMUSH == eOutputType)
+    {
+        bool fLabels = g_p6hgame.HasLabels();
+        if (fLabels)
+        {
+            switch (eOutputVersion)
+            {
+            case eSame:
+            case eLatest:
+                break;
+
+            case eLegacyOne:
+                fprintf(stderr, "Downgrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
+                return 1;
+                break;
+               
+            case eLegacyTwo:
+                fprintf(stderr, "Downgrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
+                return 1;
+                break;
+            }
+        }
+        else
+        {
+            switch (eOutputVersion)
+            {
+            case eLatest:
+                g_p6hgame.Upgrade();
+                g_p6hgame.Validate();
+                break;
+
+            case eSame:
+            case eLegacyOne:
+                break;
+               
+            case eLegacyTwo:
+                fprintf(stderr, "Downgrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
+                return 1;
+                break;
+            }
+        }
+    }
+    else if (eTinyMUX == eOutputType)
+    {
+        int ver = (g_t5xgame.m_flags & T5X_V_MASK);
+        switch (ver)
+        {
+        case 3:
+            switch (eOutputVersion)
+            {
+            case eSame:
+            case eLatest:
+                break;
+
+            case eLegacyOne:
+                g_t5xgame.Downgrade2();
+                g_t5xgame.Validate();
+                break;
+               
+            case eLegacyTwo:
+                g_t5xgame.Downgrade1();
+                g_t5xgame.Validate();
+                break;
+            }
+            break;
+
+        case 2:
+            switch (eOutputVersion)
+            {
+            case eLatest:
+                g_t5xgame.Upgrade3();
+                g_t5xgame.Validate();
+                break;
+
+            case eSame:
+            case eLegacyOne:
+                break;
+               
+            case eLegacyTwo:
+                g_t5xgame.Downgrade1();
+                g_t5xgame.Validate();
+                break;
+            }
+            break;
+
+        case 1:
+            switch (eOutputVersion)
+            {
+            case eLatest:
+                g_t5xgame.Upgrade3();
+                g_t5xgame.Validate();
+                break;
+
+            case eLegacyOne:
+                g_t5xgame.Upgrade2();
+                g_t5xgame.Validate();
+                break;
+               
+            case eSame:
+            case eLegacyTwo:
+                break;
+            }
+            break;
+        }
+    }
 
     // Optionally reset password.
     //
@@ -481,9 +540,13 @@ int main(int argc, char *argv[])
         {
             g_p6hgame.ResetPassword();
         }
-        else
+        else if (eTinyMUX == eOutputType)
         {
             g_t5xgame.ResetPassword();
+        }
+        else
+        {
+            fprintf(stderr, "Requested password reset is not currently supported.\n");
         }
     }
 
@@ -496,6 +559,14 @@ int main(int argc, char *argv[])
     else if (eTinyMUX == eOutputType)
     {
         g_t5xgame.Write(fpout);
+    }
+    else if (eTinyMUSH == eOutputType)
+    {
+        g_t6hgame.Write(fpout);
+    }
+    else if (eRhostMUSH == eOutputType)
+    {
+        g_r7hgame.Write(fpout);
     }
 
     fclose(fpout);
