@@ -1,44 +1,37 @@
-#ifndef _T5XGAME_H_
-#define _T5XGAME_H_
+#ifndef _R7HGAME_H_
+#define _R7HGAME_H_
 
-#define T5X_V_MASK      0x000000ff  /* Database version */
-#define T5X_V_ZONE      0x00000100  /* ZONE/DOMAIN field */
-#define T5X_V_LINK      0x00000200  /* LINK field (exits from objs) */
-#define T5X_V_DATABASE  0x00000400  /* attrs in a separate database */
-#define T5X_V_ATRNAME   0x00000800  /* NAME is an attr, not in the hdr */
-#define T5X_V_ATRKEY    0x00001000  /* KEY is an attr, not in the hdr */
-#define T5X_V_PARENT    0x00002000  /* db has the PARENT field */
-#define T5X_V_ATRMONEY  0x00008000  /* Money is kept in an attribute */
-#define T5X_V_XFLAGS    0x00010000  /* An extra word of flags */
-#define T5X_V_POWERS    0x00020000  /* Powers? */
-#define T5X_V_3FLAGS    0x00040000  /* Adding a 3rd flag word */
-#define T5X_V_QUOTED    0x00080000  /* Quoted strings, ala PennMUSH */
+#define R7H_V_MASK          0x000000ff      /* Database version */
+#define R7H_V_ZONE          0x00000100      /* ZONE/DOMAIN field */
+#define R7H_V_LINK          0x00000200      /* LINK field (exits from objs) */
+#define R7H_V_GDBM          0x00000400      /* attrs are in a gdbm db, not here */
+#define R7H_V_ATRNAME       0x00000800      /* NAME is an attr, not in the hdr */
+#define R7H_V_ATRKEY        0x00001000      /* KEY is an attr, not in the hdr */
+#define R7H_V_PERNKEY       0x00001000      /* PERN: Extra locks in object hdr */
+#define R7H_V_PARENT        0x00002000      /* db has the PARENT field */
+#define R7H_V_COMM          0x00004000      /* PERN: Comm status in header */
+#define R7H_V_ATRMONEY      0x00008000      /* Money is kept in an attribute */
+#define R7H_V_XFLAGS        0x00010000      /* An extra word of flags */
 
-#define T5X_MANDFLAGS_V2  (T5X_V_LINK|T5X_V_PARENT|T5X_V_XFLAGS|T5X_V_ZONE|T5X_V_POWERS|T5X_V_3FLAGS|T5X_V_QUOTED)
-#define T5X_OFLAGS_V2     (T5X_V_DATABASE|T5X_V_ATRKEY|T5X_V_ATRNAME|T5X_V_ATRMONEY)
-
-#define T5X_MANDFLAGS_V3  (T5X_V_LINK|T5X_V_PARENT|T5X_V_XFLAGS|T5X_V_ZONE|T5X_V_POWERS|T5X_V_3FLAGS|T5X_V_QUOTED|T5X_V_ATRKEY)
-#define T5X_OFLAGS_V3     (T5X_V_DATABASE|T5X_V_ATRNAME|T5X_V_ATRMONEY)
+#define R7H_MANDFLAGS  (R7H_V_LINK|R7H_V_PARENT|R7H_V_XFLAGS)
+#define R7H_OFLAGS     (R7H_V_GDBM|R7HV_ATRKEY|R7H_V_ATRNAME|R7H_V_ATRMONEY)
 
 #define A_USER_START    256     // Start of user-named attributes.
 
 /* Object types */
-#define T5X_TYPE_ROOM     0x0
-#define T5X_TYPE_THING    0x1
-#define T5X_TYPE_EXIT     0x2
-#define T5X_TYPE_PLAYER   0x3
-#define T5X_TYPE_GARBAGE  0x5
-#define T5X_NOTYPE        0x7
-#define T5X_TYPE_MASK     0x7
+#define R7H_TYPE_ROOM     0x0
+#define R7H_TYPE_THING    0x1
+#define R7H_TYPE_EXIT     0x2
+#define R7H_TYPE_PLAYER   0x3
+#define R7H_TYPE_GARBAGE  0x5
+#define R7H_NOTYPE        0x7
+#define R7H_TYPE_MASK     0x7
 
 #define ATR_INFO_CHAR 0x01
 
-typedef unsigned char UTF8;
-
 class P6H_LOCKEXP;
-class T6H_LOCKEXP;
 
-class T5X_LOCKEXP
+class R7H_LOCKEXP
 {
 public:
     typedef enum
@@ -55,58 +48,58 @@ public:
         le_ref,
         le_text,
         le_none,
-    } T5X_OP;
+    } R7H_OP;
 
-    T5X_OP m_op;
+    R7H_OP m_op;
 
-    T5X_LOCKEXP *m_le[2];
+    R7H_LOCKEXP *m_le[2];
     int          m_dbRef;
     char        *m_p[2];
 
-    void SetIs(T5X_LOCKEXP *p)
+    void SetIs(R7H_LOCKEXP *p)
     {
         m_op = le_is;
         m_le[0] = p;
     }
-    void SetCarry(T5X_LOCKEXP *p)
+    void SetCarry(R7H_LOCKEXP *p)
     {
         m_op = le_carry;
         m_le[0] = p;
     }
-    void SetIndir(T5X_LOCKEXP *p)
+    void SetIndir(R7H_LOCKEXP *p)
     {
         m_op = le_indirect;
         m_le[0] = p;
     }
-    void SetOwner(T5X_LOCKEXP *p)
+    void SetOwner(R7H_LOCKEXP *p)
     {
         m_op = le_owner;
         m_le[0] = p;
     }
-    void SetAnd(T5X_LOCKEXP *p, T5X_LOCKEXP *q)
+    void SetAnd(R7H_LOCKEXP *p, R7H_LOCKEXP *q)
     {
         m_op = le_and;
         m_le[0] = p;
         m_le[1] = q;
     }
-    void SetOr(T5X_LOCKEXP *p, T5X_LOCKEXP *q)
+    void SetOr(R7H_LOCKEXP *p, R7H_LOCKEXP *q)
     {
         m_op = le_or;
         m_le[0] = p;
         m_le[1] = q;
     }
-    void SetNot(T5X_LOCKEXP *p)
+    void SetNot(R7H_LOCKEXP *p)
     {
         m_op = le_not;
         m_le[0] = p;
     }
-    void SetAttr(T5X_LOCKEXP *p, T5X_LOCKEXP *q)
+    void SetAttr(R7H_LOCKEXP *p, R7H_LOCKEXP *q)
     {
         m_op = le_attr;
         m_le[0] = p;
         m_le[1] = q;
     }
-    void SetEval(T5X_LOCKEXP *p, T5X_LOCKEXP *q)
+    void SetEval(R7H_LOCKEXP *p, R7H_LOCKEXP *q)
     {
         m_op = le_eval;
         m_le[0] = p;
@@ -127,16 +120,15 @@ public:
     char *Write(char *p);
 
     bool ConvertFromP6H(P6H_LOCKEXP *p);
-    bool ConvertFromT6H(T6H_LOCKEXP *p);
 
-    T5X_LOCKEXP()
+    R7H_LOCKEXP()
     {
         m_op = le_none;
         m_le[0] = m_le[1] = NULL;
         m_p[0] = m_p[1] = NULL;
         m_dbRef = 0;
     }
-    ~T5X_LOCKEXP()
+    ~R7H_LOCKEXP()
     {
         delete m_le[0];
         delete m_le[1];
@@ -147,7 +139,7 @@ public:
     } 
 };
 
-class T5X_ATTRNAMEINFO
+class R7H_ATTRNAMEINFO
 {
 public:
     bool  m_fNumAndName;
@@ -159,22 +151,19 @@ public:
 
     void Write(FILE *fp, bool fExtraEscapes);
 
-    void Upgrade();
-    void Downgrade();
-
-    T5X_ATTRNAMEINFO()
+    R7H_ATTRNAMEINFO()
     {
         m_fNumAndName = false;
         m_pName = NULL;
     }
-    ~T5X_ATTRNAMEINFO()
+    ~R7H_ATTRNAMEINFO()
     {
         free(m_pName);
         m_pName = NULL;
     }
 };
 
-class T5X_ATTRINFO
+class R7H_ATTRINFO
 {
 public:
     bool m_fNumAndValue;
@@ -183,23 +172,20 @@ public:
     void SetNumAndValue(int iNum, char *pValue);
 
     bool m_fIsLock;
-    T5X_LOCKEXP *m_pKeyTree;
+    R7H_LOCKEXP *m_pKeyTree;
 
     void Validate() const;
 
     void Write(FILE *fp, bool fExtraEscapes) const;
 
-    void Upgrade();
-    void Downgrade();
-
-    T5X_ATTRINFO()
+    R7H_ATTRINFO()
     {
         m_fNumAndValue = false;
         m_fIsLock = false;
         m_pValue = NULL;
         m_pKeyTree = NULL;
     }
-    ~T5X_ATTRINFO()
+    ~R7H_ATTRINFO()
     {
         free(m_pValue);
         delete m_pKeyTree;
@@ -208,7 +194,7 @@ public:
     }
 };
 
-class T5X_OBJECTINFO
+class R7H_OBJECTINFO
 {
 public:
     bool m_fRef;
@@ -262,13 +248,45 @@ public:
     int  m_iFlags3;
     void SetFlags3(int iFlags3) { m_fFlags3 = true; m_iFlags3 = iFlags3; }
 
-    bool m_fPowers1;
-    int  m_iPowers1;
-    void SetPowers1(int iPowers1) { m_fPowers1 = true; m_iPowers1 = iPowers1; }
+    bool m_fFlags4;
+    int  m_iFlags4;
+    void SetFlags4(int iFlags4) { m_fFlags4 = true; m_iFlags4 = iFlags4; }
 
-    bool m_fPowers2;
-    int  m_iPowers2;
-    void SetPowers2(int iPowers2) { m_fPowers2 = true; m_iPowers2 = iPowers2; }
+    bool m_fToggles1;
+    int  m_iToggles1;
+    void SetToggles1(int iToggles1) { m_fToggles1 = true; m_iToggles1 = iToggles1; }
+
+    bool m_fToggles2;
+    int  m_iToggles2;
+    void SetToggles2(int iToggles2) { m_fToggles2 = true; m_iToggles2 = iToggles2; }
+
+    bool m_fToggles3;
+    int  m_iToggles3;
+    void SetToggles3(int iToggles3) { m_fToggles3 = true; m_iToggles3 = iToggles3; }
+
+    bool m_fToggles4;
+    int  m_iToggles4;
+    void SetToggles4(int iToggles4) { m_fToggles4 = true; m_iToggles4 = iToggles4; }
+
+    bool m_fToggles5;
+    int  m_iToggles5;
+    void SetToggles5(int iToggles5) { m_fToggles5 = true; m_iToggles5 = iToggles5; }
+
+    bool m_fToggles6;
+    int  m_iToggles6;
+    void SetToggles6(int iToggles6) { m_fToggles6 = true; m_iToggles6 = iToggles6; }
+
+    bool m_fToggles7;
+    int  m_iToggles7;
+    void SetToggles7(int iToggles7) { m_fToggles7 = true; m_iToggles7 = iToggles7; }
+
+    bool m_fToggles8;
+    int  m_iToggles8;
+    void SetToggles8(int iToggles8) { m_fToggles8 = true; m_iToggles8 = iToggles8; }
+
+    bool m_fZones;
+    vector<int> *m_pvz;
+    void SetZones(vector<int> *pvz) { m_fZones = true; delete m_pvz; m_pvz = pvz; }
 
     bool m_fLink;
     int  m_dbLink;
@@ -276,20 +294,17 @@ public:
 
     bool m_fAttrCount;
     int  m_nAttrCount;
-    vector<T5X_ATTRINFO *> *m_pvai;
-    void SetAttrs(int nAttrCount, vector<T5X_ATTRINFO *> *pvai);
+    vector<R7H_ATTRINFO *> *m_pvai;
+    void SetAttrs(int nAttrCount, vector<R7H_ATTRINFO *> *pvai);
 
-    T5X_LOCKEXP *m_ple;
-    void SetDefaultLock(T5X_LOCKEXP *p) { free(m_ple); m_ple = p; }
+    R7H_LOCKEXP *m_ple;
+    void SetDefaultLock(R7H_LOCKEXP *p) { delete m_ple; m_ple = p; }
 
     void Validate() const;
 
     void Write(FILE *fp, bool bWriteLock, bool fExtraEscapes);
 
-    void Upgrade();
-    void Downgrade();
-
-    T5X_OBJECTINFO()
+    R7H_OBJECTINFO()
     {
         m_fRef = false;
         m_pName = NULL;
@@ -301,20 +316,34 @@ public:
         m_fOwner = false;
         m_fZone = false;
         m_fPennies = false;
-        m_fPennies = false;
+        m_fFlags1 = false;
+        m_fFlags2 = false;
+        m_fFlags3 = false;
+        m_fFlags4 = false;
+        m_fToggles1 = false;
+        m_fToggles2 = false;
+        m_fToggles3 = false;
+        m_fToggles4 = false;
+        m_fToggles5 = false;
+        m_fToggles6 = false;
+        m_fToggles7 = false;
+        m_fToggles8 = false;
         m_fAttrCount = false;
         m_pvai = NULL;
         m_ple = NULL;
+        m_pvz = NULL;
     }
-    ~T5X_OBJECTINFO()
+    ~R7H_OBJECTINFO()
     {
         free(m_pName);
         delete m_ple;
+        delete m_pvz;
         m_pName = NULL;
         m_ple = NULL;
+        m_pvz = NULL;
         if (NULL != m_pvai)
         {
-            for (vector<T5X_ATTRINFO *>::iterator it = m_pvai->begin(); it != m_pvai->end(); ++it)
+            for (vector<R7H_ATTRINFO *>::iterator it = m_pvai->begin(); it != m_pvai->end(); ++it)
             {
                delete *it;
             } 
@@ -324,8 +353,7 @@ public:
     }
 };
 
-
-class T5X_GAME
+class R7H_GAME
 {
 public:
     int  m_flags;
@@ -344,11 +372,11 @@ public:
     int  m_nRecordPlayers;
     void SetRecordPlayers(int nRecordPlayers) { m_fRecordPlayers = true; m_nRecordPlayers = nRecordPlayers; }
 
-    vector<T5X_ATTRNAMEINFO *> m_vAttrNames;
+    vector<R7H_ATTRNAMEINFO *> m_vAttrNames;
     void AddNumAndName(int iNum, char *pName);
 
-    map<int, T5X_OBJECTINFO *, lti> m_mObjects;
-    void AddObject(T5X_OBJECTINFO *poi);
+    map<int, R7H_OBJECTINFO *, lti> m_mObjects;
+    void AddObject(R7H_OBJECTINFO *poi);
 
     void Validate() const;
     void ValidateFlags() const;
@@ -357,31 +385,25 @@ public:
 
     void Write(FILE *fp);
  
-    bool Upgrade3();
-    bool Upgrade2();
-    bool Downgrade1();
-    bool Downgrade2();
-
     void ConvertFromP6H();
-    void ConvertFromT6H();
 
     void ResetPassword();
 
-    T5X_GAME()
+    R7H_GAME()
     {
         m_flags = 0;
         m_fSizeHint = false;
         m_fNextAttr = false;
         m_fRecordPlayers = false;
     }
-    ~T5X_GAME()
+    ~R7H_GAME()
     {
-        for (vector<T5X_ATTRNAMEINFO *>::iterator it = m_vAttrNames.begin(); it != m_vAttrNames.end(); ++it)
+        for (vector<R7H_ATTRNAMEINFO *>::iterator it = m_vAttrNames.begin(); it != m_vAttrNames.end(); ++it)
         {
             delete *it;
         } 
         m_vAttrNames.clear();
-        for (map<int, T5X_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
+        for (map<int, R7H_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
         {
             delete it->second;
         } 
@@ -389,10 +411,10 @@ public:
     }
 };
 
-extern T5X_GAME g_t5xgame;
-extern int t5xparse();
-extern FILE *t5xin;
+extern R7H_GAME g_r7hgame;
+extern int r7hparse();
+extern FILE *r7hin;
 
-char *t5x_ConvertAttributeName(const char *);
+char *r7h_ConvertAttributeName(const char *);
 
 #endif

@@ -16,6 +16,8 @@
 #define P6H_TYPE_GARBAGE        0x10
 #define P6H_NOTYPE              0xFFFF
 
+class T5X_LOCKEXP;
+
 class P6H_LOCKEXP
 {
 public:
@@ -127,6 +129,8 @@ public:
 
     char *Write(char *p);
 
+    bool ConvertFromT5X(T5X_LOCKEXP *p);
+
     P6H_LOCKEXP()
     {
         m_op = le_none;
@@ -163,7 +167,7 @@ public:
     char *m_pNegatePerms;
     void SetNegatePerms(char *p);
 
-    void Validate();
+    void Validate() const;
 
     void Merge(P6H_FLAGINFO *pfi);
 
@@ -248,7 +252,7 @@ public:
 
     void Merge(P6H_LOCKINFO *pli);
 
-    void Validate();
+    void Validate() const;
 
     void Write(FILE *fp, bool fLabels) const;
 
@@ -414,7 +418,7 @@ public:
 
     void Merge(P6H_OBJECTINFO *poi);
 
-    void Validate();
+    void Validate() const;
 
     void Write(FILE *fp, bool fLabels);
 
@@ -486,7 +490,7 @@ public:
     int m_flags;
     void SetFlags(int flags) { m_flags = flags; }
     int  GetFlags()          { return m_flags;  }
-    bool HasLabels();
+    bool HasLabels() const;
 
     char *m_pSavedTime;
     void SetSavedTime(char *p);
@@ -523,16 +527,18 @@ public:
     int  m_nSizeHint;
     void SetSizeHint(int nSizeHint) { m_fSizeHint = true; m_nSizeHint = nSizeHint; }
 
-    vector<P6H_OBJECTINFO *> m_vObjects;
+    map<int, P6H_OBJECTINFO *, lti> m_mObjects;
     void AddObject(P6H_OBJECTINFO *poi);
 
-    void Validate();
-    void ValidateFlags();
-    void ValidateSavedTime();
+    void Validate() const;
+    void ValidateFlags() const;
+    void ValidateSavedTime() const;
 
     void Write(FILE *fp);
 
     void Upgrade();
+
+    void ConvertFromT5X();
 
     void ResetPassword();
 
@@ -595,11 +601,11 @@ public:
             delete m_pvPowerAliases;
             m_pvPowerAliases = NULL;
         }
-        for (vector<P6H_OBJECTINFO *>::iterator it = m_vObjects.begin(); it != m_vObjects.end(); ++it)
+        for (map<int, P6H_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
         {
-            delete *it;
+            delete it->second;
         } 
-        m_vObjects.clear();
+        m_mObjects.clear();
     }
 };
 

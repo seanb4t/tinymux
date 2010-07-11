@@ -1,6 +1,7 @@
 #include "omega.h"
 #include "t5xgame.h"
 #include "p6hgame.h"
+#include "t6hgame.h"
 
 typedef struct _t5x_gameflaginfo
 {
@@ -10,17 +11,17 @@ typedef struct _t5x_gameflaginfo
 
 t5x_gameflaginfo t5x_gameflagnames[] =
 {
-    { V_ZONE,     "V_ZONE"     },
-    { V_LINK,     "V_LINK"     },
-    { V_DATABASE, "V_DATABASE" },
-    { V_ATRNAME,  "V_ATRNAME"  },
-    { V_ATRKEY,   "V_ATRKEY"   },
-    { V_PARENT,   "V_PARENT"   },
-    { V_ATRMONEY, "V_ATRMONEY" },
-    { V_XFLAGS,   "V_XFLAGS"   },
-    { V_POWERS,   "V_POWERS"   },
-    { V_3FLAGS,   "V_3FLAGS"   },
-    { V_QUOTED,   "V_QUOTED"   },
+    { T5X_V_ZONE,     "V_ZONE"     },
+    { T5X_V_LINK,     "V_LINK"     },
+    { T5X_V_DATABASE, "V_DATABASE" },
+    { T5X_V_ATRNAME,  "V_ATRNAME"  },
+    { T5X_V_ATRKEY,   "V_ATRKEY"   },
+    { T5X_V_PARENT,   "V_PARENT"   },
+    { T5X_V_ATRMONEY, "V_ATRMONEY" },
+    { T5X_V_XFLAGS,   "V_XFLAGS"   },
+    { T5X_V_POWERS,   "V_POWERS"   },
+    { T5X_V_3FLAGS,   "V_3FLAGS"   },
+    { T5X_V_QUOTED,   "V_QUOTED"   },
 };
 #define T5X_NUM_GAMEFLAGNAMES (sizeof(t5x_gameflagnames)/sizeof(t5x_gameflagnames[0]))
 
@@ -472,6 +473,138 @@ bool T5X_LOCKEXP::ConvertFromP6H(P6H_LOCKEXP *p)
     }
     return true;
 }
+
+bool T5X_LOCKEXP::ConvertFromT6H(T6H_LOCKEXP *p)
+{
+    switch (p->m_op)
+    {
+    case T6H_LOCKEXP::le_is:
+        m_op = T5X_LOCKEXP::le_is;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromT6H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_carry:
+        m_op = T5X_LOCKEXP::le_carry;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromT6H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_indirect:
+        m_op = T5X_LOCKEXP::le_indirect;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromT6H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_owner:
+        m_op = T5X_LOCKEXP::le_owner;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromT6H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_or:
+        m_op = T5X_LOCKEXP::le_or;
+        m_le[0] = new T5X_LOCKEXP;
+        m_le[1] = new T5X_LOCKEXP;
+        if (  !m_le[0]->ConvertFromT6H(p->m_le[0])
+           || !m_le[1]->ConvertFromT6H(p->m_le[1]))
+        {
+            delete m_le[0];
+            delete m_le[1];
+            m_le[0] = m_le[1] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_not:
+        m_op = T5X_LOCKEXP::le_not;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromT6H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_attr:
+        m_op = T5X_LOCKEXP::le_attr;
+        m_le[0] = new T5X_LOCKEXP;
+        m_le[1] = new T5X_LOCKEXP;
+        if (  !m_le[0]->ConvertFromT6H(p->m_le[0])
+           || !m_le[1]->ConvertFromT6H(p->m_le[1]))
+        {
+            delete m_le[0];
+            delete m_le[1];
+            m_le[0] = m_le[1] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_eval:
+        m_op = T5X_LOCKEXP::le_eval;
+        m_le[0] = new T5X_LOCKEXP;
+        m_le[1] = new T5X_LOCKEXP;
+        if (  !m_le[0]->ConvertFromT6H(p->m_le[0])
+           || !m_le[1]->ConvertFromT6H(p->m_le[1]))
+        {
+            delete m_le[0];
+            delete m_le[1];
+            m_le[0] = m_le[1] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_and:
+        m_op = T5X_LOCKEXP::le_and;
+        m_le[0] = new T5X_LOCKEXP;
+        m_le[1] = new T5X_LOCKEXP;
+        if (  !m_le[0]->ConvertFromT6H(p->m_le[0])
+           || !m_le[1]->ConvertFromT6H(p->m_le[1]))
+        {
+            delete m_le[0];
+            delete m_le[1];
+            m_le[0] = m_le[1] = NULL;
+            return false;
+        }
+        break;
+
+    case T6H_LOCKEXP::le_ref:
+        m_op = T5X_LOCKEXP::le_ref;
+        m_dbRef = p->m_dbRef;
+        break;
+
+    case T6H_LOCKEXP::le_text:
+        m_op = T5X_LOCKEXP::le_text;
+        m_p[0] = StringClone(p->m_p[0]);
+        break;
+
+    default:
+        fprintf(stderr, "%d not recognized.\n", m_op);
+        break;
+    }
+    return true;
+}
  
 void T5X_ATTRNAMEINFO::SetNumAndName(int iNum, char *pName)
 {
@@ -594,6 +727,11 @@ void T5X_OBJECTINFO::SetAttrs(int nAttrs, vector<T5X_ATTRINFO *> *pvai)
                 if (t5x_locknums[i] == (*it)->m_iNum)
                 {
                     (*it)->m_fIsLock = true;
+                    (*it)->m_pKeyTree = t5xl_ParseKey((*it)->m_pValue);
+                    if (NULL == (*it)->m_pKeyTree)
+                    {
+                       fprintf(stderr, "WARNING: Lock key '%s' is not valid.\n", (*it)->m_pValue);
+                    }
                     break;
                 }
             }
@@ -621,20 +759,20 @@ void T5X_GAME::AddNumAndName(int iNum, char *pName)
 
 void T5X_GAME::AddObject(T5X_OBJECTINFO *poi)
 {
-    m_vObjects.push_back(poi);
+    m_mObjects[poi->m_dbRef] = poi;
 }
 
-void T5X_GAME::ValidateFlags()
+void T5X_GAME::ValidateFlags() const
 {
     int flags = m_flags;
 
-    int ver = (m_flags & V_MASK);
+    int ver = (m_flags & T5X_V_MASK);
     fprintf(stderr, "INFO: Flatfile version is %d\n", ver);
     if (ver < 1 || 3 < ver)
     {
         fprintf(stderr, "WARNING: Expecting version to be between 1 and 3.\n");
     }
-    flags &= ~V_MASK;
+    flags &= ~T5X_V_MASK;
     int tflags = flags;
 
     fprintf(stderr, "INFO: Flatfile flags are ");
@@ -656,44 +794,44 @@ void T5X_GAME::ValidateFlags()
     // Validate mandatory flags are present.
     //
     if (  2 == ver
-       && (flags & MANDFLAGS_V2) != MANDFLAGS_V2)
+       && (flags & T5X_MANDFLAGS_V2) != T5X_MANDFLAGS_V2)
     {
         fprintf(stderr, "WARNING: Not all mandatory flags for v2 are present.\n");
     }
     else if (  3 == ver
-            && (flags & MANDFLAGS_V3) != MANDFLAGS_V3)
+            && (flags & T5X_MANDFLAGS_V3) != T5X_MANDFLAGS_V3)
     {
         fprintf(stderr, "WARNING: Not all mandatory flags for v3 are present.\n");
     }
 
     // Validate that this is a flatfile and not a structure file.
     //
-    if (  (flags & V_DATABASE) != 0
-       || (flags & V_ATRNAME) != 0
-       || (flags & V_ATRMONEY) != 0)
+    if (  (flags & T5X_V_DATABASE) != 0
+       || (flags & T5X_V_ATRNAME) != 0
+       || (flags & T5X_V_ATRMONEY) != 0)
     {
         fprintf(stderr, "WARNING: Expected a flatfile (with strings) instead of a structure file (with only object anchors).\n");
     }
 }
 
-void T5X_GAME::ValidateObjects()
+void T5X_GAME::ValidateObjects() const
 {
+    int dbRefMax = 0;
+    for (map<int, T5X_OBJECTINFO *, lti>::const_iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
+    {
+        it->second->Validate();
+        if (dbRefMax < it->first)
+        {
+            dbRefMax = it->first;
+        }
+    } 
+      
     if (!m_fSizeHint)
     {
         fprintf(stderr, "WARNING: +S phrase for next object was missing.\n");
     }
     else
     {
-        int dbRefMax = 0;
-        for (vector<T5X_OBJECTINFO *>::iterator it = m_vObjects.begin(); it != m_vObjects.end(); ++it)
-        {
-            (*it)->Validate();
-            if (dbRefMax < (*it)->m_dbRef)
-            {
-                dbRefMax = (*it)->m_dbRef;
-            }
-        } 
-      
         if (m_nSizeHint < dbRefMax)
         {
             fprintf(stderr, "WARNING: +S phrase does not leave room for the dbrefs.\n");
@@ -705,7 +843,67 @@ void T5X_GAME::ValidateObjects()
     }
 }
 
-void T5X_GAME::ValidateAttrNames()
+void T5X_ATTRNAMEINFO::Validate(int ver) const
+{
+    if (m_fNumAndName)
+    {
+        if (m_iNum < A_USER_START)
+        {
+            fprintf(stderr, "WARNING: User attribute (%s) uses an attribute number (%d) which is below %d.\n", m_pName, m_iNum, A_USER_START);
+        }
+        char *p = strchr(m_pName, ':');
+        if (NULL == p)
+        {
+            fprintf(stderr, "WARNING, User attribute (%s) does not contain a flag sub-field.\n", m_pName);
+        }
+        else
+        {
+            char *q = m_pName;
+            while (q != p)
+            {
+                if (!isdigit(*q))
+                {
+                    fprintf(stderr, "WARNING, User attribute (%s) flag sub-field is not numeric.\n", m_pName);
+                    break;
+                }
+                q++;
+            }
+
+            if (ver <= 2)
+            {
+                q = p + 1;
+                bool fValid = true;
+                if (!t5x_AttrNameInitialSet[*q])
+                {
+                    fValid = false;
+                }
+                else if ('\0' != *q)
+                {
+                    q++;
+                    while ('\0' != *q)
+                    {
+                        if (!t5x_AttrNameSet[*q])
+                        {
+                            fValid = false;
+                            break;
+                        }
+                        q++;
+                    }
+                }
+                if (!fValid)
+                {
+                    fprintf(stderr, "WARNING, User attribute (%s) name is not valid.\n", m_pName);
+                }
+            }
+        }
+    }
+    else
+    {
+        fprintf(stderr, "WARNING: Unexpected ATTRNAMEINFO -- internal error.\n");
+    }
+}
+
+void T5X_GAME::ValidateAttrNames(int ver) const
 {
     if (!m_fNextAttr)
     {
@@ -714,23 +912,16 @@ void T5X_GAME::ValidateAttrNames()
     else
     {
         int n = 256;
-        for (vector<T5X_ATTRNAMEINFO *>::iterator it = m_vAttrNames.begin(); it != m_vAttrNames.end(); ++it)
+        for (vector<T5X_ATTRNAMEINFO *>::const_iterator it = m_vAttrNames.begin(); it != m_vAttrNames.end(); ++it)
         {
+            (*it)->Validate(ver);
             if ((*it)->m_fNumAndName)
             {
                 int iNum = (*it)->m_iNum;
-                if (iNum < A_USER_START)
-                {
-                    fprintf(stderr, "WARNING: User attribute (%s) uses an attribute number (%d) which is below %d.\n", (*it)->m_pName, iNum, A_USER_START);
-                }
                 if (n <= iNum)
                 {
                     n = iNum + 1;
                 }
-            }
-            else
-            {
-                fprintf(stderr, "WARNING: Unexpected ATTRNAMEINFO -- internal error.\n");
             }
         }
         if (m_nNextAttr != n)
@@ -740,10 +931,11 @@ void T5X_GAME::ValidateAttrNames()
     }
 }
 
-void T5X_GAME::Validate()
+void T5X_GAME::Validate() const
 {
+    int ver = (m_flags & T5X_V_MASK);
     ValidateFlags();
-    ValidateAttrNames();
+    ValidateAttrNames(ver);
     ValidateObjects();
 }
 
@@ -833,31 +1025,98 @@ void T5X_OBJECTINFO::Write(FILE *fp, bool bWriteLock, bool fExtraEscapes)
     fprintf(fp, "<\n");
 }
 
-void T5X_ATTRINFO::Validate()
+void T5X_ATTRINFO::Validate() const
 {
-    if (m_fIsLock)
+    if (  m_fNumAndValue
+       && m_fIsLock
+       && NULL != m_pKeyTree)
     {
-        delete m_pKeyTree;
-        m_pKeyTree = t5xl_ParseKey(m_pValue);
-        if (NULL == m_pKeyTree)
+        char buffer[65536];
+        char *p = m_pKeyTree->Write(buffer);
+        *p = '\0';
+        if (strcmp(m_pValue, buffer) != 0)
         {
-            fprintf(stderr, "WARNING: Lock key '%s' is not valid.\n", m_pValue);
-        }
-        else
-        {
-            char buffer[65536];
-            char *p = m_pKeyTree->Write(buffer);
-            *p = '\0';
-            if (strcmp(m_pValue, buffer) != 0)
-            {
-                 fprintf(stderr, "WARNING: Re-generated lock key '%s' does not agree with parsed key '%s'.\n", buffer, m_pValue);
-            }
+            fprintf(stderr, "WARNING: Re-generated lock key '%s' does not agree with parsed key '%s'.\n", buffer, m_pValue);
         }
     }
 }
 
-void T5X_OBJECTINFO::Validate()
+void T5X_OBJECTINFO::Validate() const
 {
+    map<int, T5X_OBJECTINFO *, lti>::const_iterator itFound;
+    if (  m_fLocation
+       && -1 != m_dbLocation)
+    {
+        itFound = g_t5xgame.m_mObjects.find(m_dbLocation);
+        if (itFound == g_t5xgame.m_mObjects.end())
+        {
+            fprintf(stderr, "WARNING: Location (#%d) of object #%d does not exist.\n", m_dbLocation, m_dbRef);
+        }
+    }
+    if (  m_fContents
+       && -1 != m_dbContents)
+    {
+        itFound = g_t5xgame.m_mObjects.find(m_dbContents);
+        if (itFound == g_t5xgame.m_mObjects.end())
+        {
+            fprintf(stderr, "WARNING: Contents (#%d) of object #%d does not exist.\n", m_dbContents, m_dbRef);
+        }
+    }
+    if (  m_fExits
+       && -1 != m_dbExits)
+    {
+        itFound = g_t5xgame.m_mObjects.find(m_dbExits);
+        if (itFound == g_t5xgame.m_mObjects.end())
+        {
+            fprintf(stderr, "WARNING: Exits (#%d) of object #%d does not exist.\n", m_dbExits, m_dbRef);
+        }
+    }
+    if (  m_fNext
+       && -1 != m_dbNext)
+    {
+        itFound = g_t5xgame.m_mObjects.find(m_dbNext);
+        if (itFound == g_t5xgame.m_mObjects.end())
+        {
+            fprintf(stderr, "WARNING: Next (#%d) of object #%d does not exist.\n", m_dbNext, m_dbRef);
+        }
+    }
+    if (  m_fParent
+       && -1 != m_dbParent)
+    {
+        itFound = g_t5xgame.m_mObjects.find(m_dbParent);
+        if (itFound == g_t5xgame.m_mObjects.end())
+        {
+            fprintf(stderr, "WARNING: Parent (#%d) of object #%d does not exist.\n", m_dbParent, m_dbRef);
+        }
+    }
+    if (  m_fOwner
+       && -1 != m_dbOwner)
+    {
+        itFound = g_t5xgame.m_mObjects.find(m_dbOwner);
+        if (itFound == g_t5xgame.m_mObjects.end())
+        {
+            fprintf(stderr, "WARNING: Owner (#%d) of object #%d does not exist.\n", m_dbOwner, m_dbRef);
+        }
+    }
+    if (  m_fZone
+       && -1 != m_dbZone)
+    {
+        itFound = g_t5xgame.m_mObjects.find(m_dbZone);
+        if (itFound == g_t5xgame.m_mObjects.end())
+        {
+            fprintf(stderr, "WARNING: Zone (#%d) of object #%d does not exist.\n", m_dbZone, m_dbRef);
+        }
+    }
+    if (  m_fLink
+       && -1 != m_dbLink)
+    {
+        itFound = g_t5xgame.m_mObjects.find(m_dbLink);
+        if (itFound == g_t5xgame.m_mObjects.end())
+        {
+            fprintf(stderr, "WARNING: Link (#%d) of object #%d does not exist.\n", m_dbLink, m_dbRef);
+        }
+    }
+
     if (  m_fAttrCount
        && NULL != m_pvai)
     {
@@ -878,7 +1137,7 @@ void T5X_ATTRINFO::Write(FILE *fp, bool fExtraEscapes) const
 
 void T5X_GAME::Write(FILE *fp)
 {
-    int ver = (m_flags & V_MASK);
+    int ver = (m_flags & T5X_V_MASK);
     bool fExtraEscapes = (2 <= ver);
     fprintf(fp, "+X%d\n", m_flags);
     if (m_fSizeHint)
@@ -897,15 +1156,15 @@ void T5X_GAME::Write(FILE *fp)
     {
         (*it)->Write(fp, fExtraEscapes);
     } 
-    for (vector<T5X_OBJECTINFO *>::iterator it = m_vObjects.begin(); it != m_vObjects.end(); ++it)
+    for (map<int, T5X_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
     {
-        (*it)->Write(fp, (m_flags & V_ATRKEY) == 0, fExtraEscapes);
+        it->second->Write(fp, (m_flags & T5X_V_ATRKEY) == 0, fExtraEscapes);
     } 
 
     fprintf(fp, "***END OF DUMP***\n");
 }
 
-int t5x_convert_type[] =
+static int p6h_convert_type[] =
 {
     T5X_NOTYPE,        //  0
     T5X_TYPE_ROOM,     //  1
@@ -926,7 +1185,7 @@ int t5x_convert_type[] =
     T5X_TYPE_GARBAGE,  // 16
 };
 
-NameMask t5x_convert_flag1[] =
+static NameMask p6h_convert_obj_flags1[] =
 {
     { "TRANSPARENT",    0x00000008UL },
     { "WIZARD",         0x00000010UL },
@@ -955,7 +1214,7 @@ NameMask t5x_convert_flag1[] =
     { "TERSE",          0x80000000UL },
 };
 
-NameMask t5x_convert_flag2[] =
+static NameMask p6h_convert_obj_flags2[] =
 {
     { "ABODE",          0x00000002UL },
     { "FLOATING",       0x00000004UL },
@@ -974,7 +1233,7 @@ NameMask t5x_convert_flag2[] =
     { "SLAVE",          0x80000000UL },
 };
 
-NameMask t5x_convert_powers1[] =
+static NameMask p6h_convert_obj_powers1[] =
 {
     { "Announce",       0x00000004UL },
     { "Boot",           0x00000008UL },
@@ -995,7 +1254,7 @@ NameMask t5x_convert_powers1[] =
     { "Unkillable",     0x80000000UL },
 };
 
-NameMask t5x_convert_powers2[] =
+static NameMask p6h_convert_obj_powers2[] =
 {
     { "Builder",        0x00000001UL },
 };
@@ -1045,7 +1304,7 @@ static struct
     { "CONFORMAT",     242 },
     { "CONNINFO",       -1 },
     { "COST",           24 },
-    { "CREATED",        -1 }, // rename CREATED to XCREATED QQQ
+    { "CREATED",        -1 }, // rename CREATED to XCREATED
     { "DAILY",          -1 }, // rename DAILY to XDAILY
     { "DESC",           -1 }, // rename DESC to XDESC
     { "DESCRIBE",        6 }, // rename DESCRIBE to DESC
@@ -1097,7 +1356,7 @@ static struct
     { "MAILSUCC",       -1 }, // rename MAILSUCC to XMAILSUCC
     { "MAILTO",         -1 }, // rename MAILTO to XMAILTO
     { "MFAIL",          -1 }, // rename MFAIL to XMFAIL
-    { "MODIFIED",       -1 }, // rename MODIFIED to XMODIFIED QQQ
+    { "MODIFIED",       -1 }, // rename MODIFIED to XMODIFIED
     { "MONIKER",        -1 }, // rename MONIKER to XMONIKER
     { "MOVE",           55 },
     { "NAME",           -1 }, // rename NAME to XNAME
@@ -1192,12 +1451,11 @@ static struct
     { "XYXXY",           5 },   // *Password
 };
 
-
 static struct
 {
     const char *pName;
     int         iNum;
-} t5x_locknames[] =
+} p6h_locknames[] =
 {
     { "Basic",       42 },
     { "Enter",       59 },
@@ -1217,7 +1475,7 @@ static struct
     { "Open",       225 },
 };
 
-NameMask t5x_attr_flags[] =
+static NameMask p6h_attr_flags[] =
 {
     { "no_command",     0x00000100UL },
     { "private",        0x00001000UL },
@@ -1234,7 +1492,7 @@ NameMask t5x_attr_flags[] =
     { "noname",         0x00400000UL },
 };
 
-char *EncodeAttrValue(int iObjOwner, int iAttrOwner, int iAttrFlags, char *pValue)
+static char *EncodeAttrValue(int iObjOwner, int iAttrOwner, int iAttrFlags, char *pValue)
 {
     // If using the default owner and flags (almost all attributes will),
     // just store the string.
@@ -1257,17 +1515,9 @@ char *EncodeAttrValue(int iObjOwner, int iAttrOwner, int iAttrFlags, char *pValu
     return buffer;
 }
 
-struct ltstr
-{
-    bool operator()(const char* s1, const char* s2) const
-    {
-        return strcmp(s1, s2) < 0;
-    }
-};
-
 void T5X_GAME::ConvertFromP6H()
 {
-    SetFlags(MANDFLAGS_V2 | 2);
+    SetFlags(T5X_MANDFLAGS_V2 | 2);
 
     // Build internal attribute names.
     //
@@ -1281,11 +1531,11 @@ void T5X_GAME::ConvertFromP6H()
     //
     int iNextAttr = A_USER_START;
     map<const char *, int, ltstr> AttrNames;
-    for (vector<P6H_OBJECTINFO *>::iterator itObj = g_p6hgame.m_vObjects.begin(); itObj != g_p6hgame.m_vObjects.end(); ++itObj)
+    for (map<int, P6H_OBJECTINFO *, lti>::iterator itObj = g_p6hgame.m_mObjects.begin(); itObj != g_p6hgame.m_mObjects.end(); ++itObj)
     {
-        if (NULL != (*itObj)->m_pvai)
+        if (NULL != itObj->second->m_pvai)
         {
-            for (vector<P6H_ATTRINFO *>::iterator itAttr = (*itObj)->m_pvai->begin(); itAttr != (*itObj)->m_pvai->end(); ++itAttr)
+            for (vector<P6H_ATTRINFO *>::iterator itAttr = itObj->second->m_pvai->begin(); itAttr != itObj->second->m_pvai->end(); ++itAttr)
             {
                 if (NULL != (*itAttr)->m_pName)
                 {
@@ -1325,24 +1575,24 @@ void T5X_GAME::ConvertFromP6H()
     SetNextAttr(iNextAttr);
 
     int dbRefMax = 0;
-    for (vector<P6H_OBJECTINFO *>::iterator it = g_p6hgame.m_vObjects.begin(); it != g_p6hgame.m_vObjects.end(); ++it)
+    for (map<int, P6H_OBJECTINFO *, lti>::iterator it = g_p6hgame.m_mObjects.begin(); it != g_p6hgame.m_mObjects.end(); ++it)
     {
-        if (  !(*it)->m_fType
-           || (*it)->m_iType < 0
-           || 16 < (*it)->m_iType)
+        if (  !it->second->m_fType
+           || it->second->m_iType < 0
+           || 16 < it->second->m_iType)
         {
             continue;
         }
 
         T5X_OBJECTINFO *poi = new T5X_OBJECTINFO;
 
-        int iType = t5x_convert_type[(*it)->m_iType];
+        int iType = p6h_convert_type[it->second->m_iType];
 
-        poi->SetRef((*it)->m_dbRef);
-        poi->SetName(StringClone((*it)->m_pName));
-        if ((*it)->m_fLocation)
+        poi->SetRef(it->first);
+        poi->SetName(StringClone(it->second->m_pName));
+        if (it->second->m_fLocation)
         {
-            int iLocation = (*it)->m_dbLocation;
+            int iLocation = it->second->m_dbLocation;
             if (  T5X_TYPE_EXIT == iType
                && -2 == iLocation)
             {
@@ -1353,45 +1603,45 @@ void T5X_GAME::ConvertFromP6H()
                 poi->SetLocation(iLocation);
             }
         }
-        if ((*it)->m_fContents)
+        if (it->second->m_fContents)
         {
-            poi->SetContents((*it)->m_dbContents);
+            poi->SetContents(it->second->m_dbContents);
         }
-        if ((*it)->m_fExits)
+        if (it->second->m_fExits)
         {
             switch (iType)
             {
             case T5X_TYPE_PLAYER:
             case T5X_TYPE_THING:
                 poi->SetExits(-1);
-                poi->SetLink((*it)->m_dbExits);
+                poi->SetLink(it->second->m_dbExits);
                 break;
 
             default:
-                poi->SetExits((*it)->m_dbExits);
+                poi->SetExits(it->second->m_dbExits);
                 poi->SetLink(-1);
                 break;
             }
         }
-        if ((*it)->m_fNext)
+        if (it->second->m_fNext)
         {
-            poi->SetNext((*it)->m_dbNext);
+            poi->SetNext(it->second->m_dbNext);
         }
-        if ((*it)->m_fParent)
+        if (it->second->m_fParent)
         {
-            poi->SetParent((*it)->m_dbParent);
+            poi->SetParent(it->second->m_dbParent);
         }
-        if ((*it)->m_fOwner)
+        if (it->second->m_fOwner)
         {
-            poi->SetOwner((*it)->m_dbOwner);
+            poi->SetOwner(it->second->m_dbOwner);
         }
-        if ((*it)->m_fZone)
+        if (it->second->m_fZone)
         {
-            poi->SetZone((*it)->m_dbZone);
+            poi->SetZone(it->second->m_dbZone);
         }
-        if ((*it)->m_fPennies)
+        if (it->second->m_fPennies)
         {
-            poi->SetPennies((*it)->m_iPennies);
+            poi->SetPennies(it->second->m_iPennies);
         }
 
         // Flagwords
@@ -1399,26 +1649,26 @@ void T5X_GAME::ConvertFromP6H()
         int flags1 = iType;
         int flags2 = 0;
         int flags3 = 0;
-        char *pFlags = (*it)->m_pFlags;
+        char *pFlags = it->second->m_pFlags;
         if (NULL != pFlags)
         {
             // First flagword
             //
-            for (int i = 0; i < sizeof(t5x_convert_flag1)/sizeof(t5x_convert_flag1[0]); i++)
+            for (int i = 0; i < sizeof(p6h_convert_obj_flags1)/sizeof(p6h_convert_obj_flags1[0]); i++)
             {
-                if (NULL != strcasestr(pFlags, t5x_convert_flag1[i].pName))
+                if (NULL != strcasestr(pFlags, p6h_convert_obj_flags1[i].pName))
                 {
-                    flags1 |= t5x_convert_flag1[i].mask;
+                    flags1 |= p6h_convert_obj_flags1[i].mask;
                 }
             }
 
             // Second flagword
             //
-            for (int i = 0; i < sizeof(t5x_convert_flag2)/sizeof(t5x_convert_flag2[0]); i++)
+            for (int i = 0; i < sizeof(p6h_convert_obj_flags2)/sizeof(p6h_convert_obj_flags2[0]); i++)
             {
-                if (NULL != strcasestr(pFlags, t5x_convert_flag2[i].pName))
+                if (NULL != strcasestr(pFlags, p6h_convert_obj_flags2[i].pName))
                 {
-                    flags2 |= t5x_convert_flag2[i].mask;
+                    flags2 |= p6h_convert_obj_flags2[i].mask;
                 }
             }
         }
@@ -1427,26 +1677,26 @@ void T5X_GAME::ConvertFromP6H()
         //
         int powers1 = 0;
         int powers2 = 0;
-        char *pPowers = (*it)->m_pPowers;
+        char *pPowers = it->second->m_pPowers;
         if (NULL != pPowers)
         {
             // First powerword
             //
-            for (int i = 0; i < sizeof(t5x_convert_powers1)/sizeof(t5x_convert_powers1[0]); i++)
+            for (int i = 0; i < sizeof(p6h_convert_obj_powers1)/sizeof(p6h_convert_obj_powers1[0]); i++)
             {
-                if (NULL != strcasestr(pPowers, t5x_convert_powers1[i].pName))
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_powers1[i].pName))
                 {
-                    powers1 |= t5x_convert_powers1[i].mask;
+                    powers1 |= p6h_convert_obj_powers1[i].mask;
                 }
             }
 
             // Second powerword
             //
-            for (int i = 0; i < sizeof(t5x_convert_powers2)/sizeof(t5x_convert_powers2[0]); i++)
+            for (int i = 0; i < sizeof(p6h_convert_obj_powers2)/sizeof(p6h_convert_obj_powers2[0]); i++)
             {
-                if (NULL != strcasestr(pPowers, t5x_convert_powers2[i].pName))
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_powers2[i].pName))
                 {
-                    powers2 |= t5x_convert_powers2[i].mask;
+                    powers2 |= p6h_convert_obj_powers2[i].mask;
                 }
             }
 
@@ -1463,21 +1713,87 @@ void T5X_GAME::ConvertFromP6H()
         poi->SetPowers1(powers1);
         poi->SetPowers2(powers2);
 
-        if (NULL != (*it)->m_pvai)
+        if (it->second->m_fCreated)
+        {
+            time_t t = it->second->m_iCreated;
+            char *pTime = ctime(&t);
+            if (NULL != pTime)
+            {
+                char *p = strchr(pTime, '\n');
+                if (NULL != p)
+                {
+                    size_t n = p - pTime;
+                    pTime = StringCloneLen(pTime, n);
+
+                    // A_CREATED
+                    //
+                    T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                    pai->SetNumAndValue(218, StringClone(pTime));
+        
+                    if (NULL == poi->m_pvai)
+                    {
+                        vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
+                        pvai->push_back(pai);
+                        poi->SetAttrs(pvai->size(), pvai);
+                    }
+                    else
+                    {
+                        poi->m_pvai->push_back(pai);
+                        poi->m_fAttrCount = true;
+                        poi->m_nAttrCount = poi->m_pvai->size();
+                    }
+                }
+            }
+        }
+
+        if (it->second->m_fModified)
+        {
+            time_t t = it->second->m_iModified;
+            char *pTime = ctime(&t);
+            if (NULL != pTime)
+            {
+                char *p = strchr(pTime, '\n');
+                if (NULL != p)
+                {
+                    size_t n = p - pTime;
+                    pTime = StringCloneLen(pTime, n);
+
+                    // A_MODIFIED
+                    //
+                    T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                    pai->SetNumAndValue(219, StringClone(pTime));
+        
+                    if (NULL == poi->m_pvai)
+                    {
+                        vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
+                        pvai->push_back(pai);
+                        poi->SetAttrs(pvai->size(), pvai);
+                    }
+                    else
+                    {
+                        poi->m_pvai->push_back(pai);
+                        poi->m_fAttrCount = true;
+                        poi->m_nAttrCount = poi->m_pvai->size();
+                    }
+                }
+            }
+        }
+
+        if (NULL != it->second->m_pvai)
         {
             vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
-            for (vector<P6H_ATTRINFO *>::iterator itAttr = (*it)->m_pvai->begin(); itAttr != (*it)->m_pvai->end(); ++itAttr)
+            for (vector<P6H_ATTRINFO *>::iterator itAttr = it->second->m_pvai->begin(); itAttr != it->second->m_pvai->end(); ++itAttr)
             {
                 if (  NULL != (*itAttr)->m_pName
                    && NULL != (*itAttr)->m_pValue)
                 {
                     char *pAttrFlags = (*itAttr)->m_pFlags;
                     int iAttrFlags = 0;
-                    for (int i = 0; i < sizeof(t5x_attr_flags)/sizeof(t5x_attr_flags[0]); i++)
+                    for (int i = 0; i < sizeof(p6h_attr_flags)/sizeof(p6h_attr_flags[0]); i++)
                     {
-                        if (strcasecmp(t5x_attr_flags[i].pName, pAttrFlags) == 0)
+                        if (strcasecmp(p6h_attr_flags[i].pName, pAttrFlags) == 0)
                         {
-                            iAttrFlags |= t5x_attr_flags[i].mask;
+                            iAttrFlags |= p6h_attr_flags[i].mask;
                         }
                     }
                     char *pEncodedAttrValue = EncodeAttrValue(poi->m_dbOwner, (*itAttr)->m_dbOwner, iAttrFlags, (*itAttr)->m_pValue);
@@ -1521,19 +1837,19 @@ void T5X_GAME::ConvertFromP6H()
             delete pvai;
         }
 
-        if (NULL != (*it)->m_pvli)
+        if (NULL != it->second->m_pvli)
         {
-            for (vector<P6H_LOCKINFO *>::iterator itLock = (*it)->m_pvli->begin(); itLock != (*it)->m_pvli->end(); ++itLock)
+            for (vector<P6H_LOCKINFO *>::iterator itLock = it->second->m_pvli->begin(); itLock != it->second->m_pvli->end(); ++itLock)
             {
                 if (NULL != (*itLock)->m_pKeyTree)
                 {
                     bool fFound = false;
                     int iLock;
-                    for (int i = 0; i < sizeof(t5x_locknames)/sizeof(t5x_locknames[0]); i++)
+                    for (int i = 0; i < sizeof(p6h_locknames)/sizeof(p6h_locknames[0]); i++)
                     {
-                        if (strcmp(t5x_locknames[i].pName, (*itLock)->m_pType) == 0)
+                        if (strcmp(p6h_locknames[i].pName, (*itLock)->m_pType) == 0)
                         {
-                            iLock = t5x_locknames[i].iNum;
+                            iLock = p6h_locknames[i].iNum;
                             fFound = true;
                             break;
                         }
@@ -1569,7 +1885,7 @@ void T5X_GAME::ConvertFromP6H()
                         else
                         {
                             delete pLock;
-                            fprintf(stderr, "WARNING: Could not convert '%s' lock on #%d containing '%s'.\n", (*itLock)->m_pType, (*it)->m_dbRef, (*itLock)->m_pKey);
+                            fprintf(stderr, "WARNING: Could not convert '%s' lock on #%d containing '%s'.\n", (*itLock)->m_pType, it->first, (*itLock)->m_pKey);
                         }
                     }
                 }
@@ -1578,9 +1894,9 @@ void T5X_GAME::ConvertFromP6H()
 
         AddObject(poi);
 
-        if (dbRefMax < (*it)->m_dbRef)
+        if (dbRefMax < it->first)
         {
-            dbRefMax = (*it)->m_dbRef;
+            dbRefMax = it->first;
         }
     }
 
@@ -1599,18 +1915,241 @@ void T5X_GAME::ConvertFromP6H()
     SetRecordPlayers(0);
 }
 
+void T5X_GAME::ConvertFromT6H()
+{
+    SetFlags(T5X_MANDFLAGS_V2 | 2);
+
+    // Attribute names
+    //
+    for (vector<T6H_ATTRNAMEINFO *>::iterator it =  g_t6hgame.m_vAttrNames.begin(); it != g_t6hgame.m_vAttrNames.end(); ++it)
+    {
+        AddNumAndName((*it)->m_iNum, StringClone((*it)->m_pName));
+    }
+    if (!m_fNextAttr)
+    {
+        SetNextAttr(g_t6hgame.m_nNextAttr);
+    }
+
+    int dbRefMax = 0;
+    for (map<int, T6H_OBJECTINFO *, lti>::iterator it = g_t6hgame.m_mObjects.begin(); it != g_t6hgame.m_mObjects.end(); ++it)
+    {
+        if (!it->second->m_fFlags1)
+        {
+            continue;
+        }
+        int iType = (it->second->m_iFlags1) & T5X_TYPE_MASK; 
+        
+        if (  iType < 0
+           || 7 < iType)
+        {
+            continue;
+        }
+
+
+        T5X_OBJECTINFO *poi = new T5X_OBJECTINFO;
+
+        poi->SetRef(it->first);
+        poi->SetName(StringClone(it->second->m_pName));
+        if (it->second->m_fLocation)
+        {
+            int iLocation = it->second->m_dbLocation;
+            if (  T5X_TYPE_EXIT == iType
+               && -2 == iLocation)
+            {
+                poi->SetLocation(-1);
+            }
+            else
+            {
+                poi->SetLocation(iLocation);
+            }
+        }
+        if (it->second->m_fContents)
+        {
+            poi->SetContents(it->second->m_dbContents);
+        }
+        if (it->second->m_fExits)
+        {
+            switch (iType)
+            {
+            case T5X_TYPE_PLAYER:
+            case T5X_TYPE_THING:
+                poi->SetExits(-1);
+                poi->SetLink(it->second->m_dbExits);
+                break;
+
+            default:
+                poi->SetExits(it->second->m_dbExits);
+                poi->SetLink(-1);
+                break;
+            }
+        }
+        if (it->second->m_fNext)
+        {
+            poi->SetNext(it->second->m_dbNext);
+        }
+        if (it->second->m_fParent)
+        {
+            poi->SetParent(it->second->m_dbParent);
+        }
+        if (it->second->m_fOwner)
+        {
+            poi->SetOwner(it->second->m_dbOwner);
+        }
+        if (it->second->m_fZone)
+        {
+            poi->SetZone(it->second->m_dbZone);
+        }
+        if (it->second->m_fPennies)
+        {
+            poi->SetPennies(it->second->m_iPennies);
+        }
+
+        // Flagwords
+        //
+        int flags1 = iType;
+        int flags2 = 0;
+        int flags3 = 0;
+        if (it->second->m_fFlags1)
+        {
+            flags1 |= (it->second->m_iFlags1 & ~T6H_TYPE_MASK);
+        }
+        if (it->second->m_fFlags2)
+        {
+            flags2 = it->second->m_iFlags2;
+        }
+        if (it->second->m_fFlags3)
+        {
+            flags3 = it->second->m_iFlags3;
+        }
+
+        // Powers
+        //
+        int powers1 = 0;
+        int powers2 = 0;
+        if (it->second->m_fPowers1)
+        {
+            powers1 |= it->second->m_iPowers1;
+        }
+        if (it->second->m_fPowers2)
+        {
+            powers2 = it->second->m_iPowers2;
+        }
+        
+        poi->SetFlags1(flags1);
+        poi->SetFlags2(flags2);
+        poi->SetFlags3(flags3);
+        poi->SetPowers1(powers1);
+        poi->SetPowers2(powers2);
+
+        if (it->second->m_fCreated)
+        {
+            time_t t = it->second->m_iCreated;
+            char *pTime = ctime(&t);
+            if (NULL != pTime)
+            {
+                char *p = strchr(pTime, '\n');
+                if (NULL != p)
+                {
+                    size_t n = p - pTime;
+                    pTime = StringCloneLen(pTime, n);
+
+                    // A_CREATED
+                    //
+                    T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                    pai->SetNumAndValue(218, StringClone(pTime));
+        
+                    if (NULL == poi->m_pvai)
+                    {
+                        vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
+                        pvai->push_back(pai);
+                        poi->SetAttrs(pvai->size(), pvai);
+                    }
+                    else
+                    {
+                        poi->m_pvai->push_back(pai);
+                        poi->m_fAttrCount = true;
+                        poi->m_nAttrCount = poi->m_pvai->size();
+                    }
+                }
+            }
+        }
+
+        if (it->second->m_fModified)
+        {
+            time_t t = it->second->m_iModified;
+            char *pTime = ctime(&t);
+            if (NULL != pTime)
+            {
+                char *p = strchr(pTime, '\n');
+                if (NULL != p)
+                {
+                    size_t n = p - pTime;
+                    pTime = StringCloneLen(pTime, n);
+
+                    // A_MODIFIED
+                    //
+                    T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                    pai->SetNumAndValue(219, StringClone(pTime));
+        
+                    if (NULL == poi->m_pvai)
+                    {
+                        vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
+                        pvai->push_back(pai);
+                        poi->SetAttrs(pvai->size(), pvai);
+                    }
+                    else
+                    {
+                        poi->m_pvai->push_back(pai);
+                        poi->m_fAttrCount = true;
+                        poi->m_nAttrCount = poi->m_pvai->size();
+                    }
+                }
+            }
+        }
+
+        if (NULL != it->second->m_pvai)
+        {
+            vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
+            for (vector<T6H_ATTRINFO *>::iterator itAttr = it->second->m_pvai->begin(); itAttr != it->second->m_pvai->end(); ++itAttr)
+            {
+                if ((*itAttr)->m_fNumAndValue)
+                {
+                    T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                    pai->SetNumAndValue((*itAttr)->m_iNum, StringClone((*itAttr)->m_pValue));
+                    pvai->push_back(pai);
+                }
+            }
+            if (0 < pvai->size())
+            {
+                poi->SetAttrs(pvai->size(), pvai);
+                pvai = NULL;
+            }
+            delete pvai;
+        }
+
+        AddObject(poi);
+
+        if (dbRefMax < it->first)
+        {
+            dbRefMax = it->first;
+        }
+    }
+    SetSizeHint(dbRefMax);
+    SetRecordPlayers(0);
+}
+
 void T5X_GAME::ResetPassword()
 {
-    int ver = (m_flags & V_MASK);
+    int ver = (m_flags & T5X_V_MASK);
     bool fSHA1 = (2 <= ver);
-    for (vector<T5X_OBJECTINFO *>::iterator itObj = m_vObjects.begin(); itObj != m_vObjects.end(); ++itObj)
+    for (map<int, T5X_OBJECTINFO *, lti>::iterator itObj = m_mObjects.begin(); itObj != m_mObjects.end(); ++itObj)
     {
-        if (1 == (*itObj)->m_dbRef)
+        if (1 == itObj->first)
         {
             bool fFound = false;
-            if (NULL != (*itObj)->m_pvai)
+            if (NULL != itObj->second->m_pvai)
             {
-                for (vector<T5X_ATTRINFO *>::iterator itAttr = (*itObj)->m_pvai->begin(); itAttr != (*itObj)->m_pvai->end(); ++itAttr)
+                for (vector<T5X_ATTRINFO *>::iterator itAttr = itObj->second->m_pvai->begin(); itAttr != itObj->second->m_pvai->end(); ++itAttr)
                 {
                     if (5 == (*itAttr)->m_iNum)
                     {
@@ -1645,17 +2184,17 @@ void T5X_GAME::ResetPassword()
                     pai->SetNumAndValue(5, StringClone("XXNHc95o0HhAc"));
                 }
 
-                if (NULL == (*itObj)->m_pvai)
+                if (NULL == itObj->second->m_pvai)
                 {
                     vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
                     pvai->push_back(pai);
-                    (*itObj)->SetAttrs(pvai->size(), pvai);
+                    itObj->second->SetAttrs(pvai->size(), pvai);
                 }
                 else
                 {
-                    (*itObj)->m_pvai->push_back(pai);
-                    (*itObj)->m_fAttrCount = true;
-                    (*itObj)->m_nAttrCount = (*itObj)->m_pvai->size();
+                    itObj->second->m_pvai->push_back(pai);
+                    itObj->second->m_fAttrCount = true;
+                    itObj->second->m_nAttrCount = itObj->second->m_pvai->size();
                 }
             }
         }
@@ -2020,18 +2559,18 @@ UTF8 *ConvertToUTF8(const char *p)
     return aBuffer;
 }
 
-void T5X_GAME::Upgrade3()
+bool T5X_GAME::Upgrade3()
 {
-    int ver = (m_flags & V_MASK);
+    int ver = (m_flags & T5X_V_MASK);
     if (3 == ver)
     {
-        return;
+        return false;
     }
-    m_flags &= ~V_MASK;
+    m_flags &= ~T5X_V_MASK;
 
     // Additional flatfile flags.
     //
-    m_flags |= V_ATRKEY | 3;
+    m_flags |= T5X_V_ATRKEY | 3;
 
     // Upgrade attribute names.
     //
@@ -2042,10 +2581,11 @@ void T5X_GAME::Upgrade3()
 
     // Upgrade objects.
     //
-    for (vector<T5X_OBJECTINFO *>::iterator it = m_vObjects.begin(); it != m_vObjects.end(); ++it)
+    for (map<int, T5X_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
     {
-        (*it)->Upgrade();
+        it->second->Upgrade();
     }
+    return true;
 }
 
 void T5X_ATTRNAMEINFO::Upgrade()
@@ -2111,18 +2651,19 @@ void T5X_ATTRINFO::Upgrade()
     m_pValue = StringClone(p);
 }
 
-void T5X_GAME::Upgrade2()
+bool T5X_GAME::Upgrade2()
 {
-    int ver = (m_flags & V_MASK);
+    int ver = (m_flags & T5X_V_MASK);
     if (2 <= ver)
     {
-        return;
+        return false;
     }
-    m_flags &= ~V_MASK;
+    m_flags &= ~T5X_V_MASK;
 
     // Additional flatfile flags.
     //
-    m_flags |= V_ATRKEY | 2;
+    m_flags |= T5X_V_ATRKEY | 2;
+    return true;
 }
 
 #define ANSI_NORMAL   "\033[0m"
@@ -2404,14 +2945,14 @@ char *ConvertToLatin(const UTF8 *pString)
     return buffer;
 }
 
-void T5X_GAME::Downgrade2()
+bool T5X_GAME::Downgrade2()
 {
-    int ver = (m_flags & V_MASK);
+    int ver = (m_flags & T5X_V_MASK);
     if (ver <= 2)
     {
-        return;
+        return false;
     }
-    m_flags &= ~(V_MASK|V_ATRKEY);
+    m_flags &= ~(T5X_V_MASK|T5X_V_ATRKEY);
 
     // Additional flatfile flags.
     //
@@ -2426,25 +2967,27 @@ void T5X_GAME::Downgrade2()
 
     // Downgrade objects.
     //
-    for (vector<T5X_OBJECTINFO *>::iterator it = m_vObjects.begin(); it != m_vObjects.end(); ++it)
+    for (map<int, T5X_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
     {
-        (*it)->Downgrade();
+        it->second->Downgrade();
     }
+    return true;
 }
 
-void T5X_GAME::Downgrade1()
+bool T5X_GAME::Downgrade1()
 {
     Downgrade2();
-    int ver = (m_flags & V_MASK);
+    int ver = (m_flags & T5X_V_MASK);
     if (1 == ver)
     {
-        return;
+        return false;
     }
-    m_flags &= ~(V_MASK|V_ATRKEY);
+    m_flags &= ~(T5X_V_MASK|T5X_V_ATRKEY);
 
     // Additional flatfile flags.
     //
     m_flags |= 1;
+    return true;
 }
 
 void T5X_ATTRNAMEINFO::Downgrade()
