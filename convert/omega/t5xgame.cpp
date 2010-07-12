@@ -605,7 +605,7 @@ bool T5X_LOCKEXP::ConvertFromT6H(T6H_LOCKEXP *p)
     }
     return true;
 }
- 
+
 void T5X_ATTRNAMEINFO::SetNumAndName(int iNum, char *pName)
 {
     m_fNumAndName = true;
@@ -824,8 +824,8 @@ void T5X_GAME::ValidateObjects() const
         {
             dbRefMax = it->first;
         }
-    } 
-      
+    }
+
     if (!m_fSizeHint)
     {
         fprintf(stderr, "WARNING: +S phrase for next object was missing.\n");
@@ -933,6 +933,8 @@ void T5X_GAME::ValidateAttrNames(int ver) const
 
 void T5X_GAME::Validate() const
 {
+    fprintf(stderr, "TinyMUX\n");
+
     int ver = (m_flags & T5X_V_MASK);
     ValidateFlags();
     ValidateAttrNames(ver);
@@ -1155,11 +1157,11 @@ void T5X_GAME::Write(FILE *fp)
     for (vector<T5X_ATTRNAMEINFO *>::iterator it = m_vAttrNames.begin(); it != m_vAttrNames.end(); ++it)
     {
         (*it)->Write(fp, fExtraEscapes);
-    } 
+    }
     for (map<int, T5X_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
     {
         it->second->Write(fp, (m_flags & T5X_V_ATRKEY) == 0, fExtraEscapes);
-    } 
+    }
 
     fprintf(fp, "***END OF DUMP***\n");
 }
@@ -1725,11 +1727,9 @@ void T5X_GAME::ConvertFromP6H()
                     size_t n = p - pTime;
                     pTime = StringCloneLen(pTime, n);
 
-                    // A_CREATED
-                    //
                     T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                    pai->SetNumAndValue(218, StringClone(pTime));
-        
+                    pai->SetNumAndValue(T5X_A_CREATED, StringClone(pTime));
+
                     if (NULL == poi->m_pvai)
                     {
                         vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
@@ -1761,8 +1761,8 @@ void T5X_GAME::ConvertFromP6H()
                     // A_MODIFIED
                     //
                     T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                    pai->SetNumAndValue(219, StringClone(pTime));
-        
+                    pai->SetNumAndValue(T5X_A_MODIFIED, StringClone(pTime));
+
                     if (NULL == poi->m_pvai)
                     {
                         vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
@@ -1915,6 +1915,31 @@ void T5X_GAME::ConvertFromP6H()
     SetRecordPlayers(0);
 }
 
+char *convert_p6h_quota(char *p)
+{
+    int maxquota = 0;
+    for (;;)
+    {
+        maxquota = max(maxquota, atoi(p));
+        p = strchr(p, ' ');
+        if (NULL != p)
+        {
+            while (isspace(*p))
+            {
+                p++;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    static char buffer[100];
+    sprintf(buffer, "%d", maxquota);
+    return buffer;
+}
+
 void T5X_GAME::ConvertFromT6H()
 {
     SetFlags(T5X_MANDFLAGS_V2 | 2);
@@ -1937,8 +1962,8 @@ void T5X_GAME::ConvertFromT6H()
         {
             continue;
         }
-        int iType = (it->second->m_iFlags1) & T5X_TYPE_MASK; 
-        
+        int iType = (it->second->m_iFlags1) & T5X_TYPE_MASK;
+
         if (  iType < 0
            || 7 < iType)
         {
@@ -2034,7 +2059,7 @@ void T5X_GAME::ConvertFromT6H()
         {
             powers2 = it->second->m_iPowers2;
         }
-        
+
         poi->SetFlags1(flags1);
         poi->SetFlags2(flags2);
         poi->SetFlags3(flags3);
@@ -2053,11 +2078,9 @@ void T5X_GAME::ConvertFromT6H()
                     size_t n = p - pTime;
                     pTime = StringCloneLen(pTime, n);
 
-                    // A_CREATED
-                    //
                     T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                    pai->SetNumAndValue(218, StringClone(pTime));
-        
+                    pai->SetNumAndValue(T5X_A_CREATED, StringClone(pTime));
+
                     if (NULL == poi->m_pvai)
                     {
                         vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
@@ -2086,11 +2109,9 @@ void T5X_GAME::ConvertFromT6H()
                     size_t n = p - pTime;
                     pTime = StringCloneLen(pTime, n);
 
-                    // A_MODIFIED
-                    //
                     T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                    pai->SetNumAndValue(219, StringClone(pTime));
-        
+                    pai->SetNumAndValue(T5X_A_MODIFIED, StringClone(pTime));
+
                     if (NULL == poi->m_pvai)
                     {
                         vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
@@ -2114,9 +2135,20 @@ void T5X_GAME::ConvertFromT6H()
             {
                 if ((*itAttr)->m_fNumAndValue)
                 {
-                    T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                    pai->SetNumAndValue((*itAttr)->m_iNum, StringClone((*itAttr)->m_pValue));
-                    pvai->push_back(pai);
+                    if (T6H_A_QUOTA == (*itAttr)->m_iNum)
+                    {
+                        // Typed quota needs to be converted to single quota.
+                        //
+                        T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                        pai->SetNumAndValue((*itAttr)->m_iNum, StringClone(convert_p6h_quota((*itAttr)->m_pValue)));
+                        pvai->push_back(pai);
+                    }
+                    else if (T6H_A_NEWOBJS != (*itAttr)->m_iNum)
+                    {
+                        T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                        pai->SetNumAndValue((*itAttr)->m_iNum, StringClone((*itAttr)->m_pValue));
+                        pvai->push_back(pai);
+                    }
                 }
             }
             if (0 < pvai->size())
@@ -2135,7 +2167,14 @@ void T5X_GAME::ConvertFromT6H()
         }
     }
     SetSizeHint(dbRefMax);
-    SetRecordPlayers(0);
+    if (g_t6hgame.m_fRecordPlayers)
+    {
+        SetRecordPlayers(g_t6hgame.m_nRecordPlayers);
+    }
+    else
+    {
+        SetRecordPlayers(0);
+    }
 }
 
 void T5X_GAME::ResetPassword()
@@ -2198,7 +2237,7 @@ void T5X_GAME::ResetPassword()
                 }
             }
         }
-    } 
+    }
 }
 
 #define T(x)    ((const UTF8 *)x)

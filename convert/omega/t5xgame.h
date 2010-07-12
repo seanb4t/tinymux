@@ -33,6 +33,36 @@
 
 #define ATR_INFO_CHAR 0x01
 
+// Attribute flags
+//
+#define T5X_AF_ODARK    0x00000001UL
+#define T5X_AF_DARK     0x00000002UL
+#define T5X_AF_WIZARD   0x00000004UL
+#define T5X_AF_MDARK    0x00000008UL
+#define T5X_AF_INTERNAL 0x00000010UL
+#define T5X_AF_NOCMD    0x00000020UL
+#define T5X_AF_LOCK     0x00000040UL
+#define T5X_AF_DELETED  0x00000080UL
+#define T5X_AF_NOPROG   0x00000100UL
+#define T5X_AF_GOD      0x00000200UL
+#define T5X_AF_IS_LOCK  0x00000400UL
+#define T5X_AF_VISUAL   0x00000800UL
+#define T5X_AF_PRIVATE  0x00001000UL
+#define T5X_AF_HTML     0x00002000UL
+#define T5X_AF_NOPARSE  0x00004000UL
+#define T5X_AF_REGEXP   0x00008000UL
+#define T5X_AF_NOCLONE  0x00010000UL
+#define T5X_AF_CONST    0x00020000UL
+#define T5X_AF_CASE     0x00040000UL
+#define T5X_AF_TRACE    0x00080000UL
+#define T5X_AF_NONAME   0x00400000UL
+#define T5X_AF_ISUSED   0x10000000UL
+
+// Attribute numbers
+//
+#define T5X_A_CREATED       218
+#define T5X_A_MODIFIED      219
+
 typedef unsigned char UTF8;
 
 class P6H_LOCKEXP;
@@ -144,7 +174,7 @@ public:
         free(m_p[1]);
         m_le[0] = m_le[1] = NULL;
         m_p[0] = m_p[1] = NULL;
-    } 
+    }
 };
 
 class T5X_ATTRNAMEINFO
@@ -317,7 +347,7 @@ public:
             for (vector<T5X_ATTRINFO *>::iterator it = m_pvai->begin(); it != m_pvai->end(); ++it)
             {
                delete *it;
-            } 
+            }
             delete m_pvai;
             m_pvai = NULL;
         }
@@ -356,7 +386,7 @@ public:
     void ValidateObjects() const;
 
     void Write(FILE *fp);
- 
+
     bool Upgrade3();
     bool Upgrade2();
     bool Downgrade1();
@@ -379,12 +409,12 @@ public:
         for (vector<T5X_ATTRNAMEINFO *>::iterator it = m_vAttrNames.begin(); it != m_vAttrNames.end(); ++it)
         {
             delete *it;
-        } 
+        }
         m_vAttrNames.clear();
         for (map<int, T5X_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
         {
             delete it->second;
-        } 
+        }
         m_mObjects.clear();
     }
 };
