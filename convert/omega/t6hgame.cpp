@@ -478,7 +478,7 @@ bool T6H_LOCKEXP::ConvertFromP6H(P6H_LOCKEXP *p)
     }
     return true;
 }
- 
+
 void T6H_ATTRNAMEINFO::SetNumAndName(int iNum, char *pName)
 {
     m_fNumAndName = true;
@@ -692,8 +692,8 @@ void T6H_GAME::ValidateObjects() const
         {
             dbRefMax = it->first;
         }
-    } 
-      
+    }
+
     if (!m_fSizeHint)
     {
         fprintf(stderr, "WARNING: +S phrase for next object was missing.\n");
@@ -801,6 +801,8 @@ void T6H_GAME::ValidateAttrNames(int ver) const
 
 void T6H_GAME::Validate() const
 {
+    fprintf(stderr, "TinyMUSH\n");
+
     int ver = (m_flags & T6H_V_MASK);
     ValidateFlags();
     ValidateAttrNames(ver);
@@ -1019,7 +1021,7 @@ void T6H_GAME::Write(FILE *fp)
 {
     // TIMESTAMPS and escapes occured near the same time, but are not related.
     //
-    bool fExtraEscapes = (m_flags & T6H_V_TIMESTAMPS);  
+    bool fExtraEscapes = (m_flags & T6H_V_TIMESTAMPS);
     fprintf(fp, "+T%d\n", m_flags);
     if (m_fSizeHint)
     {
@@ -1036,11 +1038,11 @@ void T6H_GAME::Write(FILE *fp)
     for (vector<T6H_ATTRNAMEINFO *>::iterator it = m_vAttrNames.begin(); it != m_vAttrNames.end(); ++it)
     {
         (*it)->Write(fp, fExtraEscapes);
-    } 
+    }
     for (map<int, T6H_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
     {
         it->second->Write(fp, (m_flags & T6H_V_ATRKEY) == 0, fExtraEscapes);
-    } 
+    }
 
     fprintf(fp, "***END OF DUMP***\n");
 }
@@ -1596,68 +1598,12 @@ void T6H_GAME::ConvertFromP6H()
 
         if (it->second->m_fCreated)
         {
-            time_t t = it->second->m_iCreated;
-            char *pTime = ctime(&t);
-            if (NULL != pTime)
-            {
-                char *p = strchr(pTime, '\n');
-                if (NULL != p)
-                {
-                    size_t n = p - pTime;
-                    pTime = StringCloneLen(pTime, n);
-
-                    // A_CREATED
-                    //
-                    T6H_ATTRINFO *pai = new T6H_ATTRINFO;
-                    pai->SetNumAndValue(218, StringClone(pTime));
-        
-                    if (NULL == poi->m_pvai)
-                    {
-                        vector<T6H_ATTRINFO *> *pvai = new vector<T6H_ATTRINFO *>;
-                        pvai->push_back(pai);
-                        poi->SetAttrs(pvai->size(), pvai);
-                    }
-                    else
-                    {
-                        poi->m_pvai->push_back(pai);
-                        poi->m_fAttrCount = true;
-                        poi->m_nAttrCount = poi->m_pvai->size();
-                    }
-                }
-            }
+            poi->SetCreated(it->second->m_iCreated);
         }
 
         if (it->second->m_fModified)
         {
-            time_t t = it->second->m_iModified;
-            char *pTime = ctime(&t);
-            if (NULL != pTime)
-            {
-                char *p = strchr(pTime, '\n');
-                if (NULL != p)
-                {
-                    size_t n = p - pTime;
-                    pTime = StringCloneLen(pTime, n);
-
-                    // A_MODIFIED
-                    //
-                    T6H_ATTRINFO *pai = new T6H_ATTRINFO;
-                    pai->SetNumAndValue(219, StringClone(pTime));
-        
-                    if (NULL == poi->m_pvai)
-                    {
-                        vector<T6H_ATTRINFO *> *pvai = new vector<T6H_ATTRINFO *>;
-                        pvai->push_back(pai);
-                        poi->SetAttrs(pvai->size(), pvai);
-                    }
-                    else
-                    {
-                        poi->m_pvai->push_back(pai);
-                        poi->m_fAttrCount = true;
-                        poi->m_nAttrCount = poi->m_pvai->size();
-                    }
-                }
-            }
+            poi->SetModified(it->second->m_iModified);
         }
 
         if (NULL != it->second->m_pvai)
@@ -1840,5 +1786,5 @@ void T6H_GAME::ResetPassword()
                 }
             }
         }
-    } 
+    }
 }

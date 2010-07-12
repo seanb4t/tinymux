@@ -441,7 +441,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Downgrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
                 return 1;
                 break;
-               
+
             case eLegacyTwo:
                 fprintf(stderr, "Downgrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
                 return 1;
@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
             case eSame:
             case eLegacyOne:
                 break;
-               
+
             case eLegacyTwo:
                 fprintf(stderr, "Downgrading from PennMUSH latest to PennMUSH legacy is not not currently supported.\n");
                 return 1;
@@ -484,7 +484,7 @@ int main(int argc, char *argv[])
                 g_t5xgame.Downgrade2();
                 g_t5xgame.Validate();
                 break;
-               
+
             case eLegacyTwo:
                 g_t5xgame.Downgrade1();
                 g_t5xgame.Validate();
@@ -503,7 +503,7 @@ int main(int argc, char *argv[])
             case eSame:
             case eLegacyOne:
                 break;
-               
+
             case eLegacyTwo:
                 g_t5xgame.Downgrade1();
                 g_t5xgame.Validate();
@@ -523,7 +523,7 @@ int main(int argc, char *argv[])
                 g_t5xgame.Upgrade2();
                 g_t5xgame.Validate();
                 break;
-               
+
             case eSame:
             case eLegacyTwo:
                 break;
@@ -543,6 +543,14 @@ int main(int argc, char *argv[])
         else if (eTinyMUX == eOutputType)
         {
             g_t5xgame.ResetPassword();
+        }
+        else if (eTinyMUSH == eOutputType)
+        {
+            g_t6hgame.ResetPassword();
+        }
+        else if (eRhostMUSH == eOutputType)
+        {
+            g_r7hgame.ResetPassword();
         }
         else
         {
