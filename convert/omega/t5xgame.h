@@ -1,18 +1,18 @@
 #ifndef _T5XGAME_H_
 #define _T5XGAME_H_
 
-#define T5X_V_MASK      0x000000ff  /* Database version */
-#define T5X_V_ZONE      0x00000100  /* ZONE/DOMAIN field */
-#define T5X_V_LINK      0x00000200  /* LINK field (exits from objs) */
-#define T5X_V_DATABASE  0x00000400  /* attrs in a separate database */
-#define T5X_V_ATRNAME   0x00000800  /* NAME is an attr, not in the hdr */
-#define T5X_V_ATRKEY    0x00001000  /* KEY is an attr, not in the hdr */
-#define T5X_V_PARENT    0x00002000  /* db has the PARENT field */
-#define T5X_V_ATRMONEY  0x00008000  /* Money is kept in an attribute */
-#define T5X_V_XFLAGS    0x00010000  /* An extra word of flags */
-#define T5X_V_POWERS    0x00020000  /* Powers? */
-#define T5X_V_3FLAGS    0x00040000  /* Adding a 3rd flag word */
-#define T5X_V_QUOTED    0x00080000  /* Quoted strings, ala PennMUSH */
+#define T5X_V_MASK      0x000000FFUL
+#define T5X_V_ZONE      0x00000100UL
+#define T5X_V_LINK      0x00000200UL
+#define T5X_V_DATABASE  0x00000400UL
+#define T5X_V_ATRNAME   0x00000800UL
+#define T5X_V_ATRKEY    0x00001000UL
+#define T5X_V_PARENT    0x00002000UL
+#define T5X_V_ATRMONEY  0x00008000UL
+#define T5X_V_XFLAGS    0x00010000UL
+#define T5X_V_POWERS    0x00020000UL
+#define T5X_V_3FLAGS    0x00040000UL
+#define T5X_V_QUOTED    0x00080000UL
 
 #define T5X_MANDFLAGS_V2  (T5X_V_LINK|T5X_V_PARENT|T5X_V_XFLAGS|T5X_V_ZONE|T5X_V_POWERS|T5X_V_3FLAGS|T5X_V_QUOTED)
 #define T5X_OFLAGS_V2     (T5X_V_DATABASE|T5X_V_ATRKEY|T5X_V_ATRNAME|T5X_V_ATRMONEY)
@@ -22,7 +22,8 @@
 
 #define A_USER_START    256     // Start of user-named attributes.
 
-/* Object types */
+// Object types
+//
 #define T5X_TYPE_ROOM     0x0
 #define T5X_TYPE_THING    0x1
 #define T5X_TYPE_EXIT     0x2
@@ -32,6 +33,7 @@
 #define T5X_TYPE_MASK     0x7
 
 #define ATR_INFO_CHAR 0x01
+#define T5X_NOTHING   (-1)
 
 // Attribute flags
 //
@@ -60,8 +62,149 @@
 
 // Attribute numbers
 //
+#define T5X_A_PASS            5
+#define T5X_A_QUOTA          49
+#define T5X_A_LGET          127
+#define T5X_A_MFAIL         128
+#define T5X_A_LASTIP        144
+#define T5X_A_COMJOIN       149
+#define T5X_A_COMLEAVE      150
+#define T5X_A_COMON         151
+#define T5X_A_COMOFF        152
+#define T5X_A_CMDCHECK      198
+#define T5X_A_MONIKER       199
+#define T5X_A_SPEECHMOD     215
 #define T5X_A_CREATED       218
 #define T5X_A_MODIFIED      219
+#define T5X_A_CONNINFO      224
+#define T5X_A_LMAIL         225
+#define T5X_A_LOPEN         226
+#define T5X_A_LASTWHISPER   227
+#define T5X_A_ADESTROY      228
+#define T5X_A_APARENT       229
+#define T5X_A_ACREATE       230
+#define T5X_A_LVISIBLE      231
+#define T5X_A_IDLETMOUT     240
+#define T5X_A_EXITFORMAT    241
+#define T5X_A_CONFORMAT     242
+#define T5X_A_NAMEFORMAT    243
+#define T5X_A_DESCFORMAT    244
+
+// Object Flagword 1
+//
+#define T5X_SEETHRU      0x00000008UL
+#define T5X_WIZARD       0x00000010UL
+#define T5X_LINK_OK      0x00000020UL
+#define T5X_DARK         0x00000040UL
+#define T5X_JUMP_OK      0x00000080UL
+#define T5X_STICKY       0x00000100UL
+#define T5X_DESTROY_OK   0x00000200UL
+#define T5X_HAVEN        0x00000400UL
+#define T5X_QUIET        0x00000800UL
+#define T5X_HALT         0x00001000UL
+#define T5X_TRACE        0x00002000UL
+#define T5X_GOING        0x00004000UL
+#define T5X_MONITOR      0x00008000UL
+#define T5X_MYOPIC       0x00010000UL
+#define T5X_PUPPET       0x00020000UL
+#define T5X_CHOWN_OK     0x00040000UL
+#define T5X_ENTER_OK     0x00080000UL
+#define T5X_VISUAL       0x00100000UL
+#define T5X_IMMORTAL     0x00200000UL
+#define T5X_HAS_STARTUP  0x00400000UL
+#define T5X_MUX_OPAQUE   0x00800000UL
+#define T5X_VERBOSE      0x01000000UL
+#define T5X_INHERIT      0x02000000UL
+#define T5X_NOSPOOF      0x04000000UL
+#define T5X_ROBOT        0x08000000UL
+#define T5X_SAFE         0x10000000UL
+#define T5X_ROYALTY      0x20000000UL
+#define T5X_HEARTHRU     0x40000000UL
+#define T5X_TERSE        0x80000000UL
+
+// Object Flagword 2
+//
+#define T5X_KEY          0x00000001UL
+#define T5X_ABODE        0x00000002UL
+#define T5X_FLOATING     0x00000004UL
+#define T5X_UNFINDABLE   0x00000008UL
+#define T5X_PARENT_OK    0x00000010UL
+#define T5X_LIGHT        0x00000020UL
+#define T5X_HAS_LISTEN   0x00000040UL
+#define T5X_HAS_FWDLIST  0x00000080UL
+#define T5X_AUDITORIUM   0x00000100UL
+#define T5X_ANSI         0x00000200UL
+#define T5X_HEAD_FLAG    0x00000400UL
+#define T5X_FIXED        0x00000800UL
+#define T5X_UNINSPECTED  0x00001000UL
+#define T5X_NO_COMMAND   0x00002000UL
+#define T5X_CKEEPALIVE   0x00004000UL
+#define T5X_NOBLEED      0x00008000UL
+#define T5X_STAFF        0x00010000UL
+#define T5X_HAS_DAILY    0x00020000UL
+#define T5X_GAGGED       0x00040000UL
+#define T5X_OPEN_OK      0x00080000UL
+#define T5X_VACATION     0x01000000UL
+#define T5X_PLAYER_MAILS 0x02000000UL
+#define T5X_HTML         0x04000000UL
+#define T5X_BLIND        0x08000000UL
+#define T5X_SUSPECT      0x10000000UL
+#define T5X_ASCII        0x20000000UL
+#define T5X_CONNECTED    0x40000000UL
+#define T5X_SLAVE        0x80000000UL
+
+// Object Flagword 3
+//
+#define T5X_SITEMON      0x00000400UL
+#define T5X_CMDCHECK     0x00000800UL
+#define T5X_MUX_UNICODE  0x00001000UL
+#define T5X_MARK_0       0x00400000UL
+#define T5X_MARK_1       0x00800000UL
+#define T5X_MARK_2       0x01000000UL
+#define T5X_MARK_3       0x02000000UL
+#define T5X_MARK_4       0x04000000UL
+#define T5X_MARK_5       0x08000000UL
+#define T5X_MARK_6       0x10000000UL
+#define T5X_MARK_7       0x20000000UL
+#define T5X_MARK_8       0x40000000UL
+#define T5X_MARK_9       0x80000000UL
+
+// Object Powerword 1
+//
+#define T5X_POW_CHG_QUOTAS  0x00000001UL
+#define T5X_POW_CHOWN_ANY   0x00000002UL
+#define T5X_POW_ANNOUNCE    0x00000004UL
+#define T5X_POW_BOOT        0x00000008UL
+#define T5X_POW_HALT        0x00000010UL
+#define T5X_POW_CONTROL_ALL 0x00000020UL
+#define T5X_POW_WIZARD_WHO  0x00000040UL
+#define T5X_POW_EXAM_ALL    0x00000080UL
+#define T5X_POW_FIND_UNFIND 0x00000100UL
+#define T5X_POW_FREE_MONEY  0x00000200UL
+#define T5X_POW_FREE_QUOTA  0x00000400UL
+#define T5X_POW_HIDE        0x00000800UL
+#define T5X_POW_IDLE        0x00001000UL
+#define T5X_POW_SEARCH      0x00002000UL
+#define T5X_POW_LONGFINGERS 0x00004000UL
+#define T5X_POW_PROG        0x00008000UL
+#define T5X_POW_SITEADMIN   0x00010000UL
+#define T5X_POW_COMM_ALL    0x00080000UL
+#define T5X_POW_SEE_QUEUE   0x00100000UL
+#define T5X_POW_SEE_HIDDEN  0x00200000UL
+#define T5X_POW_MONITOR     0x00400000UL
+#define T5X_POW_POLL        0x00800000UL
+#define T5X_POW_NO_DESTROY  0x01000000UL
+#define T5X_POW_GUEST       0x02000000UL
+#define T5X_POW_PASS_LOCKS  0x04000000UL
+#define T5X_POW_STAT_ANY    0x08000000UL
+#define T5X_POW_STEAL       0x10000000UL
+#define T5X_POW_TEL_ANYWHR  0x20000000UL
+#define T5X_POW_TEL_UNRST   0x40000000UL
+#define T5X_POW_UNKILLABLE  0x80000000UL
+
+// Object Powerword 2
+//
+#define T5X_POW_BUILDER     0x00000001UL
 
 typedef unsigned char UTF8;
 
@@ -207,13 +350,28 @@ public:
 class T5X_ATTRINFO
 {
 public:
+    char *m_pAllocated;
+
     bool m_fNumAndValue;
     int  m_iNum;
-    char *m_pValue;
+    char *m_pValueEncoded;
     void SetNumAndValue(int iNum, char *pValue);
+
+    int  m_iFlags;
+    int  m_dbOwner;
+    char *m_pValueUnencoded;
+    void SetNumOwnerFlagsAndValue(int iNum, int dbOwner, int iFlags, char *pValue);
 
     bool m_fIsLock;
     T5X_LOCKEXP *m_pKeyTree;
+
+    enum
+    {
+        kNone,
+        kEncode,
+        kDecode,
+    } m_kState;
+    void EncodeDecode(int dbObj);
 
     void Validate() const;
 
@@ -225,16 +383,25 @@ public:
     T5X_ATTRINFO()
     {
         m_fNumAndValue = false;
+        m_pAllocated = NULL;
+        m_pValueEncoded = NULL;
+        m_pValueUnencoded = NULL;
         m_fIsLock = false;
-        m_pValue = NULL;
         m_pKeyTree = NULL;
+        m_iFlags = 0;
+        m_dbOwner = T5X_NOTHING;
+        m_kState = kNone;
     }
     ~T5X_ATTRINFO()
     {
-        free(m_pValue);
+        free(m_pAllocated);
         delete m_pKeyTree;
-        m_pValue = NULL;
+        m_pAllocated = NULL;
+        m_pValueEncoded = NULL;
+        m_pValueUnencoded = NULL;
         m_pKeyTree = NULL;
+        m_iFlags = 0;
+        m_dbOwner = T5X_NOTHING;
     }
 };
 
@@ -379,6 +546,8 @@ public:
 
     map<int, T5X_OBJECTINFO *, lti> m_mObjects;
     void AddObject(T5X_OBJECTINFO *poi);
+
+    void Pass2();
 
     void Validate() const;
     void ValidateFlags() const;
