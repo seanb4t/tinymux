@@ -360,6 +360,7 @@ int main(int argc, char *argv[])
         t5xin = fpin;
         t5xparse();
         t5xin = NULL;
+        g_t5xgame.Pass2();
         g_t5xgame.Validate();
     }
     else if (eTinyMUSH == eInputType)
@@ -367,6 +368,7 @@ int main(int argc, char *argv[])
         t6hin = fpin;
         t6hparse();
         t6hin = NULL;
+        g_t6hgame.Pass2();
         g_t6hgame.Validate();
     }
     else if (eRhostMUSH == eInputType)
@@ -390,6 +392,7 @@ int main(int argc, char *argv[])
            && eTinyMUX == eOutputType)
         {
             g_t5xgame.ConvertFromP6H();
+            g_t5xgame.Pass2();
             g_t5xgame.Validate();
         }
         else if (  eTinyMUX == eInputType
@@ -400,6 +403,7 @@ int main(int argc, char *argv[])
             if (  g_t5xgame.Downgrade2()
                || g_t5xgame.Upgrade2())
             {
+                g_t5xgame.Pass2();
                 g_t5xgame.Validate();
             }
             g_p6hgame.ConvertFromT5X();
@@ -409,12 +413,14 @@ int main(int argc, char *argv[])
                 && eTinyMUSH == eOutputType)
         {
             g_t6hgame.ConvertFromP6H();
+            g_t6hgame.Pass2();
             g_t6hgame.Validate();
         }
         else if (  eTinyMUSH == eInputType
                 && eTinyMUX  == eOutputType)
         {
             g_t5xgame.ConvertFromT6H();
+            g_t5xgame.Pass2();
             g_t5xgame.Validate();
         }
         else
@@ -482,11 +488,13 @@ int main(int argc, char *argv[])
 
             case eLegacyOne:
                 g_t5xgame.Downgrade2();
+                g_t5xgame.Pass2();
                 g_t5xgame.Validate();
                 break;
 
             case eLegacyTwo:
                 g_t5xgame.Downgrade1();
+                g_t5xgame.Pass2();
                 g_t5xgame.Validate();
                 break;
             }
@@ -497,6 +505,7 @@ int main(int argc, char *argv[])
             {
             case eLatest:
                 g_t5xgame.Upgrade3();
+                g_t5xgame.Pass2();
                 g_t5xgame.Validate();
                 break;
 
@@ -506,6 +515,7 @@ int main(int argc, char *argv[])
 
             case eLegacyTwo:
                 g_t5xgame.Downgrade1();
+                g_t5xgame.Pass2();
                 g_t5xgame.Validate();
                 break;
             }
@@ -516,11 +526,13 @@ int main(int argc, char *argv[])
             {
             case eLatest:
                 g_t5xgame.Upgrade3();
+                g_t5xgame.Pass2();
                 g_t5xgame.Validate();
                 break;
 
             case eLegacyOne:
                 g_t5xgame.Upgrade2();
+                g_t5xgame.Pass2();
                 g_t5xgame.Validate();
                 break;
 
@@ -543,10 +555,12 @@ int main(int argc, char *argv[])
         else if (eTinyMUX == eOutputType)
         {
             g_t5xgame.ResetPassword();
+            g_t5xgame.Pass2();
         }
         else if (eTinyMUSH == eOutputType)
         {
             g_t6hgame.ResetPassword();
+            g_t6hgame.Pass2();
         }
         else if (eRhostMUSH == eOutputType)
         {
