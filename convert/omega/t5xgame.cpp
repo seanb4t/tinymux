@@ -726,11 +726,12 @@ void T5X_OBJECTINFO::SetAttrs(int nAttrs, vector<T5X_ATTRINFO *> *pvai)
             {
                 if (t5x_locknums[i] == (*it)->m_iNum)
                 {
+                    char *pValue = (NULL != (*it)->m_pValueUnencoded) ? (*it)->m_pValueUnencoded : (*it)->m_pValueEncoded;
                     (*it)->m_fIsLock = true;
-                    (*it)->m_pKeyTree = t5xl_ParseKey((*it)->m_pValue);
+                    (*it)->m_pKeyTree = t5xl_ParseKey(pValue);
                     if (NULL == (*it)->m_pKeyTree)
                     {
-                       fprintf(stderr, "WARNING: Lock key '%s' is not valid.\n", (*it)->m_pValue);
+                       fprintf(stderr, "WARNING: Lock key '%s' is not valid.\n", pValue);
                     }
                     break;
                 }
@@ -739,15 +740,151 @@ void T5X_OBJECTINFO::SetAttrs(int nAttrs, vector<T5X_ATTRINFO *> *pvai)
     }
 }
 
+void T5X_ATTRINFO::SetNumOwnerFlagsAndValue(int iNum, int dbAttrOwner, int iAttrFlags, char *pValue)
+{
+    m_fNumAndValue = true;
+    free(m_pAllocated);
+    m_pAllocated = pValue;
+
+    m_iNum    = iNum;
+    m_pValueUnencoded  = pValue;
+    m_pValueEncoded = NULL;
+    m_iFlags  = iAttrFlags;
+    m_dbOwner = dbAttrOwner;
+
+    m_kState  = kEncode;
+}
+
 void T5X_ATTRINFO::SetNumAndValue(int iNum, char *pValue)
 {
     m_fNumAndValue = true;
-    m_iNum = iNum;
-    if (NULL != m_pValue)
+    free(m_pAllocated);
+    m_pAllocated = pValue;
+
+    m_iNum    = iNum;
+    m_pValueUnencoded  = NULL;
+    m_pValueEncoded = pValue;
+    m_iFlags  = 0;
+    m_dbOwner = T5X_NOTHING;
+
+    m_kState  = kDecode;
+}
+
+void T5X_ATTRINFO::EncodeDecode(int dbObjOwner)
+{
+    if (kEncode == m_kState)
     {
-        free(m_pValue);
+        // If using the default owner and flags (almost all attributes will),
+        // just store the string.
+        //
+        if (  (  m_dbOwner == dbObjOwner
+              || T5X_NOTHING == m_dbOwner)
+           && 0 == m_iFlags)
+        {
+            m_pValueEncoded = m_pValueUnencoded;
+        }
+        else
+        {
+            // Encode owner and flags into the attribute text.
+            //
+            if (T5X_NOTHING == m_dbOwner)
+            {
+                m_dbOwner = dbObjOwner;
+            }
+
+            char buffer[65536];
+            sprintf(buffer, "%c%d:%d:", ATR_INFO_CHAR, m_dbOwner, m_iFlags);
+            size_t n = strlen(buffer);
+            sprintf(buffer + n, "%s", m_pValueUnencoded);
+
+            delete m_pAllocated;
+            m_pAllocated = StringClone(buffer);
+
+            m_pValueEncoded = m_pAllocated;
+            m_pValueUnencoded = m_pAllocated + n;
+        }
+        m_kState = kNone;
     }
-    m_pValue = pValue;
+    else if (kDecode == m_kState)
+    {
+        // See if the first char of the attribute is the special character
+        //
+        m_iFlags = 0;
+        if (ATR_INFO_CHAR != *m_pValueEncoded)
+        {
+            m_dbOwner = dbObjOwner;
+            m_pValueUnencoded = m_pValueEncoded;
+        }
+
+        // It has the special character, crack the attr apart.
+        //
+        char *cp = m_pValueEncoded + 1;
+
+        // Get the attribute owner
+        //
+        bool neg = false;
+        if (*cp == '-')
+        {
+            neg = true;
+            cp++;
+        }
+        int tmp_owner = 0;
+        unsigned int ch = *cp;
+        while (isdigit(ch))
+        {
+            cp++;
+            tmp_owner = 10*tmp_owner + (ch-'0');
+            ch = *cp;
+        }
+        if (neg)
+        {
+            tmp_owner = -tmp_owner;
+        }
+
+        // If delimiter is not ':', just return attribute
+        //
+        if (*cp++ != ':')
+        {
+            m_dbOwner = dbObjOwner;
+            m_pValueUnencoded = m_pValueEncoded;
+            return;
+        }
+
+        // Get the attribute flags.
+        //
+        int tmp_flags = 0;
+        ch = *cp;
+        while (isdigit(ch))
+        {
+            cp++;
+            tmp_flags = 10*tmp_flags + (ch-'0');
+            ch = *cp;
+        }
+
+        // If delimiter is not ':', just return attribute.
+        //
+        if (*cp++ != ':')
+        {
+            m_dbOwner = dbObjOwner;
+            m_pValueUnencoded = m_pValueEncoded;
+            return;
+        }
+
+        // Get the attribute text.
+        //
+        if (tmp_owner < 0)
+        {
+            m_dbOwner = dbObjOwner;
+        }
+        else
+        {
+            m_dbOwner = tmp_owner;
+        }
+        m_iFlags = tmp_flags;
+        m_pValueUnencoded = cp;
+
+        m_kState = kNone;
+    }
 }
 
 void T5X_GAME::AddNumAndName(int iNum, char *pName)
@@ -814,6 +951,20 @@ void T5X_GAME::ValidateFlags() const
     }
 }
 
+void T5X_GAME::Pass2()
+{
+    for (map<int, T5X_OBJECTINFO *, lti>::iterator itObj = m_mObjects.begin(); itObj != m_mObjects.end(); ++itObj)
+    {
+        if (NULL != itObj->second->m_pvai)
+        {
+            for (vector<T5X_ATTRINFO *>::iterator itAttr = itObj->second->m_pvai->begin(); itAttr != itObj->second->m_pvai->end(); ++itAttr)
+            {
+                (*itAttr)->EncodeDecode(itObj->second->m_dbOwner);
+            }
+        }
+    }
+}
+
 void T5X_GAME::ValidateObjects() const
 {
     int dbRefMax = 0;
@@ -832,11 +983,11 @@ void T5X_GAME::ValidateObjects() const
     }
     else
     {
-        if (m_nSizeHint < dbRefMax)
+        if (m_nSizeHint < dbRefMax+1)
         {
             fprintf(stderr, "WARNING: +S phrase does not leave room for the dbrefs.\n");
         }
-        else if (m_nSizeHint != dbRefMax)
+        else if (m_nSizeHint != dbRefMax+1)
         {
             fprintf(stderr, "WARNING: +S phrase does not agree with last object.\n");
         }
@@ -1036,9 +1187,9 @@ void T5X_ATTRINFO::Validate() const
         char buffer[65536];
         char *p = m_pKeyTree->Write(buffer);
         *p = '\0';
-        if (strcmp(m_pValue, buffer) != 0)
+        if (strcmp(m_pValueUnencoded, buffer) != 0)
         {
-            fprintf(stderr, "WARNING: Re-generated lock key '%s' does not agree with parsed key '%s'.\n", buffer, m_pValue);
+            fprintf(stderr, "WARNING: Re-generated lock key '%s' does not agree with parsed key '%s'.\n", buffer, m_pValueUnencoded);
         }
     }
 }
@@ -1133,7 +1284,7 @@ void T5X_ATTRINFO::Write(FILE *fp, bool fExtraEscapes) const
 {
     if (m_fNumAndValue)
     {
-        fprintf(fp, ">%d\n\"%s\"\n", m_iNum, EncodeString(m_pValue, fExtraEscapes));
+        fprintf(fp, ">%d\n\"%s\"\n", m_iNum, EncodeString(m_pValueEncoded, fExtraEscapes));
     }
 }
 
@@ -1494,29 +1645,6 @@ static NameMask p6h_attr_flags[] =
     { "noname",         0x00400000UL },
 };
 
-static char *EncodeAttrValue(int iObjOwner, int iAttrOwner, int iAttrFlags, char *pValue)
-{
-    // If using the default owner and flags (almost all attributes will),
-    // just store the string.
-    //
-    if (  (  iAttrOwner == iObjOwner
-          || -1 == iAttrOwner)
-       && 0 == iAttrFlags)
-    {
-        return pValue;
-    }
-
-    // Encode owner and flags into the attribute text.
-    //
-    if (-1 == iAttrOwner)
-    {
-        iAttrOwner = iObjOwner;
-    }
-    static char buffer[65536];
-    sprintf(buffer, "%c%d:%d:%s", ATR_INFO_CHAR, iAttrOwner, iAttrFlags, pValue);
-    return buffer;
-}
-
 void T5X_GAME::ConvertFromP6H()
 {
     SetFlags(T5X_MANDFLAGS_V2 | 2);
@@ -1796,23 +1924,21 @@ void T5X_GAME::ConvertFromP6H()
                             iAttrFlags |= p6h_attr_flags[i].mask;
                         }
                     }
-                    char *pEncodedAttrValue = EncodeAttrValue(poi->m_dbOwner, (*itAttr)->m_dbOwner, iAttrFlags, (*itAttr)->m_pValue);
                     char *pAttrName = t5x_ConvertAttributeName((*itAttr)->m_pName);
                     map<const char *, int , ltstr>::iterator itFound = AttrNamesKnown.find(pAttrName);
                     if (itFound != AttrNamesKnown.end())
                     {
                         T5X_ATTRINFO *pai = new T5X_ATTRINFO;
                         int iNum = AttrNamesKnown[pAttrName];
-                        if (5 == iNum)
+                        if (T5X_A_PASS == iNum)
                         {
                             char buffer[200];
                             sprintf(buffer, "$P6H$$%s", (*itAttr)->m_pValue);
-                            pEncodedAttrValue = EncodeAttrValue(poi->m_dbOwner, (*itAttr)->m_dbOwner, iAttrFlags, buffer);
-                            pai->SetNumAndValue(AttrNamesKnown[pAttrName], StringClone(pEncodedAttrValue));
+                            pai->SetNumOwnerFlagsAndValue(AttrNamesKnown[pAttrName], (*itAttr)->m_dbOwner, iAttrFlags, StringClone(buffer));
                         }
                         else
                         {
-                            pai->SetNumAndValue(AttrNamesKnown[pAttrName], StringClone(pEncodedAttrValue));
+                            pai->SetNumOwnerFlagsAndValue(AttrNamesKnown[pAttrName], (*itAttr)->m_dbOwner, iAttrFlags, StringClone((*itAttr)->m_pValue));
                         }
                         pvai->push_back(pai);
                     }
@@ -1822,7 +1948,7 @@ void T5X_GAME::ConvertFromP6H()
                         if (itFound != AttrNames.end())
                         {
                             T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                            pai->SetNumAndValue(AttrNames[pAttrName], StringClone(pEncodedAttrValue));
+                            pai->SetNumOwnerFlagsAndValue(AttrNames[pAttrName], (*itAttr)->m_dbOwner, iAttrFlags, StringClone((*itAttr)->m_pValue));
                             pvai->push_back(pai);
                         }
                     }
@@ -1911,11 +2037,11 @@ void T5X_GAME::ConvertFromP6H()
         delete it->first;
     }
 
-    SetSizeHint(dbRefMax);
+    SetSizeHint(dbRefMax+1);
     SetRecordPlayers(0);
 }
 
-char *convert_p6h_quota(char *p)
+char *convert_t6h_quota(char *p)
 {
     int maxquota = 0;
     for (;;)
@@ -1940,6 +2066,230 @@ char *convert_p6h_quota(char *p)
     return buffer;
 }
 
+bool convert_t6h_attr_num(int iNum, int *piNum)
+{
+    if (A_USER_START <= iNum)
+    {
+        *piNum = iNum;
+        return true;
+    }
+
+    // T6H attribute numbers with no corresponding T5X attribute.
+    //
+    if (  T6H_A_NEWOBJS == iNum
+       || T6H_A_MAILCC == iNum
+       || T6H_A_MAILBCC == iNum
+       || T6H_A_LKNOWN == iNum
+       || T6H_A_LHEARD == iNum)
+    {
+        return false;
+    }
+
+    if (T6H_A_LEXITS_FMT == iNum)
+    {
+        iNum = T5X_A_EXITFORMAT;
+    }
+    else if (T6H_A_NAME_FMT == iNum)
+    {
+        iNum = T5X_A_NAMEFORMAT;
+    }
+    else if (T6H_A_LASTIP == iNum)
+    {
+        iNum = T5X_A_LASTIP;
+    }
+    else if (T6H_A_SPEECHFMT == iNum)
+    {
+        iNum = T5X_A_SPEECHMOD;
+    }
+    else if (T6H_A_LCON_FMT == iNum)
+    {
+        iNum = T5X_A_CONFORMAT;
+    }
+
+    // T5X attributes with no corresponding T6H attribute, and nothing
+    // in T6H currently uses the number, but it might be assigned later.
+    //
+    if (  T5X_A_LGET == iNum
+       || T5X_A_MFAIL == iNum
+       || T5X_A_LASTIP == iNum
+       || T5X_A_COMJOIN == iNum
+       || T5X_A_COMLEAVE == iNum
+       || T5X_A_COMON == iNum
+       || T5X_A_COMOFF == iNum
+       || T5X_A_CMDCHECK == iNum
+       || T5X_A_MONIKER == iNum
+       || T5X_A_CONNINFO == iNum
+       || T5X_A_IDLETMOUT == iNum
+       || T5X_A_ADESTROY == iNum
+       || T5X_A_APARENT == iNum
+       || T5X_A_ACREATE == iNum
+       || T5X_A_LMAIL == iNum
+       || T5X_A_LOPEN == iNum
+       || T5X_A_LASTWHISPER == iNum
+       || T5X_A_LVISIBLE == iNum)
+    {
+        return false;
+    }
+    *piNum = iNum;
+    return true;
+}
+
+int convert_t6h_flags1(int f)
+{
+    f &= T5X_SEETHRU
+       | T5X_WIZARD
+       | T5X_LINK_OK
+       | T5X_DARK
+       | T5X_JUMP_OK
+       | T5X_STICKY
+       | T5X_DESTROY_OK
+       | T5X_HAVEN
+       | T5X_QUIET
+       | T5X_HALT
+       | T5X_TRACE
+       | T5X_GOING
+       | T5X_MONITOR
+       | T5X_MYOPIC
+       | T5X_PUPPET
+       | T5X_CHOWN_OK
+       | T5X_ENTER_OK
+       | T5X_VISUAL
+       | T5X_IMMORTAL
+       | T5X_HAS_STARTUP
+       | T5X_MUX_OPAQUE
+       | T5X_VERBOSE
+       | T5X_INHERIT
+       | T5X_NOSPOOF
+       | T5X_ROBOT
+       | T5X_SAFE
+       | T5X_ROYALTY
+       | T5X_HEARTHRU
+       | T5X_TERSE;
+    return f;
+}
+
+int convert_t6h_flags2(int f)
+{
+    int g = f;
+    g &= T5X_KEY
+       | T5X_ABODE
+       | T5X_FLOATING
+       | T5X_UNFINDABLE
+       | T5X_PARENT_OK
+       | T5X_LIGHT
+       | T5X_HAS_LISTEN
+       | T5X_HAS_FWDLIST
+       | T5X_AUDITORIUM
+       | T5X_ANSI
+       | T5X_HEAD_FLAG
+       | T5X_FIXED
+       | T5X_UNINSPECTED
+       | T5X_NOBLEED
+       | T5X_STAFF
+       | T5X_HAS_DAILY
+       | T5X_GAGGED
+       | T5X_VACATION
+       | T5X_PLAYER_MAILS
+       | T5X_HTML
+       | T5X_BLIND
+       | T5X_SUSPECT
+       | T5X_CONNECTED
+       | T5X_SLAVE;
+
+    if ((f & T6H_HAS_COMMANDS) == 0)
+    {
+        g |= T5X_NO_COMMAND;
+    }
+
+    return g;
+}
+
+int convert_t6h_flags3(int f)
+{
+    f &= T5X_MARK_0
+       | T5X_MARK_1
+       | T5X_MARK_2
+       | T5X_MARK_3
+       | T5X_MARK_4
+       | T5X_MARK_5
+       | T5X_MARK_6
+       | T5X_MARK_7
+       | T5X_MARK_8
+       | T5X_MARK_9;
+    return f;
+}
+
+int convert_t6h_attr_flags(int f)
+{
+    int g = f;
+    g &= T5X_AF_ODARK
+       | T5X_AF_DARK
+       | T5X_AF_WIZARD
+       | T5X_AF_MDARK
+       | T5X_AF_INTERNAL
+       | T5X_AF_NOCMD
+       | T5X_AF_LOCK
+       | T5X_AF_DELETED
+       | T5X_AF_NOPROG
+       | T5X_AF_GOD
+       | T5X_AF_IS_LOCK
+       | T5X_AF_VISUAL
+       | T5X_AF_PRIVATE
+       | T5X_AF_HTML
+       | T5X_AF_NOPARSE
+       | T5X_AF_REGEXP
+       | T5X_AF_NOCLONE
+       | T5X_AF_CONST
+       | T5X_AF_CASE
+       | T5X_AF_NONAME;
+
+    if (f & T6H_AF_TRACE)
+    {
+        g |= T5X_AF_TRACE;
+    }
+    return g;
+}
+
+int convert_t6h_power1(int f)
+{
+    f &= T5X_POW_CHG_QUOTAS
+       | T5X_POW_CHOWN_ANY
+       | T5X_POW_ANNOUNCE
+       | T5X_POW_BOOT
+       | T5X_POW_HALT
+       | T5X_POW_CONTROL_ALL
+       | T5X_POW_WIZARD_WHO
+       | T5X_POW_EXAM_ALL
+       | T5X_POW_FIND_UNFIND
+       | T5X_POW_FREE_MONEY
+       | T5X_POW_FREE_QUOTA
+       | T5X_POW_HIDE
+       | T5X_POW_IDLE
+       | T5X_POW_SEARCH
+       | T5X_POW_LONGFINGERS
+       | T5X_POW_PROG
+       | T5X_POW_COMM_ALL
+       | T5X_POW_SEE_QUEUE
+       | T5X_POW_SEE_HIDDEN
+       | T5X_POW_MONITOR
+       | T5X_POW_POLL
+       | T5X_POW_NO_DESTROY
+       | T5X_POW_GUEST
+       | T5X_POW_PASS_LOCKS
+       | T5X_POW_STAT_ANY
+       | T5X_POW_STEAL
+       | T5X_POW_TEL_ANYWHR
+       | T5X_POW_TEL_UNRST
+       | T5X_POW_UNKILLABLE;
+    return f;
+}
+
+int convert_t6h_power2(int f)
+{
+    f &= T5X_POW_BUILDER;
+    return f;
+}
+
 void T5X_GAME::ConvertFromT6H()
 {
     SetFlags(T5X_MANDFLAGS_V2 | 2);
@@ -1962,14 +2312,18 @@ void T5X_GAME::ConvertFromT6H()
         {
             continue;
         }
-        int iType = (it->second->m_iFlags1) & T5X_TYPE_MASK;
 
-        if (  iType < 0
-           || 7 < iType)
+        // ROOM, THING, EXIT, and PLAYER types are the same between T6H and
+        // T5X.  No mapping is required.
+        //
+        int iType = (it->second->m_iFlags1) & T5X_TYPE_MASK;
+        if (  T5X_TYPE_ROOM != iType
+           && T5X_TYPE_THING != iType
+           && T5X_TYPE_EXIT != iType
+           && T5X_TYPE_PLAYER != iType)
         {
             continue;
         }
-
 
         T5X_OBJECTINFO *poi = new T5X_OBJECTINFO;
 
@@ -1994,19 +2348,11 @@ void T5X_GAME::ConvertFromT6H()
         }
         if (it->second->m_fExits)
         {
-            switch (iType)
-            {
-            case T5X_TYPE_PLAYER:
-            case T5X_TYPE_THING:
-                poi->SetExits(-1);
-                poi->SetLink(it->second->m_dbExits);
-                break;
-
-            default:
-                poi->SetExits(it->second->m_dbExits);
-                poi->SetLink(-1);
-                break;
-            }
+            poi->SetExits(it->second->m_dbExits);
+        }
+        if (it->second->m_fLink)
+        {
+            poi->SetLink(it->second->m_dbLink);
         }
         if (it->second->m_fNext)
         {
@@ -2036,15 +2382,15 @@ void T5X_GAME::ConvertFromT6H()
         int flags3 = 0;
         if (it->second->m_fFlags1)
         {
-            flags1 |= (it->second->m_iFlags1 & ~T6H_TYPE_MASK);
+            flags1 |= convert_t6h_flags1(it->second->m_iFlags1);
         }
         if (it->second->m_fFlags2)
         {
-            flags2 = it->second->m_iFlags2;
+            flags2 = convert_t6h_flags2(it->second->m_iFlags2);
         }
         if (it->second->m_fFlags3)
         {
-            flags3 = it->second->m_iFlags3;
+            flags3 = convert_t6h_flags3(it->second->m_iFlags3);
         }
 
         // Powers
@@ -2053,11 +2399,11 @@ void T5X_GAME::ConvertFromT6H()
         int powers2 = 0;
         if (it->second->m_fPowers1)
         {
-            powers1 |= it->second->m_iPowers1;
+            powers1 = convert_t6h_power1(it->second->m_iPowers1);
         }
         if (it->second->m_fPowers2)
         {
-            powers2 = it->second->m_iPowers2;
+            powers2 = convert_t6h_power2(it->second->m_iPowers2);
         }
 
         poi->SetFlags1(flags1);
@@ -2133,20 +2479,22 @@ void T5X_GAME::ConvertFromT6H()
             vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
             for (vector<T6H_ATTRINFO *>::iterator itAttr = it->second->m_pvai->begin(); itAttr != it->second->m_pvai->end(); ++itAttr)
             {
-                if ((*itAttr)->m_fNumAndValue)
+                int iNum;
+                if (  (*itAttr)->m_fNumAndValue
+                   && convert_t6h_attr_num((*itAttr)->m_iNum, &iNum))
                 {
-                    if (T6H_A_QUOTA == (*itAttr)->m_iNum)
+                    if (T5X_A_QUOTA == iNum)
                     {
                         // Typed quota needs to be converted to single quota.
                         //
                         T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                        pai->SetNumAndValue((*itAttr)->m_iNum, StringClone(convert_p6h_quota((*itAttr)->m_pValue)));
+                        pai->SetNumAndValue(T5X_A_QUOTA, StringClone(convert_t6h_quota((*itAttr)->m_pValueUnencoded)));
                         pvai->push_back(pai);
                     }
-                    else if (T6H_A_NEWOBJS != (*itAttr)->m_iNum)
+                    else
                     {
                         T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                        pai->SetNumAndValue((*itAttr)->m_iNum, StringClone((*itAttr)->m_pValue));
+                        pai->SetNumOwnerFlagsAndValue(iNum, (*itAttr)->m_dbOwner, convert_t6h_attr_flags((*itAttr)->m_iFlags), StringClone((*itAttr)->m_pValueUnencoded));
                         pvai->push_back(pai);
                     }
                 }
@@ -2166,7 +2514,7 @@ void T5X_GAME::ConvertFromT6H()
             dbRefMax = it->first;
         }
     }
-    SetSizeHint(dbRefMax);
+    SetSizeHint(dbRefMax+1);
     if (g_t6hgame.m_fRecordPlayers)
     {
         SetRecordPlayers(g_t6hgame.m_nRecordPlayers);
@@ -2190,18 +2538,17 @@ void T5X_GAME::ResetPassword()
             {
                 for (vector<T5X_ATTRINFO *>::iterator itAttr = itObj->second->m_pvai->begin(); itAttr != itObj->second->m_pvai->end(); ++itAttr)
                 {
-                    if (5 == (*itAttr)->m_iNum)
+                    if (T5X_A_PASS == (*itAttr)->m_iNum)
                     {
                         // Change it to 'potrzebie'.
                         //
-                        free((*itAttr)->m_pValue);
                         if (fSHA1)
                         {
-                            (*itAttr)->m_pValue = StringClone("$SHA1$X0PG0reTn66s$FxO7KKs/CJ+an2rDWgGO4zpo1co=");
+                            (*itAttr)->SetNumAndValue(T5X_A_PASS, StringClone("$SHA1$X0PG0reTn66s$FxO7KKs/CJ+an2rDWgGO4zpo1co="));
                         }
                         else
                         {
-                            (*itAttr)->m_pValue = StringClone("XXNHc95o0HhAc");
+                            (*itAttr)->SetNumAndValue(T5X_A_PASS, StringClone("XXNHc95o0HhAc"));
                         }
 
                         fFound = true;
@@ -2216,11 +2563,11 @@ void T5X_GAME::ResetPassword()
                 T5X_ATTRINFO *pai = new T5X_ATTRINFO;
                 if (fSHA1)
                 {
-                    pai->SetNumAndValue(5, StringClone("$SHA1$X0PG0reTn66s$FxO7KKs/CJ+an2rDWgGO4zpo1co="));
+                    pai->SetNumAndValue(T5X_A_PASS, StringClone("$SHA1$X0PG0reTn66s$FxO7KKs/CJ+an2rDWgGO4zpo1co="));
                 }
                 else
                 {
-                    pai->SetNumAndValue(5, StringClone("XXNHc95o0HhAc"));
+                    pai->SetNumAndValue(T5X_A_PASS, StringClone("XXNHc95o0HhAc"));
                 }
 
                 if (NULL == itObj->second->m_pvai)
@@ -2685,9 +3032,8 @@ void T5X_OBJECTINFO::Upgrade()
 
 void T5X_ATTRINFO::Upgrade()
 {
-    char *p = (char *)ConvertToUTF8(m_pValue);
-    free(m_pValue);
-    m_pValue = StringClone(p);
+    char *p = (char *)ConvertToUTF8(m_pValueUnencoded);
+    SetNumOwnerFlagsAndValue(m_iNum, m_dbOwner, m_iFlags, StringClone(p));
 }
 
 bool T5X_GAME::Upgrade2()
@@ -3055,9 +3401,8 @@ void T5X_OBJECTINFO::Downgrade()
             {
                 delete m_ple;
                 m_ple = (*it)->m_pKeyTree;
-                delete (*it)->m_pValue;
                 (*it)->m_pKeyTree = NULL;
-                (*it)->m_pValue;
+                delete (*it);
                 m_pvai->erase(it);
                 break;
             }
@@ -3082,18 +3427,6 @@ void T5X_OBJECTINFO::Downgrade()
 
 void T5X_ATTRINFO::Downgrade()
 {
-    char *p = (char *)convert_color((UTF8 *)m_pValue);
-    if (ATR_INFO_CHAR != *p)
-    {
-        p = (char *)ConvertToLatin((UTF8 *)p);
-    }
-    else
-    {
-        char buffer[65536];
-        sprintf(buffer, "%c%s", ATR_INFO_CHAR, (char *)ConvertToLatin((UTF8 *)(p+1)));
-        p = buffer;
-    }
-    free(m_pValue);
-    m_pValue = StringClone(p);
+    char *p = (char *)convert_color((UTF8 *)m_pValueUnencoded);
+    SetNumOwnerFlagsAndValue(m_iNum, m_dbOwner, m_iFlags, (char *)ConvertToLatin((UTF8 *)p));
 }
-

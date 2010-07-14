@@ -2025,50 +2025,50 @@ int t5x_convert_type[] =
 
 NameMask t5x_convert_obj_flags1[] =
 {
-    { "TRANSPARENT",    0x00000008UL },
-    { "WIZARD",         0x00000010UL },
-    { "LINK_OK",        0x00000020UL },
-    { "DARK",           0x00000040UL },
-    { "JUMP_OK",        0x00000080UL },
-    { "STICKY",         0x00000100UL },
-    { "DESTROY_OK",     0x00000200UL },
-    { "HAVEN",          0x00000400UL },
-    { "QUIET",          0x00000800UL },
-    { "HALT",           0x00001000UL },
-    { "DEBUG",          0x00002000UL },
-    { "GOING",          0x00004000UL },
-    { "MONITOR",        0x00008000UL },
-    { "MYOPIC",         0x00010000UL },
-    { "PUPPET",         0x00020000UL },
-    { "CHOWN_OK",       0x00040000UL },
-    { "ENTER_OK",       0x00080000UL },
-    { "VISUAL",         0x00100000UL },
-    { "OPAQUE",         0x00800000UL },
-    { "VERBOSE",        0x01000000UL },
-    { "NOSPOOF",        0x04000000UL },
-    { "SAFE",           0x10000000UL },
-    { "ROYALTY",        0x20000000UL },
-    { "AUDIBLE",        0x40000000UL },
-    { "TERSE",          0x80000000UL },
+    { "TRANSPARENT",    T5X_SEETHRU    },
+    { "WIZARD",         T5X_WIZARD     },
+    { "LINK_OK",        T5X_LINK_OK    },
+    { "DARK",           T5X_DARK       },
+    { "JUMP_OK",        T5X_JUMP_OK    },
+    { "STICKY",         T5X_STICKY     },
+    { "DESTROY_OK",     T5X_DESTROY_OK },
+    { "HAVEN",          T5X_HAVEN      },
+    { "QUIET",          T5X_QUIET      },
+    { "HALT",           T5X_HALT       },
+    { "DEBUG",          T5X_TRACE      },
+    { "GOING",          T5X_GOING      },
+    { "MONITOR",        T5X_MONITOR    },
+    { "MYOPIC",         T5X_MYOPIC     },
+    { "PUPPET",         T5X_PUPPET     },
+    { "CHOWN_OK",       T5X_CHOWN_OK   },
+    { "ENTER_OK",       T5X_ENTER_OK   },
+    { "VISUAL",         T5X_VISUAL     },
+    { "OPAQUE",         T5X_MUX_OPAQUE },
+    { "VERBOSE",        T5X_VERBOSE    },
+    { "NOSPOOF",        T5X_NOSPOOF    },
+    { "SAFE",           T5X_SAFE       },
+    { "ROYALTY",        T5X_ROYALTY    },
+    { "AUDIBLE",        T5X_HEARTHRU   },
+    { "TERSE",          T5X_TERSE      },
 };
 
 NameMask t5x_convert_obj_flags2[] =
 {
-    { "ABODE",          0x00000002UL },
-    { "FLOATING",       0x00000004UL },
-    { "UNFINDABLE",     0x00000008UL },
-    { "LIGHT",          0x00000020UL },
-    { "ANSI",           0x00000200UL },
-    { "COLOR",          0x00000200UL },
-    { "FIXED",          0x00000800UL },
-    { "UNINSPECTED",    0x00001000UL },
-    { "NO_COMMAND",     0x00002000UL },
-    { "KEEPALIVE",      0x00004000UL },
-    { "GAGGED",         0x00040000UL },
-    { "ON-VACATION",    0x01000000UL },
-    { "SUSPECT",        0x10000000UL },
-    { "NOACCENTS",      0x20000000UL },
-    { "SLAVE",          0x80000000UL },
+    { "ABODE",          T5X_ABODE       },
+    { "FLOATING",       T5X_FLOATING    },
+    { "UNFINDABLE",     T5X_UNFINDABLE  },
+    { "LIGHT",          T5X_LIGHT       },
+    { "ANSI",           T5X_ANSI        },
+    { "COLOR",          T5X_ANSI        },
+    { "FIXED",          T5X_FIXED       },
+    { "UNINSPECTED",    T5X_UNINSPECTED },
+    { "NO_COMMAND",     T5X_NO_COMMAND  },
+    { "KEEPALIVE",      T5X_CKEEPALIVE  },
+    { "GAGGED",         T5X_GAGGED      },
+    { "ON-VACATION",    T5X_VACATION    },
+    { "SUSPECT",        T5X_SUSPECT     },
+    { "NOACCENTS",      T5X_ASCII       },
+    { "SLAVE",          T5X_SLAVE       },
 };
 
 NameMask t5x_convert_obj_powers1[] =
@@ -2252,76 +2252,6 @@ static struct
     { "Take",       127 },
     { "Open",       225 },
 };
-
-const char *atr_decode_flags_owner(const char *iattr, int *owner, int *flags)
-{
-    // See if the first char of the attribute is the special character
-    //
-    *flags = 0;
-    if (*iattr != ATR_INFO_CHAR)
-    {
-        return iattr;
-    }
-
-    // It has the special character, crack the attr apart.
-    //
-    const char *cp = iattr + 1;
-
-    // Get the attribute owner
-    //
-    bool neg = false;
-    if (*cp == '-')
-    {
-        neg = true;
-        cp++;
-    }
-    int tmp_owner = 0;
-    unsigned int ch = *cp;
-    while (isdigit(ch))
-    {
-        cp++;
-        tmp_owner = 10*tmp_owner + (ch-'0');
-        ch = *cp;
-    }
-    if (neg)
-    {
-        tmp_owner = -tmp_owner;
-    }
-
-    // If delimiter is not ':', just return attribute
-    //
-    if (*cp++ != ':')
-    {
-        return iattr;
-    }
-
-    // Get the attribute flags.
-    //
-    int tmp_flags = 0;
-    ch = *cp;
-    while (isdigit(ch))
-    {
-        cp++;
-        tmp_flags = 10*tmp_flags + (ch-'0');
-        ch = *cp;
-    }
-
-    // If delimiter is not ':', just return attribute.
-    //
-    if (*cp++ != ':')
-    {
-        return iattr;
-    }
-
-    // Get the attribute text.
-    //
-    if (tmp_owner != -1)
-    {
-        *owner = tmp_owner;
-    }
-    *flags = tmp_flags;
-    return cp;
-}
 
 bool ConvertTimeString(char *pTime, time_t *pt)
 {
@@ -2639,7 +2569,7 @@ void P6H_GAME::ConvertFromT5X()
                             else
                             {
                                 delete ple;
-                                fprintf(stderr, "WARNING: Could not convert '%s' lock on #%d containing '%s'.\n", pType, it->first, (*itAttr)->m_pValue);
+                                fprintf(stderr, "WARNING: Could not convert '%s' lock on #%d containing '%s'.\n", pType, it->first, (*itAttr)->m_pValueUnencoded);
                             }
                         }
                     }
@@ -2649,7 +2579,7 @@ void P6H_GAME::ConvertFromT5X()
                            || T5X_A_MODIFIED  == (*itAttr)->m_iNum)
                         {
                             time_t t;
-                            if (ConvertTimeString((*itAttr)->m_pValue, &t))
+                            if (ConvertTimeString((*itAttr)->m_pValueUnencoded, &t))
                             {
                                 switch ((*itAttr)->m_iNum)
                                 {
@@ -2666,16 +2596,14 @@ void P6H_GAME::ConvertFromT5X()
                                 P6H_ATTRINFO *pai = new P6H_ATTRINFO;
                                 pai->SetName(StringClone(itFound->second));
 
-                                int flags, owner;
-                                const char *p = atr_decode_flags_owner((*itAttr)->m_pValue, &owner, &flags);
-                                pai->SetValue(StringClone(p));
-                                pai->SetOwner(owner);
+                                pai->SetValue(StringClone((*itAttr)->m_pValueUnencoded));
+                                pai->SetOwner((*itAttr)->m_dbOwner);
 
                                 pBuffer = aBuffer;
                                 fFirst = true;
                                 for (int i = 0; i < sizeof(t5x_attr_flags)/sizeof(t5x_attr_flags[0]); i++)
                                 {
-                                    if (t5x_attr_flags[i].mask & flags)
+                                    if (t5x_attr_flags[i].mask & (*itAttr)->m_iFlags)
                                     {
                                         if (!fFirst)
                                         {
