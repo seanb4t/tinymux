@@ -2,6 +2,7 @@
 #include "t5xgame.h"
 #include "p6hgame.h"
 #include "t6hgame.h"
+#include "r7hgame.h"
 
 typedef struct _t5x_gameflaginfo
 {
@@ -606,6 +607,139 @@ bool T5X_LOCKEXP::ConvertFromT6H(T6H_LOCKEXP *p)
     return true;
 }
 
+bool T5X_LOCKEXP::ConvertFromR7H(R7H_LOCKEXP *p)
+{
+    switch (p->m_op)
+    {
+    case R7H_LOCKEXP::le_is:
+        m_op = T5X_LOCKEXP::le_is;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromR7H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_carry:
+        m_op = T5X_LOCKEXP::le_carry;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromR7H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_indirect:
+        m_op = T5X_LOCKEXP::le_indirect;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromR7H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_owner:
+        m_op = T5X_LOCKEXP::le_owner;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromR7H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_or:
+        m_op = T5X_LOCKEXP::le_or;
+        m_le[0] = new T5X_LOCKEXP;
+        m_le[1] = new T5X_LOCKEXP;
+        if (  !m_le[0]->ConvertFromR7H(p->m_le[0])
+           || !m_le[1]->ConvertFromR7H(p->m_le[1]))
+        {
+            delete m_le[0];
+            delete m_le[1];
+            m_le[0] = m_le[1] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_not:
+        m_op = T5X_LOCKEXP::le_not;
+        m_le[0] = new T5X_LOCKEXP;
+        if (!m_le[0]->ConvertFromR7H(p->m_le[0]))
+        {
+            delete m_le[0];
+            m_le[0] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_attr:
+        m_op = T5X_LOCKEXP::le_attr;
+        m_le[0] = new T5X_LOCKEXP;
+        m_le[1] = new T5X_LOCKEXP;
+        if (  !m_le[0]->ConvertFromR7H(p->m_le[0])
+           || !m_le[1]->ConvertFromR7H(p->m_le[1]))
+        {
+            delete m_le[0];
+            delete m_le[1];
+            m_le[0] = m_le[1] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_eval:
+        m_op = T5X_LOCKEXP::le_eval;
+        m_le[0] = new T5X_LOCKEXP;
+        m_le[1] = new T5X_LOCKEXP;
+        if (  !m_le[0]->ConvertFromR7H(p->m_le[0])
+           || !m_le[1]->ConvertFromR7H(p->m_le[1]))
+        {
+            delete m_le[0];
+            delete m_le[1];
+            m_le[0] = m_le[1] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_and:
+        m_op = T5X_LOCKEXP::le_and;
+        m_le[0] = new T5X_LOCKEXP;
+        m_le[1] = new T5X_LOCKEXP;
+        if (  !m_le[0]->ConvertFromR7H(p->m_le[0])
+           || !m_le[1]->ConvertFromR7H(p->m_le[1]))
+        {
+            delete m_le[0];
+            delete m_le[1];
+            m_le[0] = m_le[1] = NULL;
+            return false;
+        }
+        break;
+
+    case R7H_LOCKEXP::le_ref:
+        m_op = T5X_LOCKEXP::le_ref;
+        m_dbRef = p->m_dbRef;
+        break;
+
+    case R7H_LOCKEXP::le_text:
+        m_op = T5X_LOCKEXP::le_text;
+        m_p[0] = StringClone(p->m_p[0]);
+        break;
+
+    default:
+        fprintf(stderr, "%d not recognized.\n", m_op);
+        break;
+    }
+    return true;
+}
+
+
 void T5X_ATTRNAMEINFO::SetNumAndName(int iNum, char *pName)
 {
     m_fNumAndName = true;
@@ -679,24 +813,25 @@ void T5X_OBJECTINFO::SetName(char *pName)
 
 const int t5x_locknums[] =
 {
-     42,  // A_LOCK
-     59,  // A_LENTER
-     60,  // A_LLEAVE
-     61,  // A_LPAGE
-     62,  // A_LUSE
-     63,  // A_LGIVE
-     85,  // A_LTPORT
-     86,  // A_LDROP
-     87,  // A_LRECEIVE
-     93,  // A_LLINK
-     94,  // A_LTELOUT
-     97,  // A_LUSER
-     98,  // A_LPARENT
-    127,  // A_LGET
-    209,  // A_LSPEECH
-    225,  // A_LMAIL
-    226,  // A_LOPEN
-    231,  // A_LVISIBLE
+    T5X_A_LOCK,
+    T5X_A_LENTER,
+    T5X_A_LLEAVE,
+    T5X_A_LPAGE,
+    T5X_A_LUSE,
+    T5X_A_LGIVE,
+    T5X_A_LTPORT,
+    T5X_A_LDROP,
+    T5X_A_LRECEIVE,
+    T5X_A_LLINK,
+    T5X_A_LTELOUT,
+    T5X_A_LUSER,
+    T5X_A_LPARENT,
+    T5X_A_LCONTROL,
+    T5X_A_LGET,
+    T5X_A_LSPEECH,
+    T5X_A_LMAIL,
+    T5X_A_LOPEN,
+    T5X_A_LVISIBLE,
 };
 
 void T5X_OBJECTINFO::SetAttrs(int nAttrs, vector<T5X_ATTRINFO *> *pvai)
@@ -1340,76 +1475,76 @@ static int p6h_convert_type[] =
 
 static NameMask p6h_convert_obj_flags1[] =
 {
-    { "TRANSPARENT",    0x00000008UL },
-    { "WIZARD",         0x00000010UL },
-    { "LINK_OK",        0x00000020UL },
-    { "DARK",           0x00000040UL },
-    { "JUMP_OK",        0x00000080UL },
-    { "STICKY",         0x00000100UL },
-    { "DESTROY_OK",     0x00000200UL },
-    { "HAVEN",          0x00000400UL },
-    { "QUIET",          0x00000800UL },
-    { "HALT",           0x00001000UL },
-    { "DEBUG",          0x00002000UL },
-    { "GOING",          0x00004000UL },
-    { "MONITOR",        0x00008000UL },
-    { "MYOPIC",         0x00010000UL },
-    { "PUPPET",         0x00020000UL },
-    { "CHOWN_OK",       0x00040000UL },
-    { "ENTER_OK",       0x00080000UL },
-    { "VISUAL",         0x00100000UL },
-    { "OPAQUE",         0x00800000UL },
-    { "VERBOSE",        0x01000000UL },
-    { "NOSPOOF",        0x04000000UL },
-    { "SAFE",           0x10000000UL },
-    { "ROYALTY",        0x20000000UL },
-    { "AUDIBLE",        0x40000000UL },
-    { "TERSE",          0x80000000UL },
+    { "TRANSPARENT",    T5X_SEETHRU     },
+    { "WIZARD",         T5X_WIZARD      },
+    { "LINK_OK",        T5X_LINK_OK     },
+    { "DARK",           T5X_DARK        },
+    { "JUMP_OK",        T5X_JUMP_OK     },
+    { "STICKY",         T5X_STICKY      },
+    { "DESTROY_OK",     T5X_DESTROY_OK  },
+    { "HAVEN",          T5X_HAVEN       },
+    { "QUIET",          T5X_QUIET       },
+    { "HALT",           T5X_HALT        },
+    { "DEBUG",          T5X_TRACE       },
+    { "GOING",          T5X_GOING       },
+    { "MONITOR",        T5X_MONITOR     },
+    { "MYOPIC",         T5X_MYOPIC      },
+    { "PUPPET",         T5X_PUPPET      },
+    { "CHOWN_OK",       T5X_CHOWN_OK    },
+    { "ENTER_OK",       T5X_ENTER_OK    },
+    { "VISUAL",         T5X_VISUAL      },
+    { "OPAQUE",         T5X_OPAQUE      },
+    { "VERBOSE",        T5X_VERBOSE     },
+    { "NOSPOOF",        T5X_NOSPOOF     },
+    { "SAFE",           T5X_SAFE        },
+    { "ROYALTY",        T5X_ROYALTY     },
+    { "AUDIBLE",        T5X_HEARTHRU    },
+    { "TERSE",          T5X_TERSE       },
 };
 
 static NameMask p6h_convert_obj_flags2[] =
 {
-    { "ABODE",          0x00000002UL },
-    { "FLOATING",       0x00000004UL },
-    { "UNFINDABLE",     0x00000008UL },
-    { "LIGHT",          0x00000020UL },
-    { "ANSI",           0x00000200UL },
-    { "COLOR",          0x00000200UL },
-    { "FIXED",          0x00000800UL },
-    { "UNINSPECTED",    0x00001000UL },
-    { "NO_COMMAND",     0x00002000UL },
-    { "KEEPALIVE",      0x00004000UL },
-    { "GAGGED",         0x00040000UL },
-    { "ON-VACATION",    0x01000000UL },
-    { "SUSPECT",        0x10000000UL },
-    { "NOACCENTS",      0x20000000UL },
-    { "SLAVE",          0x80000000UL },
+    { "ABODE",          T5X_ABODE       },
+    { "FLOATING",       T5X_FLOATING    },
+    { "UNFINDABLE",     T5X_UNFINDABLE  },
+    { "LIGHT",          T5X_LIGHT       },
+    { "ANSI",           T5X_ANSI        },
+    { "COLOR",          T5X_ANSI        },
+    { "FIXED",          T5X_FIXED       },
+    { "UNINSPECTED",    T5X_UNINSPECTED },
+    { "NO_COMMAND",     T5X_NO_COMMAND  },
+    { "KEEPALIVE",      T5X_KEEPALIVE   },
+    { "GAGGED",         T5X_GAGGED      },
+    { "ON-VACATION",    T5X_VACATION    },
+    { "SUSPECT",        T5X_SUSPECT     },
+    { "NOACCENTS",      T5X_ASCII       },
+    { "SLAVE",          T5X_SLAVE       },
 };
 
 static NameMask p6h_convert_obj_powers1[] =
 {
-    { "Announce",       0x00000004UL },
-    { "Boot",           0x00000008UL },
-    { "Guest",          0x02000000UL },
-    { "Halt",           0x00000010UL },
-    { "Hide",           0x00000800UL },
-    { "Idle",           0x00001000UL },
-    { "Long_Fingers",   0x00004000UL },
-    { "No_Pay",         0x00000200UL },
-    { "No_Quota",       0x00000400UL },
-    { "Poll",           0x00800000UL },
-    { "Quotas",         0x00000001UL },
-    { "Search",         0x00002000UL },
-    { "See_All",        0x00000080UL },
-    { "See_Queue",      0x00100000UL },
-    { "Tport_Anything", 0x40000000UL },
-    { "Tport_Anywhere", 0x20000000UL },
-    { "Unkillable",     0x80000000UL },
+    { "Announce",       T5X_POW_ANNOUNCE    },
+    { "Boot",           T5X_POW_BOOT        },
+    { "Guest",          T5X_POW_GUEST       },
+    { "Halt",           T5X_POW_HALT        },
+    { "Hide",           T5X_POW_HIDE        },
+    { "Idle",           T5X_POW_IDLE        },
+    { "Long_Fingers",   T5X_POW_LONGFINGERS },
+    { "No_Pay",         T5X_POW_FREE_MONEY  },
+    { "No_Quota",       T5X_POW_FREE_QUOTA  },
+    { "Poll",           T5X_POW_POLL        },
+    { "Quotas",         T5X_POW_CHG_QUOTAS  },
+    { "Search",         T5X_POW_SEARCH      },
+    { "See_All",        T5X_POW_EXAM_ALL    },
+    { "See_Queue",      T5X_POW_SEE_QUEUE   },
+    { "Tport_Anything", T5X_POW_TEL_UNRST   },
+    { "Tport_Anywhere", T5X_POW_TEL_ANYWHR  },
+    { "Unkillable",     T5X_POW_UNKILLABLE  },
 };
 
 static NameMask p6h_convert_obj_powers2[] =
 {
-    { "Builder",        0x00000001UL },
+    { "Builder",        T5X_POW_BUILDER     },
 };
 
 static struct
@@ -1418,190 +1553,190 @@ static struct
     int         iNum;
 } t5x_known_attrs[] =
 {
-    { "AAHEAR",         27 },
-    { "ACLONE",         20 },
-    { "ACONNECT",       39 },
-    { "ADESC",          -1 },  // rename ADESC to XADESC
-    { "ADESCRIBE",      36 },  // rename ADESCRIBE to ADESC
-    { "ADFAIL",         -1 },  // rename ADFAIL to XADFAIL
-    { "ADISCONNECT",    40 },
-    { "ADROP",          14 },
-    { "AEFAIL",         68 },
-    { "AENTER",         35 },
-    { "AFAIL",          -1 }, // rename AFAIL to XAFAIL
-    { "AFAILURE",       13 }, // rename AFAILURE to AFAIL
-    { "AGFAIL",         -1 }, // rename AGFAIL to XAGFAIL
-    { "AHEAR",          29 },
-    { "AKILL",          -1 }, // rename AKILL to XAKILL
-    { "ALEAVE",         52 },
-    { "ALFAIL",         71 },
-    { "ALIAS",          58 },
-    { "ALLOWANCE",      -1 },
-    { "AMAIL",         202 },
-    { "AMHEAR",         28 },
-    { "AMOVE",          57 },
-    { "APAY",           -1 }, // rename APAY to XAPAY
-    { "APAYMENT",       21 }, // rename APAYMENT to APAY
-    { "ARFAIL",         -1 },
-    { "ASUCC",          -1 }, // rename ASUCC to XASUCC
-    { "ASUCCESS",       12 }, // rename AUCCESS to ASUCC
-    { "ATFAIL",         -1 }, // rename ATFAIL to XATFAIL
-    { "ATPORT",         82 },
-    { "ATOFAIL",        -1 }, // rename ATOFAIL to XATOFAIL
-    { "AUFAIL",         77 },
-    { "AUSE",           16 },
-    { "AWAY",           73 },
-    { "CHARGES",        17 },
-    { "CMDCHECK",       -1 }, // rename CMDCHECK to XCMDCHECK
-    { "COMMENT",        44 },
-    { "CONFORMAT",     242 },
-    { "CONNINFO",       -1 },
-    { "COST",           24 },
-    { "CREATED",        -1 }, // rename CREATED to XCREATED
-    { "DAILY",          -1 }, // rename DAILY to XDAILY
-    { "DESC",           -1 }, // rename DESC to XDESC
-    { "DESCRIBE",        6 }, // rename DESCRIBE to DESC
-    { "DEFAULTLOCK",    -1 }, // rename DEFAULTLOCK to XDEFAULTLOCK
-    { "DESCFORMAT",    244 },
-    { "DESTINATION",   216 },
-    { "DESTROYER",      -1 }, // rename DESTROYER to XDESTROYER
-    { "DFAIL",          -1 }, // rename DFAIL to XDFAIL
-    { "DROP",            9 },
-    { "DROPLOCK",       -1 }, // rename DROPLOCK to XDROPLOCK
-    { "EALIAS",         64 },
-    { "EFAIL",          66 },
-    { "ENTER",          33 },
-    { "ENTERLOCK",      -1 }, // rename ENTERLOCK to XENTERLOCK
-    { "EXITFORMAT",    241 },
-    { "EXITTO",        216 },
-    { "FAIL",           -1 }, // rename FAIL to XFAIL
-    { "FAILURE",         3 }, // rename FAILURE to FAIL
-    { "FILTER",         92 },
-    { "FORWARDLIST",    95 },
-    { "GETFROMLOCK",    -1 }, // rename GETFROMLOCK to XGETFROMLOCK
-    { "GFAIL",          -1 }, // rename GFAIL to XGFAIL
-    { "GIVELOCK",       -1 }, // rename GIVELOCK to XGIVELOCK
-    { "HTDESC",         -1 }, // rename HTDESC to XHTDESC
-    { "IDESC",          -1 }, // rename IDESC to XIDESC
-    { "IDESCRIBE",      32 }, // rename IDESCRIBE to IDESC
-    { "IDLE",           74 },
-    { "IDLETIMEOUT",    -1 }, // rename IDLETIMEOUT to XIDLETIMEOUT
-    { "INFILTER",       91 },
-    { "INPREFIX",       89 },
-    { "KILL",           -1 }, // rename KILL to XKILL
-    { "LALIAS",         65 },
-    { "LAST",           30 },
-    { "LASTPAGE",       -1 }, // rename LASTPAGE to XLASTPAGE
-    { "LASTSITE",       88 },
-    { "LASTIP",        144 },
-    { "LEAVE",          50 },
-    { "LEAVELOCK",      -1 }, // rename LEAVELOCK to XLEAVELOCK
-    { "LFAIL",          69 },
-    { "LINKLOCK",       -1 }, // rename LINKLOCK to XLINKLOCK
-    { "LISTEN",         26 },
-    { "LOGINDATA",      -1 }, // rename LOGINDATA to XLOGINDATA
-    { "MAILCURF",       -1 }, // rename MAILCURF to XMAILCURF
-    { "MAILFLAGS",      -1 }, // rename MAILFLAGS to XMAILFLAGS
-    { "MAILFOLDERS",    -1 }, // rename MAILFOLDERS to XMAILFOLDERS
-    { "MAILLOCK",       -1 }, // rename MAILLOCK to XMAILLOCK
-    { "MAILMSG",        -1 }, // rename MAILMSG to XMAILMSG
-    { "MAILSUB",        -1 }, // rename MAILSUB to XMAILSUB
-    { "MAILSUCC",       -1 }, // rename MAILSUCC to XMAILSUCC
-    { "MAILTO",         -1 }, // rename MAILTO to XMAILTO
-    { "MFAIL",          -1 }, // rename MFAIL to XMFAIL
-    { "MODIFIED",       -1 }, // rename MODIFIED to XMODIFIED
-    { "MONIKER",        -1 }, // rename MONIKER to XMONIKER
-    { "MOVE",           55 },
-    { "NAME",           -1 }, // rename NAME to XNAME
-    { "NAMEFORMAT",    243 },
-    { "ODESC",          -1 }, // rename ODESC to XODESC
-    { "ODESCRIBE",      37 }, // rename ODESCRIBE to ODESC
-    { "ODFAIL",         -1 }, // rename ODFAIL to XODFAIL
-    { "ODROP",           8 },
-    { "OEFAIL",         67 },
-    { "OENTER",         53 },
-    { "OFAIL",          -1 }, // rename OFAIL to XOFAIL
-    { "OFAILURE",        2 }, // rename OFAILURE to OFAIL
-    { "OGFAIL",         -1 }, // rename OGFAIL to XOGFAIL
-    { "OKILL",          -1 }, // rename OKILL to XOKILL
-    { "OLEAVE",         51 },
-    { "OLFAIL",         70 },
-    { "OMOVE",          56 },
-    { "OPAY",           -1 }, // rename OPAY to XOPAY
-    { "OPAYMENT",       22 }, // rename OPAYMENT to OPAY
-    { "OPENLOCK",       -1 }, // rename OPENLOCK to XOPENLOCK
-    { "ORFAIL",         -1 }, // rename ORFAIL to XORFAIL
-    { "OSUCC",          -1 }, // rename OSUCC to XSUCC
-    { "OSUCCESS",        1 }, // rename OSUCCESS to OSUCC
-    { "OTFAIL",         -1 }, // rename OTFAIL to XOTFAIL
-    { "OTPORT",         80 },
-    { "OTOFAIL",        -1 }, // rename OTOFAIL to XOTOFAIL
-    { "OUFAIL",         76 },
-    { "OUSE",           46 },
-    { "OXENTER",        34 },
-    { "OXLEAVE",        54 },
-    { "OXTPORT",        81 },
-    { "PAGELOCK",       -1 }, // rename PAGELOCK to XPAGELOCK
-    { "PARENTLOCK",     -1 }, // rename PARENTLOCK to XPARENTLOCK
-    { "PAY",            -1 }, // rename PAY to XPAY
-    { "PAYMENT",        23 }, // rename PAYMENT to PAY
-    { "PREFIX",         90 },
-    { "PROGCMD",        -1 }, // rename PROGCMD to XPROGCMD
-    { "QUEUEMAX",       -1 }, // rename QUEUEMAX to XQUEUEMAX
-    { "QUOTA",          -1 }, // rename QUOTA to XQUOTA
-    { "RECEIVELOCK",    -1 },
-    { "REJECT",         -1 }, // rename REJECT to XREJECT
-    { "REASON",         -1 }, // rename REASON to XREASON
-    { "RFAIL",          -1 }, // rename RFAIL to XRFAIL
-    { "RQUOTA",         38 },
-    { "RUNOUT",         18 },
-    { "SAYSTRING",      -1 }, // rename SAYSTRING to XSAYSTRING
-    { "SEMAPHORE",      47 },
-    { "SEX",             7 },
-    { "SIGNATURE",      -1 }, // rename SIGNATURE to XSIGNATURE
-    { "MAILSIGNATURE", 203 }, // rename MAILSIGNATURE to SIGNATURE
-    { "SPEECHMOD",      -1 }, // rename SPEECHMOD to XSPEECHMOD
-    { "SPEECHLOCK",     -1 }, // rename SPEECHLOCK to XSPEECHLOCK
-    { "STARTUP",        19 },
-    { "SUCC",            4 },
-    { "TELOUTLOCK",     -1 }, // rename TELOUTLOCK to XTELOUTLOCK
-    { "TFAIL",          -1 }, // rename TFAIL to XTFAIL
-    { "TIMEOUT",        -1 }, // rename TIMEOUT to XTIMEOUT
-    { "TPORT",          79 },
-    { "TPORTLOCK",      -1 }, // rename TPORTLOCK to XTPORTLOCK
-    { "TOFAIL",         -1 }, // rename TOFAIL to XTOFAIL
-    { "UFAIL",          75 },
-    { "USE",            45 },
-    { "USELOCK",        -1 },
-    { "USERLOCK",       -1 },
-    { "VA",            100 },
-    { "VB",            101 },
-    { "VC",            102 },
-    { "VD",            103 },
-    { "VE",            104 },
-    { "VF",            105 },
-    { "VG",            106 },
-    { "VH",            107 },
-    { "VI",            108 },
-    { "VJ",            109 },
-    { "VK",            110 },
-    { "VL",            111 },
-    { "VM",            112 },
-    { "VRML_URL",      220 },
-    { "VN",            113 },
-    { "VO",            114 },
-    { "VP",            115 },
-    { "VQ",            116 },
-    { "VR",            117 },
-    { "VS",            118 },
-    { "VT",            119 },
-    { "VU",            120 },
-    { "VV",            121 },
-    { "VW",            122 },
-    { "VX",            123 },
-    { "VY",            124 },
-    { "VZ",            125 },
-    { "XYXXY",           5 },   // *Password
+    { "AAHEAR",         T5X_A_AAHEAR      },
+    { "ACLONE",         T5X_A_ACLONE      },
+    { "ACONNECT",       T5X_A_ACONNECT    },
+    { "ADESC",          -1                },  // rename ADESC to XADESC
+    { "ADESCRIBE",      T5X_A_ADESC       },  // rename ADESCRIBE to ADESC
+    { "ADFAIL",         -1                },  // rename ADFAIL to XADFAIL
+    { "ADISCONNECT",    T5X_A_ADISCONNECT },
+    { "ADROP",          T5X_A_ADROP       },
+    { "AEFAIL",         T5X_A_AEFAIL      },
+    { "AENTER",         T5X_A_AENTER      },
+    { "AFAIL",          -1                }, // rename AFAIL to XAFAIL
+    { "AFAILURE",       T5X_A_AFAIL       }, // rename AFAILURE to AFAIL
+    { "AGFAIL",         -1                }, // rename AGFAIL to XAGFAIL
+    { "AHEAR",          T5X_A_AHEAR       },
+    { "AKILL",          -1                }, // rename AKILL to XAKILL
+    { "ALEAVE",         T5X_A_ALEAVE      },
+    { "ALFAIL",         T5X_A_ALFAIL      },
+    { "ALIAS",          T5X_A_ALIAS       },
+    { "ALLOWANCE",      -1                },
+    { "AMAIL",          T5X_A_AMAIL       },
+    { "AMHEAR",         T5X_A_AMHEAR      },
+    { "AMOVE",          T5X_A_AMOVE       },
+    { "APAY",           -1                }, // rename APAY to XAPAY
+    { "APAYMENT",       T5X_A_APAY        }, // rename APAYMENT to APAY
+    { "ARFAIL",         -1                },
+    { "ASUCC",          -1                }, // rename ASUCC to XASUCC
+    { "ASUCCESS",       T5X_A_ASUCC       }, // rename AUCCESS to ASUCC
+    { "ATFAIL",         -1                }, // rename ATFAIL to XATFAIL
+    { "ATPORT",         T5X_A_ATPORT      },
+    { "ATOFAIL",        -1                }, // rename ATOFAIL to XATOFAIL
+    { "AUFAIL",         T5X_A_AUFAIL      },
+    { "AUSE",           T5X_A_AUSE        },
+    { "AWAY",           T5X_A_AWAY        },
+    { "CHARGES",        T5X_A_CHARGES     },
+    { "CMDCHECK",       -1                }, // rename CMDCHECK to XCMDCHECK
+    { "COMMENT",        T5X_A_COMMENT     },
+    { "CONFORMAT",      T5X_A_CONFORMAT   },
+    { "CONNINFO",       -1                },
+    { "COST",           T5X_A_COST        },
+    { "CREATED",        -1                }, // rename CREATED to XCREATED
+    { "DAILY",          -1                }, // rename DAILY to XDAILY
+    { "DESC",           -1                }, // rename DESC to XDESC
+    { "DESCRIBE",       T5X_A_DESC        }, // rename DESCRIBE to DESC
+    { "DEFAULTLOCK",    -1                }, // rename DEFAULTLOCK to XDEFAULTLOCK
+    { "DESCFORMAT",     T5X_A_DESCFORMAT  },
+    { "DESTINATION",    T5X_A_EXITVARDEST },
+    { "DESTROYER",      -1                }, // rename DESTROYER to XDESTROYER
+    { "DFAIL",          -1                }, // rename DFAIL to XDFAIL
+    { "DROP",           T5X_A_DROP        },
+    { "DROPLOCK",       -1                }, // rename DROPLOCK to XDROPLOCK
+    { "EALIAS",         T5X_A_EALIAS      },
+    { "EFAIL",          T5X_A_EFAIL       },
+    { "ENTER",          T5X_A_ENTER       },
+    { "ENTERLOCK",      -1                }, // rename ENTERLOCK to XENTERLOCK
+    { "EXITFORMAT",     T5X_A_EXITFORMAT  },
+    { "EXITTO",         T5X_A_EXITVARDEST },
+    { "FAIL",           -1                }, // rename FAIL to XFAIL
+    { "FAILURE",        T5X_A_FAIL        }, // rename FAILURE to FAIL
+    { "FILTER",         T5X_A_FILTER      },
+    { "FORWARDLIST",    T5X_A_FORWARDLIST },
+    { "GETFROMLOCK",    -1                }, // rename GETFROMLOCK to XGETFROMLOCK
+    { "GFAIL",          -1                }, // rename GFAIL to XGFAIL
+    { "GIVELOCK",       -1                }, // rename GIVELOCK to XGIVELOCK
+    { "HTDESC",         -1                }, // rename HTDESC to XHTDESC
+    { "IDESC",          -1                }, // rename IDESC to XIDESC
+    { "IDESCRIBE",      T5X_A_IDESC       }, // rename IDESCRIBE to IDESC
+    { "IDLE",           T5X_A_IDLE        },
+    { "IDLETIMEOUT",    -1                }, // rename IDLETIMEOUT to XIDLETIMEOUT
+    { "INFILTER",       T5X_A_INFILTER    },
+    { "INPREFIX",       T5X_A_INPREFIX    },
+    { "KILL",           -1                }, // rename KILL to XKILL
+    { "LALIAS",         T5X_A_LALIAS      },
+    { "LAST",           T5X_A_LAST        },
+    { "LASTPAGE",       -1                }, // rename LASTPAGE to XLASTPAGE
+    { "LASTSITE",       T5X_A_LASTSITE    },
+    { "LASTIP",         T5X_A_LASTIP      },
+    { "LEAVE",          T5X_A_LEAVE       },
+    { "LEAVELOCK",      -1                }, // rename LEAVELOCK to XLEAVELOCK
+    { "LFAIL",          T5X_A_LFAIL       },
+    { "LINKLOCK",       -1                }, // rename LINKLOCK to XLINKLOCK
+    { "LISTEN",         T5X_A_LISTEN      },
+    { "LOGINDATA",      -1                }, // rename LOGINDATA to XLOGINDATA
+    { "MAILCURF",       -1                }, // rename MAILCURF to XMAILCURF
+    { "MAILFLAGS",      -1                }, // rename MAILFLAGS to XMAILFLAGS
+    { "MAILFOLDERS",    -1                }, // rename MAILFOLDERS to XMAILFOLDERS
+    { "MAILLOCK",       -1                }, // rename MAILLOCK to XMAILLOCK
+    { "MAILMSG",        -1                }, // rename MAILMSG to XMAILMSG
+    { "MAILSUB",        -1                }, // rename MAILSUB to XMAILSUB
+    { "MAILSUCC",       -1                }, // rename MAILSUCC to XMAILSUCC
+    { "MAILTO",         -1                }, // rename MAILTO to XMAILTO
+    { "MFAIL",          -1                }, // rename MFAIL to XMFAIL
+    { "MODIFIED",       -1                }, // rename MODIFIED to XMODIFIED
+    { "MONIKER",        -1                }, // rename MONIKER to XMONIKER
+    { "MOVE",           T5X_A_MOVE        },
+    { "NAME",           -1                }, // rename NAME to XNAME
+    { "NAMEFORMAT",     T5X_A_NAMEFORMAT  },
+    { "ODESC",          -1                }, // rename ODESC to XODESC
+    { "ODESCRIBE",      T5X_A_ODESC       }, // rename ODESCRIBE to ODESC
+    { "ODFAIL",         -1                }, // rename ODFAIL to XODFAIL
+    { "ODROP",          T5X_A_ODROP       },
+    { "OEFAIL",         T5X_A_OEFAIL      },
+    { "OENTER",         T5X_A_OENTER      },
+    { "OFAIL",          -1                }, // rename OFAIL to XOFAIL
+    { "OFAILURE",       T5X_A_OFAIL       }, // rename OFAILURE to OFAIL
+    { "OGFAIL",         -1                }, // rename OGFAIL to XOGFAIL
+    { "OKILL",          -1                }, // rename OKILL to XOKILL
+    { "OLEAVE",         T5X_A_OLEAVE      },
+    { "OLFAIL",         T5X_A_OLFAIL      },
+    { "OMOVE",          T5X_A_OMOVE       },
+    { "OPAY",           -1                }, // rename OPAY to XOPAY
+    { "OPAYMENT",       T5X_A_OPAY        }, // rename OPAYMENT to OPAY
+    { "OPENLOCK",       -1                }, // rename OPENLOCK to XOPENLOCK
+    { "ORFAIL",         -1                }, // rename ORFAIL to XORFAIL
+    { "OSUCC",          -1                }, // rename OSUCC to XSUCC
+    { "OSUCCESS",       T5X_A_OSUCC       }, // rename OSUCCESS to OSUCC
+    { "OTFAIL",         -1                }, // rename OTFAIL to XOTFAIL
+    { "OTPORT",         T5X_A_OTPORT      },
+    { "OTOFAIL",        -1                }, // rename OTOFAIL to XOTOFAIL
+    { "OUFAIL",         T5X_A_OUFAIL      },
+    { "OUSE",           T5X_A_OUSE        },
+    { "OXENTER",        T5X_A_OXENTER     },
+    { "OXLEAVE",        T5X_A_OXLEAVE     },
+    { "OXTPORT",        T5X_A_OXTPORT     },
+    { "PAGELOCK",       -1                }, // rename PAGELOCK to XPAGELOCK
+    { "PARENTLOCK",     -1                }, // rename PARENTLOCK to XPARENTLOCK
+    { "PAY",            -1                }, // rename PAY to XPAY
+    { "PAYMENT",        T5X_A_PAY         }, // rename PAYMENT to PAY
+    { "PREFIX",         T5X_A_PREFIX      },
+    { "PROGCMD",        -1                }, // rename PROGCMD to XPROGCMD
+    { "QUEUEMAX",       -1                }, // rename QUEUEMAX to XQUEUEMAX
+    { "QUOTA",          -1                }, // rename QUOTA to XQUOTA
+    { "RECEIVELOCK",    -1                },
+    { "REJECT",         -1                }, // rename REJECT to XREJECT
+    { "REASON",         -1                }, // rename REASON to XREASON
+    { "RFAIL",          -1                }, // rename RFAIL to XRFAIL
+    { "RQUOTA",         T5X_A_RQUOTA      },
+    { "RUNOUT",         T5X_A_RUNOUT      },
+    { "SAYSTRING",      -1                }, // rename SAYSTRING to XSAYSTRING
+    { "SEMAPHORE",      T5X_A_SEMAPHORE   },
+    { "SEX",            T5X_A_SEX         },
+    { "SIGNATURE",      -1                }, // rename SIGNATURE to XSIGNATURE
+    { "MAILSIGNATURE",  T5X_A_SIGNATURE   }, // rename MAILSIGNATURE to SIGNATURE
+    { "SPEECHMOD",      -1                }, // rename SPEECHMOD to XSPEECHMOD
+    { "SPEECHLOCK",     -1                }, // rename SPEECHLOCK to XSPEECHLOCK
+    { "STARTUP",        T5X_A_STARTUP     },
+    { "SUCC",           T5X_A_SUCC        },
+    { "TELOUTLOCK",     -1                }, // rename TELOUTLOCK to XTELOUTLOCK
+    { "TFAIL",          -1                }, // rename TFAIL to XTFAIL
+    { "TIMEOUT",        -1                }, // rename TIMEOUT to XTIMEOUT
+    { "TPORT",          T5X_A_TPORT       },
+    { "TPORTLOCK",      -1                }, // rename TPORTLOCK to XTPORTLOCK
+    { "TOFAIL",         -1                }, // rename TOFAIL to XTOFAIL
+    { "UFAIL",          T5X_A_UFAIL       },
+    { "USE",            T5X_A_USE         },
+    { "USELOCK",        -1                },
+    { "USERLOCK",       -1                },
+    { "VA",             T5X_A_VA          },
+    { "VB",             T5X_A_VA+1        },
+    { "VC",             T5X_A_VA+2        },
+    { "VD",             T5X_A_VA+3        },
+    { "VE",             T5X_A_VA+4        },
+    { "VF",             T5X_A_VA+5        },
+    { "VG",             T5X_A_VA+6        },
+    { "VH",             T5X_A_VA+7        },
+    { "VI",             T5X_A_VA+8        },
+    { "VJ",             T5X_A_VA+9        },
+    { "VK",             T5X_A_VA+10       },
+    { "VL",             T5X_A_VA+11       },
+    { "VM",             T5X_A_VA+12       },
+    { "VRML_URL",       T5X_A_VRML_URL    },
+    { "VN",             T5X_A_VA+13       },
+    { "VO",             T5X_A_VA+14       },
+    { "VP",             T5X_A_VA+15       },
+    { "VQ",             T5X_A_VA+16       },
+    { "VR",             T5X_A_VA+17       },
+    { "VS",             T5X_A_VA+18       },
+    { "VT",             T5X_A_VA+19       },
+    { "VU",             T5X_A_VA+20       },
+    { "VV",             T5X_A_VA+21       },
+    { "VW",             T5X_A_VA+22       },
+    { "VX",             T5X_A_VA+23       },
+    { "VY",             T5X_A_VA+24       },
+    { "VZ",             T5X_A_VA+25       },
+    { "XYXXY",          T5X_A_PASS        },   // *Password
 };
 
 static struct
@@ -1610,39 +1745,39 @@ static struct
     int         iNum;
 } p6h_locknames[] =
 {
-    { "Basic",       42 },
-    { "Enter",       59 },
-    { "Use",         62 },
-    { "Zone",        -1 },
-    { "Page",        61 },
-    { "Teleport",    85 },
-    { "Speech",     209 },
-    { "Parent",      98 },
-    { "Link",        93 },
-    { "Leave",       60 },
-    { "Drop",        86 },
-    { "Give",        63 },
-    { "Receive",     87 },
-    { "Mail",       225 },
-    { "Take",       127 },
-    { "Open",       225 },
+    { "Basic",       T5X_A_LOCK     },
+    { "Enter",       T5X_A_LENTER   },
+    { "Use",         T5X_A_LUSE     },
+    { "Zone",        -1             },
+    { "Page",        T5X_A_LPAGE    },
+    { "Teleport",    T5X_A_LTPORT   },
+    { "Speech",      T5X_A_LSPEECH  },
+    { "Parent",      T5X_A_LPARENT  },
+    { "Link",        T5X_A_LLINK    },
+    { "Leave",       T5X_A_LLEAVE   },
+    { "Drop",        T5X_A_LDROP    },
+    { "Give",        T5X_A_LGIVE    },
+    { "Receive",     T5X_A_LRECEIVE },
+    { "Mail",        T5X_A_LMAIL    },
+    { "Take",        T5X_A_LGET     },
+    { "Open",        T5X_A_LOPEN    },
 };
 
 static NameMask p6h_attr_flags[] =
 {
-    { "no_command",     0x00000100UL },
-    { "private",        0x00001000UL },
-    { "no_clone",       0x00010000UL },
-    { "wizard",         0x00000004UL },
-    { "visual",         0x00000800UL },
-    { "mortal_dark",    0x00000008UL },
-    { "hidden",         0x00000002UL },
-    { "regexp",         0x00008000UL },
-    { "case",           0x00040000UL },
-    { "locked",         0x00000040UL },
-    { "internal",       0x00000010UL },
-    { "debug",          0x00080000UL },
-    { "noname",         0x00400000UL },
+    { "no_command",     T5X_AF_NOCMD    },
+    { "private",        T5X_AF_PRIVATE  },
+    { "no_clone",       T5X_AF_NOCLONE  },
+    { "wizard",         T5X_AF_WIZARD   },
+    { "visual",         T5X_AF_VISUAL   },
+    { "mortal_dark",    T5X_AF_MDARK    },
+    { "hidden",         T5X_AF_DARK     },
+    { "regexp",         T5X_AF_REGEXP   },
+    { "case",           T5X_AF_CASE     },
+    { "locked",         T5X_AF_LOCK     },
+    { "internal",       T5X_AF_INTERNAL },
+    { "debug",          T5X_AF_TRACE    },
+    { "noname",         T5X_AF_NONAME   },
 };
 
 void T5X_GAME::ConvertFromP6H()
@@ -1834,7 +1969,7 @@ void T5X_GAME::ConvertFromP6H()
             //
             if (NULL != strcasestr(pPowers, "Immortal"))
             {
-                flags1 |= 0x00200000;
+                flags1 |= T5X_IMMORTAL;
             }
         }
         poi->SetFlags1(flags1);
@@ -1986,26 +2121,33 @@ void T5X_GAME::ConvertFromP6H()
                         T5X_LOCKEXP *pLock = new T5X_LOCKEXP;
                         if (pLock->ConvertFromP6H((*itLock)->m_pKeyTree))
                         {
-                            char buffer[65536];
-                            char *p = pLock->Write(buffer);
-                            *p = '\0';
-
-                            // Add it.
-                            //
-                            T5X_ATTRINFO *pai = new T5X_ATTRINFO;
-                            pai->SetNumAndValue(iLock, StringClone(buffer));
-
-                            if (NULL == poi->m_pvai)
+                            if (T5X_A_LOCK == iLock)
                             {
-                                vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
-                                pvai->push_back(pai);
-                                poi->SetAttrs(pvai->size(), pvai);
+                                poi->SetDefaultLock(pLock);
                             }
                             else
                             {
-                                poi->m_pvai->push_back(pai);
-                                poi->m_fAttrCount = true;
-                                poi->m_nAttrCount = poi->m_pvai->size();
+                                char buffer[65536];
+                                char *p = pLock->Write(buffer);
+                                *p = '\0';
+
+                                // Add it.
+                                //
+                                T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                                pai->SetNumAndValue(iLock, StringClone(buffer));
+
+                                if (NULL == poi->m_pvai)
+                                {
+                                    vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
+                                    pvai->push_back(pai);
+                                    poi->SetAttrs(pvai->size(), pvai);
+                                }
+                                else
+                                {
+                                    poi->m_pvai->push_back(pai);
+                                    poi->m_fAttrCount = true;
+                                    poi->m_nAttrCount = poi->m_pvai->size();
+                                }
                             }
                         }
                         else
@@ -2156,7 +2298,7 @@ int convert_t6h_flags1(int f)
        | T5X_VISUAL
        | T5X_IMMORTAL
        | T5X_HAS_STARTUP
-       | T5X_MUX_OPAQUE
+       | T5X_OPAQUE
        | T5X_VERBOSE
        | T5X_INHERIT
        | T5X_NOSPOOF
@@ -2507,6 +2649,19 @@ void T5X_GAME::ConvertFromT6H()
             delete pvai;
         }
 
+        if (it->second->m_ple)
+        {
+            T5X_LOCKEXP *ple = new T5X_LOCKEXP;
+            if (ple->ConvertFromT6H(it->second->m_ple))
+            {
+                poi->SetDefaultLock(ple);
+            }
+            else
+            {
+                delete ple;
+            }
+        }
+
         AddObject(poi);
 
         if (dbRefMax < it->first)
@@ -2518,6 +2673,681 @@ void T5X_GAME::ConvertFromT6H()
     if (g_t6hgame.m_fRecordPlayers)
     {
         SetRecordPlayers(g_t6hgame.m_nRecordPlayers);
+    }
+    else
+    {
+        SetRecordPlayers(0);
+    }
+}
+
+bool convert_r7h_attr_num(int iNum, int *piNum)
+{
+    if (A_USER_START <= iNum)
+    {
+        *piNum = iNum;
+        return true;
+    }
+
+    // R7H attribute numbers with no corresponding T5X attribute.
+    //
+    if (  R7H_A_SPAMPROTECT == iNum
+       || R7H_A_RLEVEL == iNum
+       || R7H_A_DESTVATTRMAX == iNum
+       || R7H_A_TEMPBUFFER == iNum
+       || R7H_A_PROGPROMPTBUF == iNum
+       || R7H_A_PROGPROMPT == iNum
+       || R7H_A_PROGBUFFER == iNum
+       || R7H_A_SAVESENDMAIL == iNum
+       || R7H_A_LAMBDA == iNum
+       || R7H_A_CHANNEL == iNum
+       || R7H_A_GUILD == iNum
+       || (R7H_A_ZA <= iNum && iNum <= R7H_A_ZA + 25)
+       || R7H_A_BCCMAIL == iNum
+       || R7H_A_EMAIL == iNum
+       || R7H_A_LSHARE == iNum
+       || R7H_A_AOTFAIL == iNum
+       || R7H_A_MPASS == iNum
+       || R7H_A_MPSET == iNum
+       || R7H_A_LASTPAGE == iNum
+       || R7H_A_RETPAGE == iNum
+       || R7H_A_RECTIME == iNum
+       || R7H_A_MCURR == iNum
+       || R7H_A_MQUOTA == iNum
+       || R7H_A_LQUOTA == iNum
+       || R7H_A_TQUOTA == iNum
+       || R7H_A_MTIME == iNum
+       || R7H_A_MSAVEMAX == iNum
+       || R7H_A_MSAVECUR == iNum
+       || R7H_A_IDENT == iNum
+       || R7H_A_LZONEWIZ == iNum
+       || R7H_A_LZONETO == iNum
+       || R7H_A_LTWINK == iNum
+       || R7H_A_SITEGOOD == iNum
+       || R7H_A_SITEBAD == iNum
+       || R7H_A_ADESC2 == iNum
+       || R7H_A_PAYLIM == iNum
+       || R7H_A_DESC2 == iNum
+       || R7H_A_RACE == iNum
+       || R7H_A_SFAIL == iNum
+       || R7H_A_ASFAIL == iNum
+       || R7H_A_AUTOREG == iNum
+       || R7H_A_LDARK == iNum
+       || R7H_A_STOUCH == iNum
+       || R7H_A_SATOUCH == iNum
+       || R7H_A_SOTOUCH == iNum
+       || R7H_A_SLISTEN == iNum
+       || R7H_A_SALISTEN == iNum
+       || R7H_A_SOLISTEN == iNum
+       || R7H_A_STASTE == iNum
+       || R7H_A_SATASTE == iNum
+       || R7H_A_SOTASTE == iNum
+       || R7H_A_SSMELL == iNum
+       || R7H_A_SASMELL == iNum
+       || R7H_A_SOSMELL == iNum
+       || R7H_A_LDROPTO == iNum
+       || R7H_A_CAPTION == iNum
+       || R7H_A_TOTCMDS == iNum
+       || R7H_A_LSTCMDS == iNum
+       || R7H_A_RECEIVELIM == iNum
+       || R7H_A_LDEXIT_FMT == iNum
+       || R7H_A_ALTNAME == iNum
+       || R7H_A_LALTNAME == iNum
+       || R7H_A_INVTYPE == iNum
+       || R7H_A_TOTCHARIN == iNum
+       || R7H_A_TOTCHAROUT == iNum
+       || R7H_A_LGIVETO == iNum
+       || R7H_A_LASTCREATE == iNum)
+    {
+        return false;
+    }
+
+    if (R7H_A_NAME_FMT == iNum)
+    {
+        iNum = T5X_A_NAMEFORMAT;
+    }
+    else if (R7H_A_LASTIP == iNum)
+    {
+        iNum = T5X_A_LASTIP;
+    }
+    else if (R7H_A_LCON_FMT == iNum)
+    {
+        iNum = T5X_A_CONFORMAT;
+    }
+    else if (R7H_A_EXITTO == iNum)
+    {
+        iNum = T5X_A_EXITVARDEST;
+    }
+    else if (R7H_A_LCONTROL == iNum)
+    {
+        iNum = T5X_A_LCONTROL;
+    }
+    else if (R7H_A_LMAIL == iNum)
+    {
+        iNum = T5X_A_LMAIL;
+    }
+    else if (R7H_A_LGETFROM == iNum)
+    {
+        iNum = T5X_A_LGET;
+    }
+    else if (R7H_A_GFAIL == iNum)
+    {
+        iNum = T5X_A_GFAIL;
+    }
+    else if (R7H_A_OGFAIL == iNum)
+    {
+        iNum = T5X_A_OGFAIL;
+    }
+    else if (R7H_A_AGFAIL == iNum)
+    {
+        iNum = T5X_A_AGFAIL;
+    }
+    else if (R7H_A_RFAIL == iNum)
+    {
+        iNum = T5X_A_RFAIL;
+    }
+    else if (R7H_A_ORFAIL == iNum)
+    {
+        iNum = T5X_A_ORFAIL;
+    }
+    else if (R7H_A_ARFAIL == iNum)
+    {
+        iNum = T5X_A_ARFAIL;
+    }
+    else if (R7H_A_DFAIL == iNum)
+    {
+        iNum = T5X_A_DFAIL;
+    }
+    else if (R7H_A_ODFAIL == iNum)
+    {
+        iNum = T5X_A_ODFAIL;
+    }
+    else if (R7H_A_ADFAIL == iNum)
+    {
+        iNum = T5X_A_ADFAIL;
+    }
+    else if (R7H_A_TFAIL == iNum)
+    {
+        iNum = T5X_A_TFAIL;
+    }
+    else if (R7H_A_OTFAIL == iNum)
+    {
+        iNum = T5X_A_OTFAIL;
+    }
+    else if (R7H_A_ATFAIL == iNum)
+    {
+        iNum = T5X_A_ATFAIL;
+    }
+    else if (R7H_A_TOFAIL == iNum)
+    {
+        iNum = T5X_A_TOFAIL;
+    }
+    else if (R7H_A_OTOFAIL == iNum)
+    {
+        iNum = T5X_A_OTOFAIL;
+    }
+    else if (R7H_A_ATOFAIL == iNum)
+    {
+        iNum = T5X_A_ATOFAIL;
+    }
+    else if (R7H_A_MAILSIG == iNum)
+    {
+        iNum = T5X_A_SIGNATURE;
+    }
+    else if (R7H_A_LSPEECH == iNum)
+    {
+        iNum = T5X_A_LSPEECH;
+    }
+    else if (R7H_A_ANSINAME == iNum)
+    {
+        iNum = T5X_A_MONIKER;
+    }
+    else if (R7H_A_LOPEN == iNum)
+    {
+        iNum = T5X_A_LOPEN;
+    }
+    else if (R7H_A_LCHOWN == iNum)
+    {
+        iNum = T5X_A_LCHOWN;
+    }
+    else if (R7H_A_LCON_FMT == iNum)
+    {
+        iNum = T5X_A_CONFORMAT;
+    }
+    else if (R7H_A_LEXIT_FMT == iNum)
+    {
+        iNum = T5X_A_EXITFORMAT;
+    }
+    else if (R7H_A_MODIFY_TIME == iNum)
+    {
+        iNum = T5X_A_MODIFIED;
+    }
+    else if (R7H_A_CREATED_TIME == iNum)
+    {
+        iNum = T5X_A_CREATED;
+    }
+    else if (R7H_A_SAYSTRING == iNum)
+    {
+        iNum = T5X_A_SAYSTRING;
+    }
+
+    // T5X attributes with no corresponding R7H attribute, and nothing
+    // in R7H currently uses the number, but it might be assigned later.
+    //
+    if (  T5X_A_MFAIL == iNum
+       || T5X_A_COMJOIN == iNum
+       || T5X_A_COMLEAVE == iNum
+       || T5X_A_COMON == iNum
+       || T5X_A_COMOFF == iNum
+       || T5X_A_CMDCHECK == iNum
+       || T5X_A_MONIKER == iNum
+       || T5X_A_CONNINFO == iNum
+       || T5X_A_IDLETMOUT == iNum
+       || T5X_A_ADESTROY == iNum
+       || T5X_A_APARENT == iNum
+       || T5X_A_ACREATE == iNum
+       || T5X_A_LMAIL == iNum
+       || T5X_A_LOPEN == iNum
+       || T5X_A_LASTWHISPER == iNum
+       || T5X_A_LVISIBLE == iNum
+       || T5X_A_LASTPAGE == iNum
+       || T5X_A_MAIL == iNum
+       || T5X_A_AMAIL == iNum
+       || T5X_A_DAILY == iNum
+       || T5X_A_MAILTO == iNum
+       || T5X_A_MAILMSG == iNum
+       || T5X_A_MAILSUB == iNum
+       || T5X_A_MAILCURF == iNum
+       || T5X_A_PROGCMD == iNum
+       || T5X_A_MAILFLAGS == iNum
+       || T5X_A_DESTROYER == iNum
+       || T5X_A_NEWOBJS == iNum
+       || T5X_A_SPEECHMOD == iNum
+       || T5X_A_VRML_URL == iNum
+       || T5X_A_HTDESC == iNum
+       || T5X_A_REASON == iNum
+       || T5X_A_REGINFO == iNum
+       || T5X_A_CONNINFO == iNum
+       || T5X_A_LVISIBLE == iNum
+       || T5X_A_IDLETMOUT == iNum
+       || T5X_A_NAMEFORMAT == iNum
+       || T5X_A_DESCFORMAT == iNum)
+    {
+        return false;
+    }
+    *piNum = iNum;
+    return true;
+}
+
+int convert_r7h_flags1(int f)
+{
+    f &= T5X_SEETHRU
+       | T5X_WIZARD
+       | T5X_LINK_OK
+       | T5X_DARK
+       | T5X_JUMP_OK
+       | T5X_STICKY
+       | T5X_DESTROY_OK
+       | T5X_HAVEN
+       | T5X_QUIET
+       | T5X_HALT
+       | T5X_TRACE
+       | T5X_GOING
+       | T5X_MONITOR
+       | T5X_MYOPIC
+       | T5X_PUPPET
+       | T5X_CHOWN_OK
+       | T5X_ENTER_OK
+       | T5X_VISUAL
+       | T5X_IMMORTAL
+       | T5X_HAS_STARTUP
+       | T5X_OPAQUE
+       | T5X_VERBOSE
+       | T5X_INHERIT
+       | T5X_NOSPOOF
+       | T5X_ROBOT
+       | T5X_SAFE
+       | T5X_HEARTHRU
+       | T5X_TERSE;
+    return f;
+}
+
+int convert_r7h_flags2(int f2, int f3, int f4)
+{
+    int g = f2;
+    g &= T5X_KEY
+       | T5X_ABODE
+       | T5X_FLOATING
+       | T5X_UNFINDABLE
+       | T5X_PARENT_OK
+       | T5X_LIGHT
+       | T5X_HAS_LISTEN
+       | T5X_HAS_FWDLIST
+       | T5X_SUSPECT
+       | T5X_CONNECTED
+       | T5X_SLAVE;
+
+    if (f2 & R7H_ADMIN)
+    {
+        g |= T5X_STAFF;
+    }
+    if (f2 & (R7H_ANSI|R7H_ANSICOLOR))
+    {
+        g |= T5X_ANSI;
+    }
+    if (f3 & R7H_NOCOMMAND)
+    {
+        g |= T5X_NO_COMMAND;
+    }
+    if (f4 & R7H_BLIND)
+    {
+        g |= T5X_BLIND;
+    }
+
+    return g;
+}
+
+int convert_r7h_flags3(int f3, int f4)
+{
+    int g = 0;
+    if (f3 & R7H_MARKER0)
+    {
+        g |= T5X_MARK_0;
+    }
+    if (f3 & R7H_MARKER1)
+    {
+        g |= T5X_MARK_1;
+    }
+    if (f3 & R7H_MARKER2)
+    {
+        g |= T5X_MARK_2;
+    }
+    if (f3 & R7H_MARKER3)
+    {
+        g |= T5X_MARK_3;
+    }
+    if (f3 & R7H_MARKER4)
+    {
+        g |= T5X_MARK_4;
+    }
+    if (f3 & R7H_MARKER5)
+    {
+        g |= T5X_MARK_5;
+    }
+    if (f3 & R7H_MARKER6)
+    {
+        g |= T5X_MARK_6;
+    }
+    if (f3 & R7H_MARKER7)
+    {
+        g |= T5X_MARK_7;
+    }
+    if (f3 & R7H_MARKER8)
+    {
+        g |= T5X_MARK_8;
+    }
+    return g;
+}
+
+int convert_r7h_attr_flags(int f)
+{
+    int g = f;
+    g &= T5X_AF_ODARK
+       | T5X_AF_DARK
+       | T5X_AF_WIZARD
+       | T5X_AF_MDARK
+       | T5X_AF_INTERNAL
+       | T5X_AF_NOCMD
+       | T5X_AF_LOCK
+       | T5X_AF_DELETED
+       | T5X_AF_NOPROG
+       | T5X_AF_GOD;
+
+    if (f & R7H_AF_IS_LOCK)
+    {
+        g |= T5X_AF_IS_LOCK;
+    }
+    if (f & R7H_AF_PRIVATE)
+    {
+        g |= T5X_AF_PRIVATE;
+    }
+    if (f & R7H_AF_VISUAL)
+    {
+        g |= T5X_AF_VISUAL;
+    }
+    if (f & R7H_AF_NOCLONE)
+    {
+        g |= T5X_AF_NOCLONE;
+    }
+    if (f & R7H_AF_NOPARSE)
+    {
+        g |= T5X_AF_NOPARSE;
+    }
+
+    return g;
+}
+
+bool AnyLevel(int tog, int i)
+{
+    return (tog & (3 << i)) != 0;
+}
+
+int convert_r7h_power1(int t3, int t4, int t5)
+{
+    int g = 0;
+    if (AnyLevel(t3, R7H_POWER_CHANGE_QUOTAS))
+    {
+        g |= T5X_POW_CHG_QUOTAS;
+    }
+    if (AnyLevel(t3, R7H_POWER_CHOWN_OTHER))
+    {
+        g |= T5X_POW_CHOWN_ANY;
+    }
+    if (AnyLevel(t4, R7H_POWER_FREE_WALL))
+    {
+        g |= T5X_POW_ANNOUNCE;
+    }
+    if (AnyLevel(t3, R7H_POWER_BOOT))
+    {
+        g |= T5X_POW_BOOT;
+    }
+    if (  AnyLevel(t4, R7H_POWER_HALT_QUEUE)
+       || AnyLevel(t4, R7H_POWER_HALT_QUEUE_ALL))
+    {
+        g |= T5X_POW_HALT;
+    }
+    if (AnyLevel(t3, R7H_POWER_WIZ_WHO))
+    {
+        g |= T5X_POW_WIZARD_WHO;
+    }
+    if (AnyLevel(t5, R7H_POWER_EX_FULL))
+    {
+        g |= T5X_POW_EXAM_ALL;
+    }
+    if (AnyLevel(t4, R7H_POWER_WHO_UNFIND))
+    {
+        g |= T5X_POW_FIND_UNFIND;
+    }
+    if (AnyLevel(t3, R7H_POWER_FREE_QUOTA))
+    {
+        g |= T5X_POW_FREE_QUOTA;
+    }
+    if (AnyLevel(t5, R7H_POWER_HIDEBIT))
+    {
+        g |= T5X_POW_HIDE;
+    }
+    if (AnyLevel(t4, R7H_POWER_SEARCH_ANY))
+    {
+        g |= T5X_POW_SEARCH;
+    }
+    if (AnyLevel(t3, R7H_POWER_LONG_FINGERS))
+    {
+        g |= T5X_POW_LONGFINGERS;
+    }
+    if (AnyLevel(t3, R7H_POWER_SEE_QUEUE))
+    {
+        g |= T5X_POW_SEE_QUEUE;
+    }
+    if (AnyLevel(t4, R7H_POWER_STAT_ANY))
+    {
+        g |= T5X_POW_STAT_ANY;
+    }
+    if (AnyLevel(t3, R7H_POWER_STEAL))
+    {
+        g |= T5X_POW_STEAL;
+    }
+    if (AnyLevel(t4, R7H_POWER_TEL_ANYWHERE))
+    {
+        g |= T5X_POW_TEL_ANYWHR;
+    }
+    if (AnyLevel(t4, R7H_POWER_TEL_ANYTHING))
+    {
+        g |= T5X_POW_TEL_UNRST;
+    }
+    if (AnyLevel(t4, R7H_POWER_NOKILL))
+    {
+        g |= T5X_POW_UNKILLABLE;
+    }
+    return g;
+}
+
+int convert_r7h_power2(int f2)
+{
+    int g = 0;
+    if (f2 & R7H_BUILDER)
+    {
+         g |= T5X_POW_BUILDER;
+    }
+    return g;
+}
+
+void T5X_GAME::ConvertFromR7H()
+{
+    SetFlags(T5X_MANDFLAGS_V2 | 2);
+
+    // Attribute names
+    //
+    for (vector<R7H_ATTRNAMEINFO *>::iterator it =  g_r7hgame.m_vAttrNames.begin(); it != g_r7hgame.m_vAttrNames.end(); ++it)
+    {
+        AddNumAndName((*it)->m_iNum, StringClone((*it)->m_pName));
+    }
+    if (!m_fNextAttr)
+    {
+        SetNextAttr(g_r7hgame.m_nNextAttr);
+    }
+
+    int dbRefMax = 0;
+    for (map<int, R7H_OBJECTINFO *, lti>::iterator it = g_r7hgame.m_mObjects.begin(); it != g_r7hgame.m_mObjects.end(); ++it)
+    {
+        if (!it->second->m_fFlags1)
+        {
+            continue;
+        }
+
+        // ROOM, THING, EXIT, and PLAYER types are the same between R7H and
+        // T5X.  No mapping is required.
+        //
+        int iType = (it->second->m_iFlags1) & T5X_TYPE_MASK;
+        if (  T5X_TYPE_ROOM != iType
+           && T5X_TYPE_THING != iType
+           && T5X_TYPE_EXIT != iType
+           && T5X_TYPE_PLAYER != iType)
+        {
+            continue;
+        }
+
+        T5X_OBJECTINFO *poi = new T5X_OBJECTINFO;
+
+        poi->SetRef(it->first);
+        poi->SetName(StringClone(it->second->m_pName));
+        if (it->second->m_fLocation)
+        {
+            int iLocation = it->second->m_dbLocation;
+            if (  T5X_TYPE_EXIT == iType
+               && -2 == iLocation)
+            {
+                poi->SetLocation(-1);
+            }
+            else
+            {
+                poi->SetLocation(iLocation);
+            }
+        }
+        if (it->second->m_fContents)
+        {
+            poi->SetContents(it->second->m_dbContents);
+        }
+        if (it->second->m_fExits)
+        {
+            poi->SetExits(it->second->m_dbExits);
+        }
+        if (it->second->m_fLink)
+        {
+            poi->SetLink(it->second->m_dbLink);
+        }
+        if (it->second->m_fNext)
+        {
+            poi->SetNext(it->second->m_dbNext);
+        }
+        if (it->second->m_fParent)
+        {
+            poi->SetParent(it->second->m_dbParent);
+        }
+        if (it->second->m_fOwner)
+        {
+            poi->SetOwner(it->second->m_dbOwner);
+        }
+        if (it->second->m_fZone)
+        {
+            poi->SetZone(it->second->m_dbZone);
+        }
+        if (it->second->m_fPennies)
+        {
+            poi->SetPennies(it->second->m_iPennies);
+        }
+
+        // Flagwords
+        //
+        int flags1 = iType;
+        int flags2 = 0;
+        int flags3 = 0;
+        if (it->second->m_fFlags1)
+        {
+            flags1 |= convert_r7h_flags1(it->second->m_iFlags1);
+        }
+        if (it->second->m_fFlags2)
+        {
+            flags2 = convert_r7h_flags2(it->second->m_iFlags2, it->second->m_iFlags3, it->second->m_iFlags4);
+        }
+        if (it->second->m_fFlags3)
+        {
+            flags3 = convert_r7h_flags3(it->second->m_iFlags3, it->second->m_iFlags4);
+        }
+
+        // Powers
+        //
+        int powers1 = 0;
+        int powers2 = 0;
+        if (it->second->m_fToggles1)
+        {
+            powers1 = convert_r7h_power1(it->second->m_iToggles3, it->second->m_iToggles4, it->second->m_iToggles5);
+        }
+        if (it->second->m_fToggles2)
+        {
+            powers2 = convert_r7h_power2(it->second->m_iFlags2);
+        }
+
+        poi->SetFlags1(flags1);
+        poi->SetFlags2(flags2);
+        poi->SetFlags3(flags3);
+        poi->SetPowers1(powers1);
+        poi->SetPowers2(powers2);
+
+        if (NULL != it->second->m_pvai)
+        {
+            vector<T5X_ATTRINFO *> *pvai = new vector<T5X_ATTRINFO *>;
+            for (vector<R7H_ATTRINFO *>::iterator itAttr = it->second->m_pvai->begin(); itAttr != it->second->m_pvai->end(); ++itAttr)
+            {
+                int iNum;
+                if (  (*itAttr)->m_fNumAndValue
+                   && convert_r7h_attr_num((*itAttr)->m_iNum, &iNum))
+                {
+                    T5X_ATTRINFO *pai = new T5X_ATTRINFO;
+                    pai->SetNumOwnerFlagsAndValue(iNum, (*itAttr)->m_dbOwner, convert_r7h_attr_flags((*itAttr)->m_iFlags), StringClone((*itAttr)->m_pValueUnencoded));
+                    pvai->push_back(pai);
+                }
+            }
+            if (0 < pvai->size())
+            {
+                poi->SetAttrs(pvai->size(), pvai);
+                pvai = NULL;
+            }
+            delete pvai;
+        }
+
+        if (it->second->m_ple)
+        {
+            T5X_LOCKEXP *ple = new T5X_LOCKEXP;
+            if (ple->ConvertFromR7H(it->second->m_ple))
+            {
+                poi->SetDefaultLock(ple);
+            }
+            else
+            {
+                delete ple;
+            }
+        }
+
+        AddObject(poi);
+
+        if (dbRefMax < it->first)
+        {
+            dbRefMax = it->first;
+        }
+    }
+    SetSizeHint(dbRefMax+1);
+    if (g_r7hgame.m_fRecordPlayers)
+    {
+        SetRecordPlayers(g_r7hgame.m_nRecordPlayers);
     }
     else
     {
