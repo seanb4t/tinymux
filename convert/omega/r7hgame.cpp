@@ -480,57 +480,11 @@ void R7H_ATTRNAMEINFO::SetNumAndName(int iNum, char *pName)
     m_pName = pName;
 }
 
-static char *EncodeString(const char *str, bool fExtraEscapes)
-{
-    static char buf[65536];
-    char *p = buf;
-    while (  '\0' != *str
-          && p < buf + sizeof(buf) - 2)
-    {
-        if (  '\\' == *str
-           || '"' == *str)
-        {
-            *p++ = '\\';
-            *p++ = *str++;
-        }
-        else if (fExtraEscapes && '\r' == *str)
-        {
-            *p++ = '\\';
-            *p++ = 'r';
-            str++;
-        }
-        else if (fExtraEscapes && '\n' == *str)
-        {
-            *p++ = '\\';
-            *p++ = 'n';
-            str++;
-        }
-        else if (fExtraEscapes && '\t' == *str)
-        {
-            *p++ = '\\';
-            *p++ = 't';
-            str++;
-        }
-        else if (fExtraEscapes && '\x1B' == *str)
-        {
-            *p++ = '\\';
-            *p++ = 'e';
-            str++;
-        }
-        else
-        {
-            *p++ = *str++;
-        }
-    }
-    *p = '\0';
-    return buf;
-}
-
-void R7H_ATTRNAMEINFO::Write(FILE *fp, bool fExtraEscapes)
+void R7H_ATTRNAMEINFO::Write(FILE *fp)
 {
     if (m_fNumAndName)
     {
-        fprintf(fp, "+A%d\n%s\n", m_iNum, EncodeString(m_pName, fExtraEscapes));
+        fprintf(fp, "+A%d\n%s\n", m_iNum, m_pName);
     }
 }
 
@@ -545,24 +499,33 @@ void R7H_OBJECTINFO::SetName(char *pName)
 
 const int r7h_locknums[] =
 {
-     42,  // A_LOCK
-     59,  // A_LENTER
-     60,  // A_LLEAVE
-     61,  // A_LPAGE
-     62,  // A_LUSE
-     63,  // A_LGIVE
-     85,  // A_LTPORT
-     86,  // A_LDROP
-     87,  // A_LRECEIVE
-     93,  // A_LLINK
-     94,  // A_LTELOUT
-     97,  // A_LUSER
-     98,  // A_LPARENT
-    127,  // A_LGET
-    209,  // A_LSPEECH
-    225,  // A_LMAIL
-    226,  // A_LOPEN
-    231,  // A_LVISIBLE
+    R7H_A_LOCK,
+    R7H_A_LENTER,
+    R7H_A_LLEAVE,
+    R7H_A_LPAGE,
+    R7H_A_LUSE,
+    R7H_A_LGIVE,
+    R7H_A_LTPORT,
+    R7H_A_LDROP,
+    R7H_A_LRECEIVE,
+    R7H_A_LLINK,
+    R7H_A_LTELOUT,
+    R7H_A_LCONTROL,
+    R7H_A_LUSER,
+    R7H_A_LPARENT,
+    R7H_A_LMAIL,
+    R7H_A_LSHARE,
+    R7H_A_LZONEWIZ,
+    R7H_A_LZONETO,
+    R7H_A_LTWINK,
+    R7H_A_LSPEECH,
+    R7H_A_LDARK,
+    R7H_A_LDROPTO,
+    R7H_A_LOPEN,
+    R7H_A_LCHOWN,
+    R7H_A_LALTNAME,
+    R7H_A_LGIVETO,
+    R7H_A_LGETFROM,
 };
 
 void R7H_OBJECTINFO::SetAttrs(int nAttrs, vector<R7H_ATTRINFO *> *pvai)
@@ -593,10 +556,10 @@ void R7H_OBJECTINFO::SetAttrs(int nAttrs, vector<R7H_ATTRINFO *> *pvai)
                 if (r7h_locknums[i] == (*it)->m_iNum)
                 {
                     (*it)->m_fIsLock = true;
-                    (*it)->m_pKeyTree = r7hl_ParseKey((*it)->m_pValue);
+                    (*it)->m_pKeyTree = r7hl_ParseKey((*it)->m_pValueEncoded);
                     if (NULL == (*it)->m_pKeyTree)
                     {
-                       fprintf(stderr, "WARNING: Lock key '%s' is not valid.\n", (*it)->m_pValue);
+                       fprintf(stderr, "WARNING: Lock key '%s' is not valid.\n", (*it)->m_pValueEncoded);
                     }
                     break;
                 }
@@ -605,15 +568,151 @@ void R7H_OBJECTINFO::SetAttrs(int nAttrs, vector<R7H_ATTRINFO *> *pvai)
     }
 }
 
+void R7H_ATTRINFO::SetNumOwnerFlagsAndValue(int iNum, int dbAttrOwner, int iAttrFlags, char *pValue)
+{
+    m_fNumAndValue = true;
+    free(m_pAllocated);
+    m_pAllocated = pValue;
+
+    m_iNum    = iNum;
+    m_pValueUnencoded  = pValue;
+    m_pValueEncoded = NULL;
+    m_iFlags  = iAttrFlags;
+    m_dbOwner = dbAttrOwner;
+
+    m_kState  = kEncode;
+}
+
 void R7H_ATTRINFO::SetNumAndValue(int iNum, char *pValue)
 {
     m_fNumAndValue = true;
-    m_iNum = iNum;
-    if (NULL != m_pValue)
+    free(m_pAllocated);
+    m_pAllocated = pValue;
+
+    m_iNum    = iNum;
+    m_pValueUnencoded  = NULL;
+    m_pValueEncoded = pValue;
+    m_iFlags  = 0;
+    m_dbOwner = R7H_NOTHING;
+
+    m_kState  = kDecode;
+}
+
+void R7H_ATTRINFO::EncodeDecode(int dbObjOwner)
+{
+    if (kEncode == m_kState)
     {
-        free(m_pValue);
+        // If using the default owner and flags (almost all attributes will),
+        // just store the string.
+        //
+        if (  (  m_dbOwner == dbObjOwner
+              || R7H_NOTHING == m_dbOwner)
+           && 0 == m_iFlags)
+        {
+            m_pValueEncoded = m_pValueUnencoded;
+        }
+        else
+        {
+            // Encode owner and flags into the attribute text.
+            //
+            if (R7H_NOTHING == m_dbOwner)
+            {
+                m_dbOwner = dbObjOwner;
+            }
+
+            char buffer[65536];
+            sprintf(buffer, "%c%d:%d:", ATR_INFO_CHAR, m_dbOwner, m_iFlags);
+            size_t n = strlen(buffer);
+            sprintf(buffer + n, "%s", m_pValueUnencoded);
+
+            delete m_pAllocated;
+            m_pAllocated = StringClone(buffer);
+
+            m_pValueEncoded = m_pAllocated;
+            m_pValueUnencoded = m_pAllocated + n;
+        }
+        m_kState = kNone;
     }
-    m_pValue = pValue;
+    else if (kDecode == m_kState)
+    {
+        // See if the first char of the attribute is the special character
+        //
+        m_iFlags = 0;
+        if (ATR_INFO_CHAR != *m_pValueEncoded)
+        {
+            m_dbOwner = dbObjOwner;
+            m_pValueUnencoded = m_pValueEncoded;
+        }
+
+        // It has the special character, crack the attr apart.
+        //
+        char *cp = m_pValueEncoded + 1;
+
+        // Get the attribute owner
+        //
+        bool neg = false;
+        if (*cp == '-')
+        {
+            neg = true;
+            cp++;
+        }
+        int tmp_owner = 0;
+        unsigned int ch = *cp;
+        while (isdigit(ch))
+        {
+            cp++;
+            tmp_owner = 10*tmp_owner + (ch-'0');
+            ch = *cp;
+        }
+        if (neg)
+        {
+            tmp_owner = -tmp_owner;
+        }
+
+        // If delimiter is not ':', just return attribute
+        //
+        if (*cp++ != ':')
+        {
+            m_dbOwner = dbObjOwner;
+            m_pValueUnencoded = m_pValueEncoded;
+            return;
+        }
+
+        // Get the attribute flags.
+        //
+        int tmp_flags = 0;
+        ch = *cp;
+        while (isdigit(ch))
+        {
+            cp++;
+            tmp_flags = 10*tmp_flags + (ch-'0');
+            ch = *cp;
+        }
+
+        // If delimiter is not ':', just return attribute.
+        //
+        if (*cp++ != ':')
+        {
+            m_dbOwner = dbObjOwner;
+            m_pValueUnencoded = m_pValueEncoded;
+            return;
+        }
+
+        // Get the attribute text.
+        //
+        if (tmp_owner < 0)
+        {
+            m_dbOwner = dbObjOwner;
+        }
+        else
+        {
+            m_dbOwner = tmp_owner;
+        }
+        m_iFlags = tmp_flags;
+        m_pValueUnencoded = cp;
+
+        m_kState = kNone;
+    }
 }
 
 void R7H_GAME::AddNumAndName(int iNum, char *pName)
@@ -672,6 +771,20 @@ void R7H_GAME::ValidateFlags() const
        || (flags & R7H_V_ATRMONEY) != 0)
     {
         fprintf(stderr, "WARNING: Expected a flatfile (with strings) instead of a structure file (with only object anchors).\n");
+    }
+}
+
+void R7H_GAME::Pass2()
+{
+    for (map<int, R7H_OBJECTINFO *, lti>::iterator itObj = m_mObjects.begin(); itObj != m_mObjects.end(); ++itObj)
+    {
+        if (NULL != itObj->second->m_pvai)
+        {
+            for (vector<R7H_ATTRINFO *>::iterator itAttr = itObj->second->m_pvai->begin(); itAttr != itObj->second->m_pvai->end(); ++itAttr)
+            {
+                (*itAttr)->EncodeDecode(itObj->second->m_dbOwner);
+            }
+        }
     }
 }
 
@@ -802,12 +915,12 @@ void R7H_GAME::Validate() const
     ValidateObjects();
 }
 
-void R7H_OBJECTINFO::Write(FILE *fp, bool bWriteLock, bool fExtraEscapes)
+void R7H_OBJECTINFO::Write(FILE *fp, bool bWriteLock)
 {
     fprintf(fp, "!%d\n", m_dbRef);
     if (NULL != m_pName)
     {
-        fprintf(fp, "%s\n", EncodeString(m_pName, fExtraEscapes));
+        fprintf(fp, "%s\n", m_pName);
     }
     if (m_fLocation)
     {
@@ -918,7 +1031,7 @@ void R7H_OBJECTINFO::Write(FILE *fp, bool bWriteLock, bool fExtraEscapes)
     {
         for (vector<R7H_ATTRINFO *>::iterator it = m_pvai->begin(); it != m_pvai->end(); ++it)
         {
-            (*it)->Write(fp, fExtraEscapes);
+            (*it)->Write(fp);
         }
     }
     fprintf(fp, "<\n");
@@ -933,9 +1046,9 @@ void R7H_ATTRINFO::Validate() const
         char buffer[65536];
         char *p = m_pKeyTree->Write(buffer);
         *p = '\0';
-        if (strcmp(m_pValue, buffer) != 0)
+        if (strcmp(m_pValueUnencoded, buffer) != 0)
         {
-            fprintf(stderr, "WARNING: Re-generated lock key '%s' does not agree with parsed key '%s'.\n", buffer, m_pValue);
+            fprintf(stderr, "WARNING: Re-generated lock key '%s' does not agree with parsed key '%s'.\n", buffer, m_pValueUnencoded);
         }
     }
 }
@@ -1026,11 +1139,11 @@ void R7H_OBJECTINFO::Validate() const
     }
 }
 
-void R7H_ATTRINFO::Write(FILE *fp, bool fExtraEscapes) const
+void R7H_ATTRINFO::Write(FILE *fp) const
 {
     if (m_fNumAndValue)
     {
-        fprintf(fp, ">%d\n%s\n", m_iNum, EncodeString(m_pValue, fExtraEscapes));
+        fprintf(fp, ">%d\n%s\n", m_iNum, m_pValueEncoded);
     }
 }
 
@@ -1038,7 +1151,6 @@ void R7H_GAME::Write(FILE *fp)
 {
     // TIMESTAMPS and escapes occured near the same time, but are not related.
     //
-    bool fExtraEscapes = false;
     fprintf(fp, "+V%d\n", m_flags);
     if (m_fSizeHint)
     {
@@ -1054,11 +1166,11 @@ void R7H_GAME::Write(FILE *fp)
     }
     for (vector<R7H_ATTRNAMEINFO *>::iterator it = m_vAttrNames.begin(); it != m_vAttrNames.end(); ++it)
     {
-        (*it)->Write(fp, fExtraEscapes);
+        (*it)->Write(fp);
     }
     for (map<int, R7H_OBJECTINFO *, lti>::iterator it = m_mObjects.begin(); it != m_mObjects.end(); ++it)
     {
-        it->second->Write(fp, (m_flags & R7H_V_ATRKEY) == 0, fExtraEscapes);
+        it->second->Write(fp, (m_flags & R7H_V_ATRKEY) == 0);
     }
 
     fprintf(fp, "***END OF DUMP***\n");
@@ -1087,76 +1199,96 @@ static int p6h_convert_type[] =
 
 static NameMask p6h_convert_obj_flags1[] =
 {
-    { "TRANSPARENT",    0x00000008UL },
-    { "WIZARD",         0x00000010UL },
-    { "LINK_OK",        0x00000020UL },
-    { "DARK",           0x00000040UL },
-    { "JUMP_OK",        0x00000080UL },
-    { "STICKY",         0x00000100UL },
-    { "DESTROY_OK",     0x00000200UL },
-    { "HAVEN",          0x00000400UL },
-    { "QUIET",          0x00000800UL },
-    { "HALT",           0x00001000UL },
-    { "DEBUG",          0x00002000UL },
-    { "GOING",          0x00004000UL },
-    { "MONITOR",        0x00008000UL },
-    { "MYOPIC",         0x00010000UL },
-    { "PUPPET",         0x00020000UL },
-    { "CHOWN_OK",       0x00040000UL },
-    { "ENTER_OK",       0x00080000UL },
-    { "VISUAL",         0x00100000UL },
-    { "OPAQUE",         0x00800000UL },
-    { "VERBOSE",        0x01000000UL },
-    { "NOSPOOF",        0x04000000UL },
-    { "SAFE",           0x10000000UL },
-    { "ROYALTY",        0x20000000UL },
-    { "AUDIBLE",        0x40000000UL },
-    { "TERSE",          0x80000000UL },
+    { "TRANSPARENT",    R7H_SEETHRU    },
+    { "WIZARD",         R7H_WIZARD     },
+    { "LINK_OK",        R7H_LINK_OK    },
+    { "DARK",           R7H_DARK       },
+    { "JUMP_OK",        R7H_JUMP_OK    },
+    { "STICKY",         R7H_STICKY     },
+    { "DESTROY_OK",     R7H_DESTROY_OK },
+    { "HAVEN",          R7H_HAVEN      },
+    { "QUIET",          R7H_QUIET      },
+    { "HALT",           R7H_HALT       },
+    { "DEBUG",          R7H_TRACE      },
+    { "GOING",          R7H_GOING      },
+    { "MONITOR",        R7H_MONITOR    },
+    { "MYOPIC",         R7H_MYOPIC     },
+    { "PUPPET",         R7H_PUPPET     },
+    { "CHOWN_OK",       R7H_CHOWN_OK   },
+    { "ENTER_OK",       R7H_ENTER_OK   },
+    { "VISUAL",         R7H_VISUAL     },
+    { "OPAQUE",         R7H_OPAQUE     },
+    { "VERBOSE",        R7H_VERBOSE    },
+    { "NOSPOOF",        R7H_NOSPOOF    },
+    { "SAFE",           R7H_SAFE       },
+    { "AUDIBLE",        R7H_HEARTHRU   },
+    { "TERSE",          R7H_TERSE      },
 };
 
 static NameMask p6h_convert_obj_flags2[] =
 {
-    { "ABODE",          0x00000002UL },
-    { "FLOATING",       0x00000004UL },
-    { "UNFINDABLE",     0x00000008UL },
-    { "LIGHT",          0x00000020UL },
-    { "ANSI",           0x00000200UL },
-    { "COLOR",          0x00000200UL },
-    { "FIXED",          0x00000800UL },
-    { "UNINSPECTED",    0x00001000UL },
-    { "NO_COMMAND",     0x00002000UL },
-    { "KEEPALIVE",      0x00004000UL },
-    { "GAGGED",         0x00040000UL },
-    { "ON-VACATION",    0x01000000UL },
-    { "SUSPECT",        0x10000000UL },
-    { "NOACCENTS",      0x20000000UL },
-    { "SLAVE",          0x80000000UL },
+    { "ABODE",          R7H_ABODE      },
+    { "FLOATING",       R7H_FLOATING   },
+    { "UNFINDABLE",     R7H_UNFINDABLE },
+    { "LIGHT",          R7H_LIGHT      },
+    { "ANSI",           R7H_ANSI|R7H_ANSICOLOR },
+    { "COLOR",          R7H_ANSI|R7H_ANSICOLOR },
+    { "SUSPECT",        R7H_SUSPECT    },
+    { "SLAVE",          R7H_SLAVE      },
 };
 
-static NameMask p6h_convert_obj_powers1[] =
+static NameMask p6h_convert_obj_flags3[] =
 {
-    { "Announce",       0x00000004UL },
-    { "Boot",           0x00000008UL },
-    { "Guest",          0x02000000UL },
-    { "Halt",           0x00000010UL },
-    { "Hide",           0x00000800UL },
-    { "Idle",           0x00001000UL },
-    { "Long_Fingers",   0x00004000UL },
-    { "No_Pay",         0x00000200UL },
-    { "No_Quota",       0x00000400UL },
-    { "Poll",           0x00800000UL },
-    { "Quotas",         0x00000001UL },
-    { "Search",         0x00002000UL },
-    { "See_All",        0x00000080UL },
-    { "See_Queue",      0x00100000UL },
-    { "Tport_Anything", 0x40000000UL },
-    { "Tport_Anywhere", 0x20000000UL },
-    { "Unkillable",     0x80000000UL },
+    { "NO_COMMAND",     R7H_NOCOMMAND  },
 };
 
-static NameMask p6h_convert_obj_powers2[] =
+static NameMask p6h_convert_obj_flags4[] =
 {
-    { "Builder",        0x00000001UL },
+};
+
+static NameMask p6h_convert_obj_toggles1[] =
+{
+    { "Boot",          1 << R7H_POWER_BOOT          },
+    { "Long_Fingers",  1 << R7H_POWER_LONG_FINGERS  },
+    { "No_Quota",      1 << R7H_POWER_FREE_QUOTA    },
+    { "Quotas",        1 << R7H_POWER_CHANGE_QUOTAS },
+    { "See_All",       1 << R7H_POWER_EX_ALL        },
+    { "See_Queue",     (1 << R7H_POWER_SEE_QUEUE) | (1 << R7H_POWER_SEE_QUEUE_ALL) },
+};
+
+static NameMask p6h_convert_obj_toggles2[] =
+{
+    { "Announce",  1 << R7H_POWER_FREE_WALL },
+    { "Halt",     (1 << R7H_POWER_HALT_QUEUE) | (1 << R7H_POWER_HALT_QUEUE_ALL) },
+    { "Search",    1 << R7H_POWER_SEARCH_ANY },
+    { "Tport_Anything", 1 << R7H_POWER_TEL_ANYTHING },
+    { "Tport_Anywhere", 1 << R7H_POWER_TEL_ANYWHERE },
+    { "Unkillable",     1 << R7H_POWER_NOKILL  },
+};
+
+static NameMask p6h_convert_obj_toggles3[] =
+{
+    { "Hide", 1 << R7H_POWER_HIDEBIT },
+};
+
+static NameMask p6h_convert_obj_toggles4[] =
+{
+};
+
+static NameMask p6h_convert_obj_toggles5[] =
+{
+};
+
+static NameMask p6h_convert_obj_toggles6[] =
+{
+};
+
+static NameMask p6h_convert_obj_toggles7[] =
+{
+};
+
+static NameMask p6h_convert_obj_toggles8[] =
+{
 };
 
 static struct
@@ -1165,190 +1297,186 @@ static struct
     int         iNum;
 } r7h_known_attrs[] =
 {
-    { "AAHEAR",         27 },
-    { "ACLONE",         20 },
-    { "ACONNECT",       39 },
-    { "ADESC",          -1 },  // rename ADESC to XADESC
-    { "ADESCRIBE",      36 },  // rename ADESCRIBE to ADESC
-    { "ADFAIL",         -1 },  // rename ADFAIL to XADFAIL
-    { "ADISCONNECT",    40 },
-    { "ADROP",          14 },
-    { "AEFAIL",         68 },
-    { "AENTER",         35 },
-    { "AFAIL",          -1 }, // rename AFAIL to XAFAIL
-    { "AFAILURE",       13 }, // rename AFAILURE to AFAIL
-    { "AGFAIL",         -1 }, // rename AGFAIL to XAGFAIL
-    { "AHEAR",          29 },
-    { "AKILL",          -1 }, // rename AKILL to XAKILL
-    { "ALEAVE",         52 },
-    { "ALFAIL",         71 },
-    { "ALIAS",          58 },
+    { "AAHEAR",         R7H_A_AAHEAR      },
+    { "ACLONE",         R7H_A_ACLONE      },
+    { "ACONNECT",       R7H_A_ACONNECT    },
+    { "ADESC",          -1                },  // rename ADESC to XADESC
+    { "ADESCRIBE",      R7H_A_ADESC       },  // rename ADESCRIBE to ADESC
+    { "ADFAIL",         -1                },  // rename ADFAIL to XADFAIL
+    { "ADISCONNECT",    R7H_A_ADISCONNECT },
+    { "ADROP",          R7H_A_ADROP       },
+    { "AEFAIL",         R7H_A_AEFAIL      },
+    { "AENTER",         R7H_A_AENTER      },
+    { "AFAIL",          -1                }, // rename AFAIL to XAFAIL
+    { "AFAILURE",       R7H_A_AFAIL       }, // rename AFAILURE to AFAIL
+    { "AGFAIL",         -1                }, // rename AGFAIL to XAGFAIL
+    { "AHEAR",          R7H_A_AHEAR       },
+    { "AKILL",          -1                }, // rename AKILL to XAKILL
+    { "ALEAVE",         R7H_A_ALEAVE      },
+    { "ALFAIL",         R7H_A_ALFAIL      },
+    { "ALIAS",          R7H_A_ALIAS       },
     { "ALLOWANCE",      -1 },
-    { "AMAIL",         202 },
-    { "AMHEAR",         28 },
-    { "AMOVE",          57 },
-    { "APAY",           -1 }, // rename APAY to XAPAY
-    { "APAYMENT",       21 }, // rename APAYMENT to APAY
-    { "ARFAIL",         -1 },
-    { "ASUCC",          -1 }, // rename ASUCC to XASUCC
-    { "ASUCCESS",       12 }, // rename AUCCESS to ASUCC
-    { "ATFAIL",         -1 }, // rename ATFAIL to XATFAIL
-    { "ATPORT",         82 },
-    { "ATOFAIL",        -1 }, // rename ATOFAIL to XATOFAIL
-    { "AUFAIL",         77 },
-    { "AUSE",           16 },
-    { "AWAY",           73 },
-    { "CHARGES",        17 },
-    { "CMDCHECK",       -1 }, // rename CMDCHECK to XCMDCHECK
-    { "COMMENT",        44 },
-    { "CONFORMAT",     242 },
-    { "CONNINFO",       -1 },
-    { "COST",           24 },
-    { "CREATED",        -1 }, // rename CREATED to XCREATED
-    { "DAILY",          -1 }, // rename DAILY to XDAILY
-    { "DESC",           -1 }, // rename DESC to XDESC
-    { "DESCRIBE",        6 }, // rename DESCRIBE to DESC
-    { "DEFAULTLOCK",    -1 }, // rename DEFAULTLOCK to XDEFAULTLOCK
-    { "DESCFORMAT",    244 },
-    { "DESTINATION",   216 },
-    { "DESTROYER",      -1 }, // rename DESTROYER to XDESTROYER
-    { "DFAIL",          -1 }, // rename DFAIL to XDFAIL
-    { "DROP",            9 },
-    { "DROPLOCK",       -1 }, // rename DROPLOCK to XDROPLOCK
-    { "EALIAS",         64 },
-    { "EFAIL",          66 },
-    { "ENTER",          33 },
-    { "ENTERLOCK",      -1 }, // rename ENTERLOCK to XENTERLOCK
-    { "EXITFORMAT",    241 },
-    { "EXITTO",        216 },
-    { "FAIL",           -1 }, // rename FAIL to XFAIL
-    { "FAILURE",         3 }, // rename FAILURE to FAIL
-    { "FILTER",         92 },
-    { "FORWARDLIST",    95 },
-    { "GETFROMLOCK",    -1 }, // rename GETFROMLOCK to XGETFROMLOCK
-    { "GFAIL",          -1 }, // rename GFAIL to XGFAIL
-    { "GIVELOCK",       -1 }, // rename GIVELOCK to XGIVELOCK
-    { "HTDESC",         -1 }, // rename HTDESC to XHTDESC
-    { "IDESC",          -1 }, // rename IDESC to XIDESC
-    { "IDESCRIBE",      32 }, // rename IDESCRIBE to IDESC
-    { "IDLE",           74 },
-    { "IDLETIMEOUT",    -1 }, // rename IDLETIMEOUT to XIDLETIMEOUT
-    { "INFILTER",       91 },
-    { "INPREFIX",       89 },
-    { "KILL",           -1 }, // rename KILL to XKILL
-    { "LALIAS",         65 },
-    { "LAST",           30 },
-    { "LASTPAGE",       -1 }, // rename LASTPAGE to XLASTPAGE
-    { "LASTSITE",       88 },
-    { "LASTIP",        144 },
-    { "LEAVE",          50 },
-    { "LEAVELOCK",      -1 }, // rename LEAVELOCK to XLEAVELOCK
-    { "LFAIL",          69 },
-    { "LINKLOCK",       -1 }, // rename LINKLOCK to XLINKLOCK
-    { "LISTEN",         26 },
-    { "LOGINDATA",      -1 }, // rename LOGINDATA to XLOGINDATA
-    { "MAILCURF",       -1 }, // rename MAILCURF to XMAILCURF
-    { "MAILFLAGS",      -1 }, // rename MAILFLAGS to XMAILFLAGS
-    { "MAILFOLDERS",    -1 }, // rename MAILFOLDERS to XMAILFOLDERS
-    { "MAILLOCK",       -1 }, // rename MAILLOCK to XMAILLOCK
-    { "MAILMSG",        -1 }, // rename MAILMSG to XMAILMSG
-    { "MAILSUB",        -1 }, // rename MAILSUB to XMAILSUB
-    { "MAILSUCC",       -1 }, // rename MAILSUCC to XMAILSUCC
-    { "MAILTO",         -1 }, // rename MAILTO to XMAILTO
-    { "MFAIL",          -1 }, // rename MFAIL to XMFAIL
-    { "MODIFIED",       -1 }, // rename MODIFIED to XMODIFIED
-    { "MONIKER",        -1 }, // rename MONIKER to XMONIKER
-    { "MOVE",           55 },
-    { "NAME",           -1 }, // rename NAME to XNAME
-    { "NAMEFORMAT",    243 },
-    { "ODESC",          -1 }, // rename ODESC to XODESC
-    { "ODESCRIBE",      37 }, // rename ODESCRIBE to ODESC
-    { "ODFAIL",         -1 }, // rename ODFAIL to XODFAIL
-    { "ODROP",           8 },
-    { "OEFAIL",         67 },
-    { "OENTER",         53 },
-    { "OFAIL",          -1 }, // rename OFAIL to XOFAIL
-    { "OFAILURE",        2 }, // rename OFAILURE to OFAIL
-    { "OGFAIL",         -1 }, // rename OGFAIL to XOGFAIL
-    { "OKILL",          -1 }, // rename OKILL to XOKILL
-    { "OLEAVE",         51 },
-    { "OLFAIL",         70 },
-    { "OMOVE",          56 },
-    { "OPAY",           -1 }, // rename OPAY to XOPAY
-    { "OPAYMENT",       22 }, // rename OPAYMENT to OPAY
-    { "OPENLOCK",       -1 }, // rename OPENLOCK to XOPENLOCK
-    { "ORFAIL",         -1 }, // rename ORFAIL to XORFAIL
-    { "OSUCC",          -1 }, // rename OSUCC to XSUCC
-    { "OSUCCESS",        1 }, // rename OSUCCESS to OSUCC
-    { "OTFAIL",         -1 }, // rename OTFAIL to XOTFAIL
-    { "OTPORT",         80 },
-    { "OTOFAIL",        -1 }, // rename OTOFAIL to XOTOFAIL
-    { "OUFAIL",         76 },
-    { "OUSE",           46 },
-    { "OXENTER",        34 },
-    { "OXLEAVE",        54 },
-    { "OXTPORT",        81 },
-    { "PAGELOCK",       -1 }, // rename PAGELOCK to XPAGELOCK
-    { "PARENTLOCK",     -1 }, // rename PARENTLOCK to XPARENTLOCK
-    { "PAY",            -1 }, // rename PAY to XPAY
-    { "PAYMENT",        23 }, // rename PAYMENT to PAY
-    { "PREFIX",         90 },
-    { "PROGCMD",        -1 }, // rename PROGCMD to XPROGCMD
-    { "QUEUEMAX",       -1 }, // rename QUEUEMAX to XQUEUEMAX
-    { "QUOTA",          -1 }, // rename QUOTA to XQUOTA
-    { "RECEIVELOCK",    -1 },
-    { "REJECT",         -1 }, // rename REJECT to XREJECT
-    { "REASON",         -1 }, // rename REASON to XREASON
-    { "RFAIL",          -1 }, // rename RFAIL to XRFAIL
-    { "RQUOTA",         38 },
-    { "RUNOUT",         18 },
-    { "SAYSTRING",      -1 }, // rename SAYSTRING to XSAYSTRING
-    { "SEMAPHORE",      47 },
-    { "SEX",             7 },
-    { "SIGNATURE",      -1 }, // rename SIGNATURE to XSIGNATURE
-    { "MAILSIGNATURE", 203 }, // rename MAILSIGNATURE to SIGNATURE
-    { "SPEECHMOD",      -1 }, // rename SPEECHMOD to XSPEECHMOD
-    { "SPEECHLOCK",     -1 }, // rename SPEECHLOCK to XSPEECHLOCK
-    { "STARTUP",        19 },
-    { "SUCC",            4 },
-    { "TELOUTLOCK",     -1 }, // rename TELOUTLOCK to XTELOUTLOCK
-    { "TFAIL",          -1 }, // rename TFAIL to XTFAIL
-    { "TIMEOUT",        -1 }, // rename TIMEOUT to XTIMEOUT
-    { "TPORT",          79 },
-    { "TPORTLOCK",      -1 }, // rename TPORTLOCK to XTPORTLOCK
-    { "TOFAIL",         -1 }, // rename TOFAIL to XTOFAIL
-    { "UFAIL",          75 },
-    { "USE",            45 },
-    { "USELOCK",        -1 },
-    { "USERLOCK",       -1 },
-    { "VA",            100 },
-    { "VB",            101 },
-    { "VC",            102 },
-    { "VD",            103 },
-    { "VE",            104 },
-    { "VF",            105 },
-    { "VG",            106 },
-    { "VH",            107 },
-    { "VI",            108 },
-    { "VJ",            109 },
-    { "VK",            110 },
-    { "VL",            111 },
-    { "VM",            112 },
-    { "VRML_URL",      220 },
-    { "VN",            113 },
-    { "VO",            114 },
-    { "VP",            115 },
-    { "VQ",            116 },
-    { "VR",            117 },
-    { "VS",            118 },
-    { "VT",            119 },
-    { "VU",            120 },
-    { "VV",            121 },
-    { "VW",            122 },
-    { "VX",            123 },
-    { "VY",            124 },
-    { "VZ",            125 },
-    { "XYXXY",           5 },   // *Password
+    { "AMHEAR",         R7H_A_AMHEAR      },
+    { "AMOVE",          R7H_A_AMOVE       },
+    { "APAY",           -1                }, // rename APAY to XAPAY
+    { "APAYMENT",       R7H_A_APAY        }, // rename APAYMENT to APAY
+    { "ARFAIL",         -1                },
+    { "ASUCC",          -1                }, // rename ASUCC to XASUCC
+    { "ASUCCESS",       R7H_A_ASUCC       }, // rename ASUCCESS to ASUCC
+    { "ATFAIL",         -1                }, // rename ATFAIL to XATFAIL
+    { "ATPORT",         R7H_A_ATPORT      },
+    { "ATOFAIL",        -1                }, // rename ATOFAIL to XATOFAIL
+    { "AUFAIL",         R7H_A_AUFAIL      },
+    { "AUSE",           R7H_A_AUSE        },
+    { "AWAY",           R7H_A_AWAY        },
+    { "CHARGES",        R7H_A_CHARGES     },
+    { "CMDCHECK",       -1                }, // rename CMDCHECK to XCMDCHECK
+    { "COMMENT",        R7H_A_COMMENT     },
+    { "CONFORMAT",      R7H_A_LCON_FMT    },
+    { "CONNINFO",       -1                },
+    { "COST",           R7H_A_COST        },
+    { "CREATED",        -1                }, // rename CREATED to XCREATED
+    { "DAILY",          -1                }, // rename DAILY to XDAILY
+    { "DESC",           -1                }, // rename DESC to XDESC
+    { "DESCRIBE",       R7H_A_DESC        }, // rename DESCRIBE to DESC
+    { "DEFAULTLOCK",    -1                }, // rename DEFAULTLOCK to XDEFAULTLOCK
+    { "DESTROYER",      -1                }, // rename DESTROYER to XDESTROYER
+    { "DFAIL",          -1                }, // rename DFAIL to XDFAIL
+    { "DROP",           R7H_A_DROP        },
+    { "DROPLOCK",       -1                }, // rename DROPLOCK to XDROPLOCK
+    { "EALIAS",         R7H_A_EALIAS      },
+    { "EFAIL",          R7H_A_EFAIL       },
+    { "ENTER",          R7H_A_ENTER       },
+    { "ENTERLOCK",      -1                }, // rename ENTERLOCK to XENTERLOCK
+    { "EXITFORMAT",     R7H_A_LEXIT_FMT   },
+    { "EXITTO",         R7H_A_EXITTO      },
+    { "FAIL",           -1                }, // rename FAIL to XFAIL
+    { "FAILURE",        R7H_A_FAIL        }, // rename FAILURE to FAIL
+    { "FILTER",         R7H_A_FILTER      },
+    { "FORWARDLIST",    R7H_A_FORWARDLIST },
+    { "GETFROMLOCK",    -1                }, // rename GETFROMLOCK to XGETFROMLOCK
+    { "GFAIL",          -1                }, // rename GFAIL to XGFAIL
+    { "GIVELOCK",       -1                }, // rename GIVELOCK to XGIVELOCK
+    { "HTDESC",         -1                }, // rename HTDESC to XHTDESC
+    { "IDESC",          -1                }, // rename IDESC to XIDESC
+    { "IDESCRIBE",      R7H_A_IDESC       }, // rename IDESCRIBE to IDESC
+    { "IDLE",           R7H_A_IDLE        },
+    { "IDLETIMEOUT",    -1                }, // rename IDLETIMEOUT to XIDLETIMEOUT
+    { "INFILTER",       R7H_A_INFILTER    },
+    { "INPREFIX",       R7H_A_INPREFIX    },
+    { "KILL",           -1                }, // rename KILL to XKILL
+    { "LALIAS",         R7H_A_LALIAS      },
+    { "LAST",           R7H_A_LAST        },
+    { "LASTPAGE",       -1                }, // rename LASTPAGE to XLASTPAGE
+    { "LASTSITE",       R7H_A_LASTSITE    },
+    { "LASTIP",         R7H_A_LASTIP      },
+    { "LEAVE",          R7H_A_LEAVE       },
+    { "LEAVELOCK",      -1                }, // rename LEAVELOCK to XLEAVELOCK
+    { "LFAIL",          R7H_A_LFAIL       },
+    { "LINKLOCK",       -1                }, // rename LINKLOCK to XLINKLOCK
+    { "LISTEN",         R7H_A_LISTEN      },
+    { "LOGINDATA",      -1                }, // rename LOGINDATA to XLOGINDATA
+    { "MAILCURF",       -1                }, // rename MAILCURF to XMAILCURF
+    { "MAILFLAGS",      -1                }, // rename MAILFLAGS to XMAILFLAGS
+    { "MAILFOLDERS",    -1                }, // rename MAILFOLDERS to XMAILFOLDERS
+    { "MAILLOCK",       -1                }, // rename MAILLOCK to XMAILLOCK
+    { "MAILMSG",        -1                }, // rename MAILMSG to XMAILMSG
+    { "MAILSUB",        -1                }, // rename MAILSUB to XMAILSUB
+    { "MAILSUCC",       -1                }, // rename MAILSUCC to XMAILSUCC
+    { "MAILTO",         -1                }, // rename MAILTO to XMAILTO
+    { "MFAIL",          -1                }, // rename MFAIL to XMFAIL
+    { "MODIFIED",       -1                }, // rename MODIFIED to XMODIFIED
+    { "MONIKER",        -1                }, // rename MONIKER to XMONIKER
+    { "MOVE",           R7H_A_MOVE        },
+    { "NAME",           -1                }, // rename NAME to XNAME
+    { "NAMEFORMAT",     R7H_A_NAME_FMT    },
+    { "ODESC",          -1                }, // rename ODESC to XODESC
+    { "ODESCRIBE",      R7H_A_ODESC       }, // rename ODESCRIBE to ODESC
+    { "ODFAIL",         -1                }, // rename ODFAIL to XODFAIL
+    { "ODROP",          R7H_A_ODROP       },
+    { "OEFAIL",         R7H_A_OEFAIL      },
+    { "OENTER",         R7H_A_OENTER      },
+    { "OFAIL",          -1                }, // rename OFAIL to XOFAIL
+    { "OFAILURE",       R7H_A_OFAIL       }, // rename OFAILURE to OFAIL
+    { "OGFAIL",         -1                }, // rename OGFAIL to XOGFAIL
+    { "OKILL",          -1                }, // rename OKILL to XOKILL
+    { "OLEAVE",         R7H_A_OLEAVE      },
+    { "OLFAIL",         R7H_A_OLFAIL      },
+    { "OMOVE",          R7H_A_OMOVE       },
+    { "OPAY",           -1                }, // rename OPAY to XOPAY
+    { "OPAYMENT",       R7H_A_OPAY        }, // rename OPAYMENT to OPAY
+    { "OPENLOCK",       -1                }, // rename OPENLOCK to XOPENLOCK
+    { "ORFAIL",         -1                }, // rename ORFAIL to XORFAIL
+    { "OSUCC",          -1                }, // rename OSUCC to XSUCC
+    { "OSUCCESS",       R7H_A_OSUCC       }, // rename OSUCCESS to OSUCC
+    { "OTFAIL",         -1                }, // rename OTFAIL to XOTFAIL
+    { "OTPORT",         R7H_A_OTPORT      },
+    { "OTOFAIL",        -1                }, // rename OTOFAIL to XOTOFAIL
+    { "OUFAIL",         R7H_A_OUFAIL      },
+    { "OUSE",           R7H_A_OUSE        },
+    { "OXENTER",        R7H_A_OXENTER     },
+    { "OXLEAVE",        R7H_A_OXLEAVE     },
+    { "OXTPORT",        R7H_A_OXTPORT     },
+    { "PAGELOCK",       -1                }, // rename PAGELOCK to XPAGELOCK
+    { "PARENTLOCK",     -1                }, // rename PARENTLOCK to XPARENTLOCK
+    { "PAY",            -1                }, // rename PAY to XPAY
+    { "PAYMENT",        R7H_A_PAY         }, // rename PAYMENT to PAY
+    { "PREFIX",         R7H_A_PREFIX      },
+    { "PROGCMD",        -1                }, // rename PROGCMD to XPROGCMD
+    { "QUEUEMAX",       -1                }, // rename QUEUEMAX to XQUEUEMAX
+    { "QUOTA",          -1                }, // rename QUOTA to XQUOTA
+    { "RECEIVELOCK",    -1                },
+    { "REJECT",         -1                }, // rename REJECT to XREJECT
+    { "REASON",         -1                }, // rename REASON to XREASON
+    { "RFAIL",          -1                }, // rename RFAIL to XRFAIL
+    { "RQUOTA",         R7H_A_RQUOTA      },
+    { "RUNOUT",         R7H_A_RUNOUT      },
+    { "SAYSTRING",      -1                }, // rename SAYSTRING to XSAYSTRING
+    { "SEMAPHORE",      R7H_A_SEMAPHORE   },
+    { "SEX",            R7H_A_SEX         },
+    { "SIGNATURE",      -1                }, // rename SIGNATURE to XSIGNATURE
+    { "MAILSIGNATURE",  R7H_A_MAILSIG     }, // rename MAILSIGNATURE to SIGNATURE
+    { "SPEECHMOD",      -1                }, // rename SPEECHMOD to XSPEECHMOD
+    { "SPEECHLOCK",     -1                }, // rename SPEECHLOCK to XSPEECHLOCK
+    { "STARTUP",        R7H_A_STARTUP     },
+    { "SUCC",           R7H_A_SUCC        },
+    { "TELOUTLOCK",     -1                }, // rename TELOUTLOCK to XTELOUTLOCK
+    { "TFAIL",          -1                }, // rename TFAIL to XTFAIL
+    { "TIMEOUT",        -1                }, // rename TIMEOUT to XTIMEOUT
+    { "TPORT",          R7H_A_TPORT       },
+    { "TPORTLOCK",      -1                }, // rename TPORTLOCK to XTPORTLOCK
+    { "TOFAIL",         -1                }, // rename TOFAIL to XTOFAIL
+    { "UFAIL",          R7H_A_UFAIL       },
+    { "USE",            R7H_A_USE         },
+    { "USELOCK",        -1                },
+    { "USERLOCK",       -1                },
+    { "VA",             R7H_A_VA          },
+    { "VB",             R7H_A_VA+1        },
+    { "VC",             R7H_A_VA+2        },
+    { "VD",             R7H_A_VA+3        },
+    { "VE",             R7H_A_VA+4        },
+    { "VF",             R7H_A_VA+5        },
+    { "VG",             R7H_A_VA+6        },
+    { "VH",             R7H_A_VA+7        },
+    { "VI",             R7H_A_VA+8        },
+    { "VJ",             R7H_A_VA+9        },
+    { "VK",             R7H_A_VA+10       },
+    { "VL",             R7H_A_VA+11       },
+    { "VM",             R7H_A_VA+12       },
+    { "VN",             R7H_A_VA+13       },
+    { "VO",             R7H_A_VA+14       },
+    { "VP",             R7H_A_VA+15       },
+    { "VQ",             R7H_A_VA+16       },
+    { "VR",             R7H_A_VA+17       },
+    { "VS",             R7H_A_VA+18       },
+    { "VT",             R7H_A_VA+19       },
+    { "VU",             R7H_A_VA+20       },
+    { "VV",             R7H_A_VA+21       },
+    { "VW",             R7H_A_VA+22       },
+    { "VX",             R7H_A_VA+23       },
+    { "VY",             R7H_A_VA+24       },
+    { "VZ",             R7H_A_VA+25       },
+    { "XYXXY",          R7H_A_PASS        },   // *Password
 };
 
 static struct
@@ -1357,39 +1485,34 @@ static struct
     int         iNum;
 } p6h_locknames[] =
 {
-    { "Basic",       42 },
-    { "Enter",       59 },
-    { "Use",         62 },
-    { "Zone",        -1 },
-    { "Page",        61 },
-    { "Teleport",    85 },
-    { "Speech",     209 },
-    { "Parent",      98 },
-    { "Link",        93 },
-    { "Leave",       60 },
-    { "Drop",        86 },
-    { "Give",        63 },
-    { "Receive",     87 },
-    { "Mail",       225 },
-    { "Take",       127 },
-    { "Open",       225 },
+    { "Basic",       R7H_A_LOCK     },
+    { "Enter",       R7H_A_LENTER   },
+    { "Use",         R7H_A_LUSE     },
+    { "Zone",        -1             },
+    { "Page",        R7H_A_LPAGE    },
+    { "Teleport",    R7H_A_LTPORT   },
+    { "Speech",      R7H_A_LSPEECH  },
+    { "Parent",      R7H_A_LPARENT  },
+    { "Link",        R7H_A_LLINK    },
+    { "Leave",       R7H_A_LLEAVE   },
+    { "Drop",        R7H_A_LDROP    },
+    { "Give",        R7H_A_LGIVE    },
+    { "Receive",     R7H_A_LRECEIVE },
+    { "Mail",        R7H_A_LMAIL    },
+    { "Take",        R7H_A_LGETFROM },
+    { "Open",        R7H_A_LOPEN    },
 };
 
 static NameMask p6h_attr_flags[] =
 {
-    { "no_command",     0x00000100UL },
-    { "private",        0x00001000UL },
-    { "no_clone",       0x00010000UL },
-    { "wizard",         0x00000004UL },
-    { "visual",         0x00000800UL },
-    { "mortal_dark",    0x00000008UL },
-    { "hidden",         0x00000002UL },
-    { "regexp",         0x00008000UL },
-    { "case",           0x00040000UL },
-    { "locked",         0x00000040UL },
-    { "internal",       0x00000010UL },
-    { "debug",          0x00080000UL },
-    { "noname",         0x00400000UL },
+    { "private",        R7H_AF_PRIVATE  },
+    { "no_clone",       R7H_AF_NOCLONE  },
+    { "wizard",         R7H_AF_WIZARD   },
+    { "visual",         R7H_AF_VISUAL   },
+    { "mortal_dark",    R7H_AF_MDARK    },
+    { "hidden",         R7H_AF_DARK     },
+    { "locked",         R7H_AF_LOCK     },
+    { "internal",       R7H_AF_INTERNAL },
 };
 
 static char *EncodeAttrValue(int iObjOwner, int iAttrOwner, int iAttrFlags, char *pValue)
@@ -1544,11 +1667,21 @@ void R7H_GAME::ConvertFromP6H()
             poi->SetPennies(it->second->m_iPennies);
         }
 
+        int flags1   = iType;
+        int flags2   = 0;
+        int flags3   = 0;
+        int flags4   = 0;
+        int toggles1 = 0;
+        int toggles2 = 0;
+        int toggles3 = 0;
+        int toggles4 = 0;
+        int toggles5 = 0;
+        int toggles6 = 0;
+        int toggles7 = 0;
+        int toggles8 = 0;
+
         // Flagwords
         //
-        int flags1 = iType;
-        int flags2 = 0;
-        int flags3 = 0;
         char *pFlags = it->second->m_pFlags;
         if (NULL != pFlags)
         {
@@ -1571,47 +1704,146 @@ void R7H_GAME::ConvertFromP6H()
                     flags2 |= p6h_convert_obj_flags2[i].mask;
                 }
             }
+
+            // Third flagword
+            //
+            for (int i = 0; i < sizeof(p6h_convert_obj_flags3)/sizeof(p6h_convert_obj_flags3[0]); i++)
+            {
+                if (NULL != strcasestr(pFlags, p6h_convert_obj_flags3[i].pName))
+                {
+                    flags3 |= p6h_convert_obj_flags3[i].mask;
+                }
+            }
+
+            // Fourth flagword
+            //
+            for (int i = 0; i < sizeof(p6h_convert_obj_flags4)/sizeof(p6h_convert_obj_flags4[0]); i++)
+            {
+                if (NULL != strcasestr(pFlags, p6h_convert_obj_flags4[i].pName))
+                {
+                    flags4 |= p6h_convert_obj_flags4[i].mask;
+                }
+            }
+
+            // KEEPALIVE flag is special.
+            //
+            if (NULL != strcasestr(pFlags, "KEEPALIVE"))
+            {
+                toggles2 |= R7H_TOG_KEEPALIVE;
+            }
         }
 
         // Powers
         //
-        int powers1 = 0;
-        int powers2 = 0;
         char *pPowers = it->second->m_pPowers;
         if (NULL != pPowers)
         {
-            // First powerword
+            // First toggleword
             //
-            for (int i = 0; i < sizeof(p6h_convert_obj_powers1)/sizeof(p6h_convert_obj_powers1[0]); i++)
+            for (int i = 0; i < sizeof(p6h_convert_obj_toggles1)/sizeof(p6h_convert_obj_toggles1[0]); i++)
             {
-                if (NULL != strcasestr(pPowers, p6h_convert_obj_powers1[i].pName))
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_toggles1[i].pName))
                 {
-                    powers1 |= p6h_convert_obj_powers1[i].mask;
+                    toggles1 |= p6h_convert_obj_toggles1[i].mask;
                 }
             }
 
-            // Second powerword
+            // Second toggleword
             //
-            for (int i = 0; i < sizeof(p6h_convert_obj_powers2)/sizeof(p6h_convert_obj_powers2[0]); i++)
+            for (int i = 0; i < sizeof(p6h_convert_obj_toggles2)/sizeof(p6h_convert_obj_toggles2[0]); i++)
             {
-                if (NULL != strcasestr(pPowers, p6h_convert_obj_powers2[i].pName))
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_toggles2[i].pName))
                 {
-                    powers2 |= p6h_convert_obj_powers2[i].mask;
+                    toggles2 |= p6h_convert_obj_toggles2[i].mask;
                 }
             }
 
-            // Immortal power is special.
+            // Third toggleword
+            //
+            for (int i = 0; i < sizeof(p6h_convert_obj_toggles3)/sizeof(p6h_convert_obj_toggles3[0]); i++)
+            {
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_toggles3[i].pName))
+                {
+                    toggles3 |= p6h_convert_obj_toggles3[i].mask;
+                }
+            }
+
+            // Fourth toggleword
+            //
+            for (int i = 0; i < sizeof(p6h_convert_obj_toggles4)/sizeof(p6h_convert_obj_toggles4[0]); i++)
+            {
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_toggles4[i].pName))
+                {
+                    toggles4 |= p6h_convert_obj_toggles4[i].mask;
+                }
+            }
+
+            // Fifth toggleword
+            //
+            for (int i = 0; i < sizeof(p6h_convert_obj_toggles5)/sizeof(p6h_convert_obj_toggles5[0]); i++)
+            {
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_toggles5[i].pName))
+                {
+                    toggles5 |= p6h_convert_obj_toggles5[i].mask;
+                }
+            }
+
+            // Sixth toggleword
+            //
+            for (int i = 0; i < sizeof(p6h_convert_obj_toggles6)/sizeof(p6h_convert_obj_toggles6[0]); i++)
+            {
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_toggles6[i].pName))
+                {
+                    toggles6 |= p6h_convert_obj_toggles6[i].mask;
+                }
+            }
+
+            // Seventh toggleword
+            //
+            for (int i = 0; i < sizeof(p6h_convert_obj_toggles7)/sizeof(p6h_convert_obj_toggles7[0]); i++)
+            {
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_toggles7[i].pName))
+                {
+                    toggles7 |= p6h_convert_obj_toggles7[i].mask;
+                }
+            }
+
+            // Eighth toggleword
+            //
+            for (int i = 0; i < sizeof(p6h_convert_obj_toggles8)/sizeof(p6h_convert_obj_toggles8[0]); i++)
+            {
+                if (NULL != strcasestr(pPowers, p6h_convert_obj_toggles8[i].pName))
+                {
+                    toggles8 |= p6h_convert_obj_toggles8[i].mask;
+                }
+            }
+
+            // Immortal, Builder, and Guest powers are special.
             //
             if (NULL != strcasestr(pPowers, "Immortal"))
             {
-                flags1 |= 0x00200000;
+                flags1 |= R7H_IMMORTAL;
+            }
+            if (NULL != strcasestr(pPowers, "Builder"))
+            {
+                flags2 |= R7H_BUILDER;
+            }
+            if (NULL != strcasestr(pPowers, "Guest"))
+            {
+                flags2 |= R7H_GUEST_FLAG;
             }
         }
         poi->SetFlags1(flags1);
         poi->SetFlags2(flags2);
         poi->SetFlags3(flags3);
-        //poi->SetPowers1(powers1);
-        //poi->SetPowers2(powers2);
+        poi->SetToggles1(toggles1);
+        poi->SetToggles2(toggles2);
+        poi->SetToggles3(toggles3);
+        poi->SetToggles4(toggles4);
+        poi->SetToggles5(toggles5);
+        poi->SetToggles6(toggles6);
+        poi->SetToggles7(toggles7);
+        poi->SetToggles8(toggles8);
 
         if (it->second->m_fCreated)
         {
@@ -1627,7 +1859,7 @@ void R7H_GAME::ConvertFromP6H()
 
                     R7H_ATTRINFO *pai = new R7H_ATTRINFO;
                     pai->SetNumAndValue(R7H_A_CREATED_TIME, StringClone(pTime));
-        
+
                     if (NULL == poi->m_pvai)
                     {
                         vector<R7H_ATTRINFO *> *pvai = new vector<R7H_ATTRINFO *>;
@@ -1658,7 +1890,7 @@ void R7H_GAME::ConvertFromP6H()
 
                     R7H_ATTRINFO *pai = new R7H_ATTRINFO;
                     pai->SetNumAndValue(R7H_A_MODIFY_TIME, StringClone(pTime));
-        
+
                     if (NULL == poi->m_pvai)
                     {
                         vector<R7H_ATTRINFO *> *pvai = new vector<R7H_ATTRINFO *>;
@@ -1699,7 +1931,7 @@ void R7H_GAME::ConvertFromP6H()
                     {
                         R7H_ATTRINFO *pai = new R7H_ATTRINFO;
                         int iNum = AttrNamesKnown[pAttrName];
-                        if (5 == iNum)
+                        if (R7H_A_PASS == iNum)
                         {
                             char buffer[200];
                             sprintf(buffer, "$P6H$$%s", (*itAttr)->m_pValue);
@@ -1756,26 +1988,33 @@ void R7H_GAME::ConvertFromP6H()
                         R7H_LOCKEXP *pLock = new R7H_LOCKEXP;
                         if (pLock->ConvertFromP6H((*itLock)->m_pKeyTree))
                         {
-                            char buffer[65536];
-                            char *p = pLock->Write(buffer);
-                            *p = '\0';
-
-                            // Add it.
-                            //
-                            R7H_ATTRINFO *pai = new R7H_ATTRINFO;
-                            pai->SetNumAndValue(iLock, StringClone(buffer));
-
-                            if (NULL == poi->m_pvai)
+                            if (R7H_A_LOCK == iLock)
                             {
-                                vector<R7H_ATTRINFO *> *pvai = new vector<R7H_ATTRINFO *>;
-                                pvai->push_back(pai);
-                                poi->SetAttrs(pvai->size(), pvai);
+                                poi->SetDefaultLock(pLock);
                             }
                             else
                             {
-                                poi->m_pvai->push_back(pai);
-                                poi->m_fAttrCount = true;
-                                poi->m_nAttrCount = poi->m_pvai->size();
+                                char buffer[65536];
+                                char *p = pLock->Write(buffer);
+                                *p = '\0';
+
+                                // Add it.
+                                //
+                                R7H_ATTRINFO *pai = new R7H_ATTRINFO;
+                                pai->SetNumAndValue(iLock, StringClone(buffer));
+
+                                if (NULL == poi->m_pvai)
+                                {
+                                    vector<R7H_ATTRINFO *> *pvai = new vector<R7H_ATTRINFO *>;
+                                    pvai->push_back(pai);
+                                    poi->SetAttrs(pvai->size(), pvai);
+                                }
+                                else
+                                {
+                                    poi->m_pvai->push_back(pai);
+                                    poi->m_fAttrCount = true;
+                                    poi->m_nAttrCount = poi->m_pvai->size();
+                                }
                             }
                         }
                         else
@@ -1822,12 +2061,11 @@ void R7H_GAME::ResetPassword()
             {
                 for (vector<R7H_ATTRINFO *>::iterator itAttr = itObj->second->m_pvai->begin(); itAttr != itObj->second->m_pvai->end(); ++itAttr)
                 {
-                    if (5 == (*itAttr)->m_iNum)
+                    if (R7H_A_PASS == (*itAttr)->m_iNum)
                     {
                         // Change it to 'potrzebie'.
                         //
-                        free((*itAttr)->m_pValue);
-                        (*itAttr)->m_pValue = StringClone("XXNHc95o0HhAc");
+                        (*itAttr)->SetNumAndValue(R7H_A_PASS, StringClone("XXNHc95o0HhAc"));
 
                         fFound = true;
                     }
@@ -1839,7 +2077,7 @@ void R7H_GAME::ResetPassword()
                 // Add it.
                 //
                 R7H_ATTRINFO *pai = new R7H_ATTRINFO;
-                pai->SetNumAndValue(5, StringClone("XXNHc95o0HhAc"));
+                pai->SetNumAndValue(R7H_A_PASS, StringClone("XXNHc95o0HhAc"));
 
                 if (NULL == itObj->second->m_pvai)
                 {
