@@ -33,7 +33,7 @@ char *StringClone(const char *str)
 void Usage()
 {
     fprintf(stderr, "Version: %s\n", OMEGA_VERSION);
-    fprintf(stderr, "omega <options> <infile> <outfile>\n");
+    fprintf(stderr, "omega <options> <infile> [<outfile>]\n");
     fprintf(stderr, "Supported options:\n");
     fprintf(stderr, "  -i <type>      Input file type (p6h, r7h, t5x, t6h)\n");
     fprintf(stderr, "  -o <type>      Output file type (p6h, r7h, t5x, t6h)\n");
@@ -41,7 +41,10 @@ void Usage()
     fprintf(stderr, "  -c <charset>   Input charset\n");
     fprintf(stderr, "  -d <charset>   Output charset\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "  -1   Reset #1 password to 'potrzebie'\n");
+    fprintf(stderr, "  -1             Reset #1 password to 'potrzebie'\n");
+    fprintf(stderr, "  -x <dbref>     Extract <dbref> in @decomp format\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "If no <outfile> is given, output is directed to standard out.\n");
 }
 
 typedef enum
@@ -76,6 +79,8 @@ int main(int argc, char *argv[])
     FILE *fpout = NULL;
 
     bool fResetPassword = false;
+    bool fExtract = false;
+    int  dbExtract;
     ServerType eInputType = eAuto;
     ServerType eOutputType = eServerUnknown;
     ServerVersion eOutputVersion = eSame;
@@ -83,7 +88,7 @@ int main(int argc, char *argv[])
     Charset eOutputCharset = eCharsetUnknown;
 
     int ch;
-    while ((ch = getopt(argc, argv, "1i:o:v:c:d:")) != -1)
+    while ((ch = getopt(argc, argv, "1i:o:v:c:d:x:")) != -1)
     {
         switch (ch)
         {
@@ -236,6 +241,18 @@ int main(int argc, char *argv[])
             }
             break;
 
+        case 'x':
+            {
+                fExtract = true;
+                char *p = optarg;
+                if ('#' == *p)
+                {
+                    p++;
+                }
+                dbExtract = atoi(p);
+            }
+            break;
+
         case '?':
         default:
             fprintf(stderr, "Command-line option not recognized.\n");
@@ -249,9 +266,10 @@ int main(int argc, char *argv[])
 
     // We should have two remaining arguments (input and output file).
     //
-    if (2 != argc)
+    if (  1 != argc
+       && 2 != argc)
     {
-        fprintf(stderr, "After options, there should be only two command-line arguments left.\n");
+        fprintf(stderr, "After the options, there should be one or two command-line arguments left.\n");
         Usage();
         return 1;
     }
@@ -262,12 +280,19 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Input file, %s, not found.\n", argv[0]);
         return 1;
     }
-    fpout = fopen(argv[1], "wb");
-    if (NULL == fpout)
+    if (1 == argc)
     {
-        fclose(fpin);
-        fprintf(stderr, "Output file, %s, not found.\n", argv[1]);
-        return 1;
+        fpout = stdout;
+    }
+    else
+    {
+        fpout = fopen(argv[1], "wb");
+        if (NULL == fpout)
+        {
+            fclose(fpin);
+            fprintf(stderr, "Output file, %s, not found.\n", argv[1]);
+            return 1;
+        }
     }
 
     if (eAuto == eInputType)
@@ -615,24 +640,49 @@ int main(int argc, char *argv[])
 
     // Output stage.
     //
-    if (ePennMUSH == eOutputType)
+    if (fExtract)
     {
-        g_p6hgame.Write(fpout);
+        if (ePennMUSH == eOutputType)
+        {
+            g_p6hgame.Extract(fpout, dbExtract);
+        }
+        else if (eTinyMUX == eOutputType)
+        {
+            g_t5xgame.Extract(fpout, dbExtract);
+        }
+        else if (eTinyMUSH == eOutputType)
+        {
+            g_t6hgame.Extract(fpout, dbExtract);
+        }
+        else if (eRhostMUSH == eOutputType)
+        {
+            g_r7hgame.Extract(fpout, dbExtract);
+        }
     }
-    else if (eTinyMUX == eOutputType)
+    else
     {
-        g_t5xgame.Write(fpout);
-    }
-    else if (eTinyMUSH == eOutputType)
-    {
-        g_t6hgame.Write(fpout);
-    }
-    else if (eRhostMUSH == eOutputType)
-    {
-        g_r7hgame.Write(fpout);
+        if (ePennMUSH == eOutputType)
+        {
+            g_p6hgame.Write(fpout);
+        }
+        else if (eTinyMUX == eOutputType)
+        {
+            g_t5xgame.Write(fpout);
+        }
+        else if (eTinyMUSH == eOutputType)
+        {
+            g_t6hgame.Write(fpout);
+        }
+        else if (eRhostMUSH == eOutputType)
+        {
+            g_r7hgame.Write(fpout);
+        }
     }
 
-    fclose(fpout);
+    if (2 == argc)
+    {
+        fclose(fpout);
+    }
     fclose(fpin);
     return 0;
 }
