@@ -318,10 +318,9 @@ int main(int argc, char *argv[])
 
     if (  eOutputVersion == eLegacyTwo
        && (  ePennMUSH == eOutputType
-          || eRhostMUSH == eOutputType
-          || eTinyMUSH == eOutputType))
+          || eRhostMUSH == eOutputType))
     {
-        fprintf(stderr, "PennMUSH, RhostMUSH, and TinyMUSH do not currently have support for flatfiles earlier than their chosen legacy version.\n");
+        fprintf(stderr, "PennMUSH and RhostMUSH do not currently have support for flatfiles earlier than their chosen legacy version.\n");
         Usage();
         return 1;
     }
@@ -376,6 +375,7 @@ int main(int argc, char *argv[])
         r7hin = fpin;
         r7hparse();
         r7hin = NULL;
+        g_r7hgame.Pass2();
         g_r7hgame.Validate();
     }
     else
@@ -420,6 +420,20 @@ int main(int argc, char *argv[])
                 && eTinyMUX  == eOutputType)
         {
             g_t5xgame.ConvertFromT6H();
+            g_t5xgame.Pass2();
+            g_t5xgame.Validate();
+        }
+        else if (  ePennMUSH == eInputType
+                && eRhostMUSH == eOutputType)
+        {
+            g_r7hgame.ConvertFromP6H();
+            g_r7hgame.Pass2();
+            g_r7hgame.Validate();
+        }
+        else if (  eRhostMUSH == eInputType
+                && eTinyMUX  == eOutputType)
+        {
+            g_t5xgame.ConvertFromR7H();
             g_t5xgame.Pass2();
             g_t5xgame.Validate();
         }
@@ -543,6 +557,32 @@ int main(int argc, char *argv[])
             break;
         }
     }
+    else if (eTinyMUSH == eOutputType)
+    {
+        switch (eOutputVersion)
+        {
+        case eSame:
+            break;
+
+        case eLatest:
+            g_t6hgame.Upgrade();
+            g_t6hgame.Pass2();
+            g_t6hgame.Validate();
+            break;
+
+        case eLegacyOne:
+            g_t6hgame.Midgrade();
+            g_t6hgame.Pass2();
+            g_t6hgame.Validate();
+            break;
+
+        case eLegacyTwo:
+            g_t6hgame.Downgrade();
+            g_t6hgame.Pass2();
+            g_t6hgame.Validate();
+            break;
+        }
+    }
 
     // Optionally reset password.
     //
@@ -565,6 +605,7 @@ int main(int argc, char *argv[])
         else if (eRhostMUSH == eOutputType)
         {
             g_r7hgame.ResetPassword();
+            g_r7hgame.Pass2();
         }
         else
         {
