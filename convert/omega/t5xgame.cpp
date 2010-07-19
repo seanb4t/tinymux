@@ -811,27 +811,31 @@ void T5X_OBJECTINFO::SetName(char *pName)
     m_pName = pName;
 }
 
-const int t5x_locknums[] =
+static struct
 {
-    T5X_A_LOCK,
-    T5X_A_LENTER,
-    T5X_A_LLEAVE,
-    T5X_A_LPAGE,
-    T5X_A_LUSE,
-    T5X_A_LGIVE,
-    T5X_A_LTPORT,
-    T5X_A_LDROP,
-    T5X_A_LRECEIVE,
-    T5X_A_LLINK,
-    T5X_A_LTELOUT,
-    T5X_A_LUSER,
-    T5X_A_LPARENT,
-    T5X_A_LCONTROL,
-    T5X_A_LGET,
-    T5X_A_LSPEECH,
-    T5X_A_LMAIL,
-    T5X_A_LOPEN,
-    T5X_A_LVISIBLE,
+    const char *pName;
+    int         iNum;
+} t5x_locks[] =
+{
+    { "defaultlock", T5X_A_LOCK     },
+    { "enterlock",   T5X_A_LENTER   },
+    { "leavelock",   T5X_A_LLEAVE   },
+    { "pagelock",    T5X_A_LPAGE    },
+    { "uselock",     T5X_A_LUSE     },
+    { "givelock",    T5X_A_LGIVE    },
+    { "tportlock",   T5X_A_LTPORT   },
+    { "droplock",    T5X_A_LDROP    },
+    { "receivelock", T5X_A_LRECEIVE },
+    { "linklock",    T5X_A_LLINK    },
+    { "teloutlock",  T5X_A_LTELOUT  },
+    { "userlock",    T5X_A_LUSER    },
+    { "parentlock",  T5X_A_LPARENT  },
+    { "controllock", T5X_A_LCONTROL },
+    { "getfromlock", T5X_A_LGET     },
+    { "speechlock",  T5X_A_LSPEECH  },
+    { "maillock",    T5X_A_LMAIL    },
+    { "openlock",    T5X_A_LOPEN    },
+    { "visiblelock", T5X_A_LVISIBLE },
 };
 
 void T5X_OBJECTINFO::SetAttrs(int nAttrs, vector<T5X_ATTRINFO *> *pvai)
@@ -857,9 +861,9 @@ void T5X_OBJECTINFO::SetAttrs(int nAttrs, vector<T5X_ATTRINFO *> *pvai)
         for (vector<T5X_ATTRINFO *>::iterator it = m_pvai->begin(); it != m_pvai->end(); ++it)
         {
             (*it)->m_fIsLock = false;
-            for (int i = 0; i < sizeof(t5x_locknums)/sizeof(t5x_locknums[0]); i++)
+            for (int i = 0; i < sizeof(t5x_locks)/sizeof(t5x_locks[0]); i++)
             {
-                if (t5x_locknums[i] == (*it)->m_iNum)
+                if (t5x_locks[i].iNum == (*it)->m_iNum)
                 {
                     char *pValue = (NULL != (*it)->m_pValueUnencoded) ? (*it)->m_pValueUnencoded : (*it)->m_pValueEncoded;
                     (*it)->m_fIsLock = true;
@@ -4259,4 +4263,920 @@ void T5X_ATTRINFO::Downgrade()
 {
     char *p = (char *)convert_color((UTF8 *)m_pValueUnencoded);
     SetNumOwnerFlagsAndValue(m_iNum, m_dbOwner, m_iFlags, (char *)ConvertToLatin((UTF8 *)p));
+}
+
+void T5X_GAME::Extract(FILE *fp, int dbExtract) const
+{
+    int ver = (m_flags & T5X_V_MASK);
+    bool fUnicode = (3 == ver);
+
+    map<int, T5X_OBJECTINFO *, lti>::const_iterator itFound;
+    itFound = m_mObjects.find(dbExtract);
+    if (itFound == m_mObjects.end())
+    {
+        fprintf(stderr, "WARNING: Object #%d does not exist in the database.\n", dbExtract);
+    }
+    else
+    {
+        itFound->second->Extract(fp, fUnicode);
+    }
+}
+
+static bool scanpoints(const char *p, const char **pend, const char **q, size_t *qn)
+{
+    *q = NULL;
+    if ('\xEF' == p[0])
+    {
+        *pend = p + 3;
+        *qn = 3;
+        if ('\x94' == p[1])
+        {
+            if ('\x80' == p[2])
+            {
+                *q = "%xn";
+            }
+            else if ('\x81' == p[2])
+            {
+                *q = "%xh";
+            }
+            else if ('\x84' == p[2])
+            {
+                *q = "%xu";
+            }
+            else if ('\x85' == p[2])
+            {
+                *q = "%xf";
+            }
+            else if ('\x87' == p[2])
+            {
+                *q = "%xi";
+            }
+        }
+        else if ('\x98' == p[1])
+        {
+            if ('\x80' == p[2])
+            {
+                *q = "%xx";
+            }
+            else if ('\x81' == p[2])
+            {
+                *q = "%xr";
+            }
+            else if ('\x82' == p[2])
+            {
+                *q = "%xg";
+            }
+            else if ('\x83' == p[2])
+            {
+                *q = "%xy";
+            }
+            else if ('\x84' == p[2])
+            {
+                *q = "%xb";
+            }
+            else if ('\x85' == p[2])
+            {
+                *q = "%xm";
+            }
+            else if ('\x86' == p[2])
+            {
+                *q = "%xc";
+            }
+            else if ('\x87' == p[2])
+            {
+                *q = "%xw";
+            }
+        }
+        else if ('\x9C' == p[1])
+        {
+            if ('\x80' == p[2])
+            {
+                *q = "%xX";
+            }
+            else if ('\x81' == p[2])
+            {
+                *q = "%xR";
+            }
+            else if ('\x82' == p[2])
+            {
+                *q = "%xG";
+            }
+            else if ('\x83' == p[2])
+            {
+                *q = "%xY";
+            }
+            else if ('\x84' == p[2])
+            {
+                *q = "%xB";
+            }
+            else if ('\x85' == p[2])
+            {
+                *q = "%xM";
+            }
+            else if ('\x86' == p[2])
+            {
+                *q = "%xC";
+            }
+            else if ('\x87' == p[2])
+            {
+                *q = "%xW";
+            }
+        }
+    }
+
+    if (NULL != *q)
+    {
+        return true;
+    }
+    else
+    {
+        *pend = strchr(p, '\xEF');
+        if (NULL == *pend)
+        {
+            *pend = p + strlen(p);
+        }
+        return false;
+    }
+}
+
+static bool scanansi(const char *p, const char **pend, const char **q, size_t *qn)
+{
+    *q = NULL;
+    if (ESC_CHAR == p[0])
+    {
+        *qn = 3;
+        if (  '[' == p[1]
+           && '\0' != p[2]
+           && 'm' == p[3])
+        {
+            *pend = p + 4;
+            if ('0' == p[2])
+            {
+                *q = "%xn";
+            }
+            else if ('1' == p[2])
+            {
+                *q = "%xh";
+            }
+            else if ('4' == p[2])
+            {
+                *q = "%xu";
+            }
+            else if ('5' == p[2])
+            {
+                *q = "%xf";
+            }
+            else if ('7' == p[2])
+            {
+                *q = "%xi";
+            }
+        }
+        else if (  '[' == p[1]
+                && '\0' != p[2]
+                && '\0' != p[3]
+                && 'm' == p[4])
+        {
+            *pend = p + 5;
+            if ('3' == p[2])
+            {
+                if ('0' == p[3])
+                {
+                    *q = "%xx";
+                }
+                else if ('1' == p[3])
+                {
+                    *q = "%xr";
+                }
+                else if ('2' == p[3])
+                {
+                    *q = "%xg";
+                }
+                else if ('3' == p[3])
+                {
+                    *q = "%xy";
+                }
+                else if ('4' == p[3])
+                {
+                    *q = "%xb";
+                }
+                else if ('5' == p[3])
+                {
+                    *q = "%xm";
+                }
+                else if ('6' == p[3])
+                {
+                    *q = "%xc";
+                }
+                else if ('7' == p[3])
+                {
+                    *q = "%xw";
+                }
+            }
+            else if ('4' == p[2])
+            {
+                if ('0' == p[3])
+                {
+                    *q = "%xX";
+                }
+                else if ('1' == p[3])
+                {
+                    *q = "%xR";
+                }
+                else if ('2' == p[3])
+                {
+                    *q = "%xG";
+                }
+                else if ('3' == p[3])
+                {
+                    *q = "%xY";
+                }
+                else if ('4' == p[3])
+                {
+                    *q = "%xB";
+                }
+                else if ('5' == p[3])
+                {
+                    *q = "%xM";
+                }
+                else if ('6' == p[3])
+                {
+                    *q = "%xC";
+                }
+                else if ('7' == p[3])
+                {
+                    *q = "%xW";
+                }
+            }
+        }
+    }
+
+    if (NULL != *q)
+    {
+        return true;
+    }
+    else
+    {
+        *pend = strchr(p, ESC_CHAR);
+        if (NULL == *pend)
+        {
+            *pend = p + strlen(p);
+        }
+        return false;
+    }
+}
+
+static char *EncodeSubstitutions(bool fUnicode, char *p)
+{
+    static char buffer[65536];
+    char *q = buffer;
+
+    if (fUnicode)
+    {
+        while (  '\0' != *p
+              && q < buffer + sizeof(buffer) - 1)
+        {
+            const char *pSub;
+            const char *pEnd;
+            size_t nSub;
+            size_t pn;
+            if (scanpoints(p, &pEnd, &pSub, &nSub))
+            {
+                size_t ncpy = nSub;
+                size_t nskp = pEnd - p;
+                if (q + ncpy < buffer + sizeof(buffer) - 1)
+                {
+                    memcpy(q, pSub, ncpy);
+                    q += ncpy;
+                }
+                p += nskp;
+            }
+            else
+            {
+                size_t ncpy = pEnd-p;
+                size_t nskp = pEnd-p;
+                if (q + ncpy < buffer + sizeof(buffer) - 1)
+                {
+                    memcpy(q, p, ncpy);
+                    q += ncpy;
+                }
+                p += nskp;
+            }
+        }
+    }
+    else
+    {
+        while (  '\0' != *p
+              && q < buffer + sizeof(buffer) - 1)
+        {
+            const char *pSub;
+            const char *pEnd;
+            size_t nSub;
+            size_t pn;
+            if (scanansi(p, &pEnd, &pSub, &nSub))
+            {
+                size_t ncpy = nSub;
+                size_t nskp = pEnd - p;
+                if (q + ncpy < buffer + sizeof(buffer) - 1)
+                {
+                    memcpy(q, pSub, ncpy);
+                    q += ncpy;
+                }
+                p += nskp;
+            }
+            else
+            {
+                size_t ncpy = pEnd-p;
+                size_t nskp = pEnd-p;
+                if (q + ncpy < buffer + sizeof(buffer) - 1)
+                {
+                    memcpy(q, p, ncpy);
+                    q += ncpy;
+                }
+                p += nskp;
+            }
+        }
+    }
+    *q = '\0';
+    return buffer;
+}
+
+static char *StripColor(bool fUnicode, char *p)
+{
+    static char buffer[65536];
+    char *q = buffer;
+
+    if (fUnicode)
+    {
+        while (  '\0' != *p
+              && q < buffer + sizeof(buffer) - 1)
+        {
+            const char *pSub;
+            const char *pEnd;
+            size_t nSub;
+            size_t pn;
+            if (!scanpoints(p, &pEnd, &pSub, &nSub))
+            {
+                size_t ncpy = pEnd-p;
+                size_t nskp = pEnd-p;
+                if (q + ncpy < buffer + sizeof(buffer) - 1)
+                {
+                    memcpy(q, p, ncpy);
+                    q += ncpy;
+                }
+                p += nskp;
+            }
+            else
+            {
+                size_t nskp = pEnd-p;
+                p += nskp;
+            }
+        }
+    }
+    else
+    {
+        while (  '\0' != *p
+              && q < buffer + sizeof(buffer) - 1)
+        {
+            const char *pSub;
+            const char *pEnd;
+            size_t nSub;
+            size_t pn;
+            if (!scanansi(p, &pEnd, &pSub, &nSub))
+            {
+                size_t ncpy = pEnd-p;
+                size_t nskp = pEnd-p;
+                if (q + ncpy < buffer + sizeof(buffer) - 1)
+                {
+                    memcpy(q, p, ncpy);
+                    q += ncpy;
+                }
+                p += nskp;
+            }
+            else
+            {
+                size_t nskp = pEnd-p;
+                p += nskp;
+            }
+        }
+    }
+    *q = '\0';
+    return buffer;
+}
+
+static NameMask t5x_flags1[] =
+{
+    { "TRANSPARENT", T5X_SEETHRU      },
+    { "WIZARD",      T5X_WIZARD       },
+    { "LINK_OK",     T5X_LINK_OK      },
+    { "DARK",        T5X_DARK         },
+    { "JUMP_OK",     T5X_JUMP_OK      },
+    { "STICKY",      T5X_STICKY       },
+    { "DESTROY_OK",  T5X_DESTROY_OK   },
+    { "HAVE",        T5X_HAVEN        },
+    { "QUIET",       T5X_QUIET        },
+    { "HALT",        T5X_HALT         },
+    { "TRACE",       T5X_TRACE        },
+    { "MONITOR",     T5X_MONITOR      },
+    { "MYOPIC",      T5X_MYOPIC       },
+    { "PUPPET",      T5X_PUPPET       },
+    { "CHOWN_OK",    T5X_CHOWN_OK     },
+    { "ENTER_OK",    T5X_ENTER_OK     },
+    { "VISUAL",      T5X_VISUAL       },
+    { "IMMORTAL",    T5X_IMMORTAL     },
+    { "OPAQUE",      T5X_OPAQUE       },
+    { "VERBOSE",     T5X_VERBOSE      },
+    { "INHERIT",     T5X_INHERIT      },
+    { "NOSPOOF",     T5X_NOSPOOF      },
+    { "SAFE",        T5X_SAFE         },
+    { "ROYALTY",     T5X_ROYALTY      },
+    { "AUDIBLE",     T5X_HEARTHRU     },
+    { "TERSE",       T5X_TERSE        },
+};
+
+static NameMask t5x_flags2[] =
+{
+    { "KEY",         T5X_KEY          },
+    { "ABODE",       T5X_ABODE        },
+    { "FLOATING",    T5X_FLOATING     },
+    { "UNFINDABLE",  T5X_UNFINDABLE   },
+    { "PARENT_OK",   T5X_PARENT_OK    },
+    { "LIGHT",       T5X_LIGHT        },
+    { "AUDITORIUM",  T5X_AUDITORIUM   },
+    { "ANSI",        T5X_ANSI         },
+    { "HEAD",        T5X_HEAD_FLAG    },
+    { "FIXED",       T5X_FIXED        },
+    { "UNINSPECTED", T5X_UNINSPECTED  },
+    { "NO_COMMAND",  T5X_NO_COMMAND   },
+    { "KEEPALIVE",   T5X_KEEPALIVE    },
+    { "NOBLEED",     T5X_NOBLEED      },
+    { "STAFF",       T5X_STAFF        },
+    { "GAGGED",      T5X_GAGGED       },
+    { "OPEN_OK",     T5X_OPEN_OK      },
+    { "VACATION",    T5X_VACATION     },
+    { "HTML",        T5X_HTML         },
+    { "BLIND",       T5X_BLIND        },
+    { "SUSPECT",     T5X_SUSPECT      },
+    { "ASCII",       T5X_ASCII        },
+    { "SLAVE",       T5X_SLAVE        },
+};
+
+static NameMask t5x_flags3[] =
+{
+    { "SITEMON", T5X_SITEMON          },
+    { "UNICODE", T5X_UNICODE          },
+    { "MARKER0", T5X_MARK_0           },
+    { "MARKER1", T5X_MARK_1           },
+    { "MARKER2", T5X_MARK_2           },
+    { "MARKER3", T5X_MARK_3           },
+    { "MARKER4", T5X_MARK_4           },
+    { "MARKER5", T5X_MARK_5           },
+    { "MARKER6", T5X_MARK_6           },
+    { "MARKER7", T5X_MARK_7           },
+    { "MARKER8", T5X_MARK_8           },
+    { "MARKER9", T5X_MARK_9           },
+};
+
+void T5X_OBJECTINFO::Extract(FILE *fp, bool fUnicode) const
+{
+    fprintf(fp, "@@ Extracting #%d\n", m_dbRef);
+    if (fUnicode)
+    {
+        fprintf(fp, "@@ encoding is UTF-8\n", m_dbRef);
+    }
+    else
+    {
+        fprintf(fp, "@@ encoding is latin-1\n", m_dbRef);
+    }
+    if (NULL != m_pName)
+    {
+        fprintf(fp, "@@ %s\n", EncodeSubstitutions(fUnicode, m_pName));
+    }
+    char *pStrippedObjName = StringClone(StripColor(fUnicode, m_pName));
+
+    // Object flags.
+    //
+    if (m_fFlags1)
+    {
+        bool fFirst = true;
+        for (int i = 0; i < sizeof(t5x_flags1)/sizeof(t5x_flags1[0]); i++)
+        {
+            if (m_iFlags1 & t5x_flags1[i].mask)
+            {
+                if (fFirst)
+                {
+                    fFirst = false;
+                    fprintf(fp, "@set %s=", pStrippedObjName);
+                }
+                else
+                {
+                    fprintf(fp, " ");
+                }
+                fprintf(fp, "%s", t5x_flags1[i].pName);
+            }
+        }
+        if (!fFirst)
+        {
+            fprintf(fp, "\n");
+        }
+    }
+
+    if (m_fFlags2)
+    {
+        bool fFirst = true;
+        for (int i = 0; i < sizeof(t5x_flags2)/sizeof(t5x_flags2[0]); i++)
+        {
+            if (m_iFlags2 & t5x_flags2[i].mask)
+            {
+                if (fFirst)
+                {
+                    fFirst = false;
+                    fprintf(fp, "@set %s=", pStrippedObjName);
+                }
+                else
+                {
+                    fprintf(fp, " ");
+                }
+                fprintf(fp, "%s", t5x_flags2[i].pName);
+            }
+        }
+        if (!fFirst)
+        {
+            fprintf(fp, "\n");
+        }
+    }
+
+    if (m_fFlags3)
+    {
+        bool fFirst = true;
+        for (int i = 0; i < sizeof(t5x_flags3)/sizeof(t5x_flags3[0]); i++)
+        {
+            if (m_iFlags3 & t5x_flags3[i].mask)
+            {
+                if (fFirst)
+                {
+                    fFirst = false;
+                    fprintf(fp, "@set %s=", pStrippedObjName);
+                }
+                else
+                {
+                    fprintf(fp, " ");
+                }
+                fprintf(fp, "%s", t5x_flags3[i].pName);
+            }
+        }
+        if (!fFirst)
+        {
+            fprintf(fp, "\n");
+        }
+    }
+
+    // Extract attribute values.
+    //
+    if (NULL != m_pvai)
+    {
+        for (vector<T5X_ATTRINFO *>::iterator it = m_pvai->begin(); it != m_pvai->end(); ++it)
+        {
+            (*it)->Extract(fp, fUnicode, pStrippedObjName);
+        }
+    }
+    free(pStrippedObjName);
+}
+
+static struct
+{
+    const char *pName;
+    int         iNum;
+} t5x_attr_names[] =
+{
+    { "Aahear",      T5X_A_AAHEAR       },
+    { "Aclone",      T5X_A_ACLONE       },
+    { "Aconnect",    T5X_A_ACONNECT     },
+    { "ACreate",     T5X_A_ACREATE      },
+    { "Adesc",       T5X_A_ADESC        },
+    { "ADestroy",    T5X_A_ADESTROY     },
+    { "Adfail",      T5X_A_ADFAIL       },
+    { "Adisconnect", T5X_A_ADISCONNECT  },
+    { "Adrop",       T5X_A_ADROP        },
+    { "Aefail",      T5X_A_AEFAIL       },
+    { "Aenter",      T5X_A_AENTER       },
+    { "Afail",       T5X_A_AFAIL        },
+    { "Agfail",      T5X_A_AGFAIL       },
+    { "Ahear",       T5X_A_AHEAR        },
+    { "Akill",       T5X_A_AKILL        },
+    { "Aleave",      T5X_A_ALEAVE       },
+    { "Alfail",      T5X_A_ALFAIL       },
+    { "Alias",       T5X_A_ALIAS        },
+    { "Allowance",   T5X_A_ALLOWANCE    },
+    { "Amail",       T5X_A_AMAIL        },
+    { "Amhear",      T5X_A_AMHEAR       },
+    { "Amove",       T5X_A_AMOVE        },
+    { "Aparent",     T5X_A_APARENT      },
+    { "Apay",        T5X_A_APAY         },
+    { "Arfail",      T5X_A_ARFAIL       },
+    { "Asucc",       T5X_A_ASUCC        },
+    { "Atfail",      T5X_A_ATFAIL       },
+    { "Atport",      T5X_A_ATPORT       },
+    { "Atofail",     T5X_A_ATOFAIL      },
+    { "Aufail",      T5X_A_AUFAIL       },
+    { "Ause",        T5X_A_AUSE         },
+    { "Away",        T5X_A_AWAY         },
+    { "Charges",     T5X_A_CHARGES      },
+    { "CmdCheck",    T5X_A_CMDCHECK     },
+    { "Comjoin",     T5X_A_COMJOIN      },
+    { "Comleave",    T5X_A_COMLEAVE     },
+    { "Comment",     T5X_A_COMMENT      },
+    { "Comoff",      T5X_A_COMOFF       },
+    { "Comon",       T5X_A_COMON        },
+    { "ConFormat",   T5X_A_CONFORMAT    },
+    { "Cost",        T5X_A_COST         },
+    { "Created",     T5X_A_CREATED      },
+    { "Daily",       T5X_A_DAILY        },
+    { "Desc",        T5X_A_DESC         },
+    { "DefaultLock", T5X_A_LOCK         },
+    { "DescFormat",  T5X_A_DESCFORMAT   },
+    { "Destroyer",   T5X_A_DESTROYER    },
+    { "Dfail",       T5X_A_DFAIL        },
+    { "Drop",        T5X_A_DROP         },
+    { "DropLock",    T5X_A_LDROP        },
+    { "Ealias",      T5X_A_EALIAS       },
+    { "Efail",       T5X_A_EFAIL        },
+    { "Enter",       T5X_A_ENTER        },
+    { "EnterLock",   T5X_A_LENTER       },
+    { "ExitFormat",  T5X_A_EXITFORMAT   },
+    { "ExitTo",      T5X_A_EXITVARDEST  },
+    { "Fail",        T5X_A_FAIL         },
+    { "Filter",      T5X_A_FILTER       },
+    { "Forwardlist", T5X_A_FORWARDLIST  },
+    { "GetFromLock", T5X_A_LGET         },
+    { "Gfail",       T5X_A_GFAIL        },
+    { "GiveLock",    T5X_A_LGIVE        },
+    { "Idesc",       T5X_A_IDESC        },
+    { "Idle",        T5X_A_IDLE         },
+    { "IdleTimeout", T5X_A_IDLETMOUT    },
+    { "Infilter",    T5X_A_INFILTER     },
+    { "Inprefix",    T5X_A_INPREFIX     },
+    { "Kill",        T5X_A_KILL         },
+    { "Lalias",      T5X_A_LALIAS       },
+    { "Last",        T5X_A_LAST         },
+    { "Lastpage",    T5X_A_LASTPAGE     },
+    { "Lastsite",    T5X_A_LASTSITE     },
+    { "LastIP",      T5X_A_LASTIP       },
+    { "Leave",       T5X_A_LEAVE        },
+    { "LeaveLock",   T5X_A_LLEAVE       },
+    { "Lfail",       T5X_A_LFAIL        },
+    { "LinkLock",    T5X_A_LLINK        },
+    { "Listen",      T5X_A_LISTEN       },
+    { "Logindata",   T5X_A_LOGINDATA    },
+    { "Mailcurf",    T5X_A_MAILCURF     },
+    { "Mailflags",   T5X_A_MAILFLAGS    },
+    { "Mailfolders", T5X_A_MAILFOLDERS  },
+    { "MailLock",    T5X_A_LMAIL        },
+    { "Mailmsg",     T5X_A_MAILMSG      },
+    { "Mailsub",     T5X_A_MAILSUB      },
+    { "Mailsucc",    T5X_A_MAIL         },
+    { "Mailto",      T5X_A_MAILTO       },
+    { "Mfail",       T5X_A_MFAIL        },
+    { "Modified",    T5X_A_MODIFIED     },
+    { "Moniker",     T5X_A_MONIKER      },
+    { "Move",        T5X_A_MOVE         },
+    { "Name",        T5X_A_NAME         },
+    { "NameFormat",  T5X_A_NAMEFORMAT   },
+    { "Newobjs",     T5X_A_NEWOBJS      },
+    { "Odesc",       T5X_A_ODESC        },
+    { "Odfail",      T5X_A_ODFAIL       },
+    { "Odrop",       T5X_A_ODROP        },
+    { "Oefail",      T5X_A_OEFAIL       },
+    { "Oenter",      T5X_A_OENTER       },
+    { "Ofail",       T5X_A_OFAIL        },
+    { "Ogfail",      T5X_A_OGFAIL       },
+    { "Okill",       T5X_A_OKILL        },
+    { "Oleave",      T5X_A_OLEAVE       },
+    { "Olfail",      T5X_A_OLFAIL       },
+    { "Omove",       T5X_A_OMOVE        },
+    { "Opay",        T5X_A_OPAY         },
+    { "OpenLock",    T5X_A_LOPEN        },
+    { "Orfail",      T5X_A_ORFAIL       },
+    { "Osucc",       T5X_A_OSUCC        },
+    { "Otfail",      T5X_A_OTFAIL       },
+    { "Otport",      T5X_A_OTPORT       },
+    { "Otofail",     T5X_A_OTOFAIL      },
+    { "Oufail",      T5X_A_OUFAIL       },
+    { "Ouse",        T5X_A_OUSE         },
+    { "Oxenter",     T5X_A_OXENTER      },
+    { "Oxleave",     T5X_A_OXLEAVE      },
+    { "Oxtport",     T5X_A_OXTPORT      },
+    { "PageLock",    T5X_A_LPAGE        },
+    { "ParentLock",  T5X_A_LPARENT      },
+    { "Pay",         T5X_A_PAY          },
+    { "Prefix",      T5X_A_PREFIX       },
+    { "ProgCmd",     T5X_A_PROGCMD      },
+    { "QueueMax",    T5X_A_QUEUEMAX     },
+    { "Quota",       T5X_A_QUOTA        },
+    { "ReceiveLock", T5X_A_LRECEIVE     },
+    { "Reject",      T5X_A_REJECT       },
+    { "Rfail",       T5X_A_RFAIL        },
+    { "Rquota",      T5X_A_RQUOTA       },
+    { "Runout",      T5X_A_RUNOUT       },
+    { "SayString",   T5X_A_SAYSTRING    },
+    { "Semaphore",   T5X_A_SEMAPHORE    },
+    { "Sex",         T5X_A_SEX          },
+    { "Signature",   T5X_A_SIGNATURE    },
+    { "SpeechMod",   T5X_A_SPEECHMOD    },
+    { "SpeechLock",  T5X_A_LSPEECH      },
+    { "Startup",     T5X_A_STARTUP      },
+    { "Succ",        T5X_A_SUCC         },
+    { "TeloutLock",  T5X_A_LTELOUT      },
+    { "Tfail",       T5X_A_TFAIL        },
+    { "Timeout",     T5X_A_TIMEOUT      },
+    { "Tport",       T5X_A_TPORT        },
+    { "TportLock",   T5X_A_LTPORT       },
+    { "Tofail",      T5X_A_TOFAIL       },
+    { "Ufail",       T5X_A_UFAIL        },
+    { "Use",         T5X_A_USE          },
+    { "UseLock",     T5X_A_LUSE         },
+    { "UserLock",    T5X_A_LUSER        },
+    { "VisibleLock", T5X_A_LVISIBLE     },
+    { "VA",          T5X_A_VA           },
+    { "VB",          T5X_A_VA + 1       },
+    { "VC",          T5X_A_VA + 2       },
+    { "VD",          T5X_A_VA + 3       },
+    { "VE",          T5X_A_VA + 4       },
+    { "VF",          T5X_A_VA + 5       },
+    { "VG",          T5X_A_VA + 6       },
+    { "VH",          T5X_A_VA + 7       },
+    { "VI",          T5X_A_VA + 8       },
+    { "VJ",          T5X_A_VA + 9       },
+    { "VK",          T5X_A_VA + 10      },
+    { "VL",          T5X_A_VA + 11      },
+    { "VM",          T5X_A_VA + 12      },
+    { "VN",          T5X_A_VA + 13      },
+    { "VO",          T5X_A_VA + 14      },
+    { "VP",          T5X_A_VA + 15      },
+    { "VQ",          T5X_A_VA + 16      },
+    { "VR",          T5X_A_VA + 17      },
+    { "VS",          T5X_A_VA + 18      },
+    { "VT",          T5X_A_VA + 19      },
+    { "VU",          T5X_A_VA + 20      },
+    { "VV",          T5X_A_VA + 21      },
+    { "VW",          T5X_A_VA + 22      },
+    { "VX",          T5X_A_VA + 23      },
+    { "VY",          T5X_A_VA + 24      },
+    { "VZ",          T5X_A_VA + 25      },
+    { "VRML_URL",    T5X_A_VRML_URL     },
+    { "HTDesc",      T5X_A_HTDESC       },
+    { "Reason",      T5X_A_REASON       },
+    { "ConnInfo",    T5X_A_CONNINFO     },
+};
+
+void T5X_ATTRINFO::Extract(FILE *fp, bool fUnicode, char *pObjName) const
+{
+    if (m_fNumAndValue)
+    {
+        if (m_iNum < A_USER_START)
+        {
+            if (m_fIsLock)
+            {
+                for (int i = 0; i < sizeof(t5x_locks)/sizeof(t5x_locks[0]); i++)
+                {
+                    if (t5x_locks[i].iNum == m_iNum)
+                    {
+                        fprintf(fp, "@lock/%s %s=%s\n", t5x_locks[i].pName, pObjName, EncodeSubstitutions(fUnicode, m_pValueUnencoded));
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < sizeof(t5x_attr_names)/sizeof(t5x_attr_names[0]); i++)
+                {
+                    if (t5x_attr_names[i].iNum == m_iNum)
+                    {
+                        if ( m_iFlags
+                           & ( T5X_AF_CONST
+                             | T5X_AF_DARK
+                             | T5X_AF_GOD
+                             | T5X_AF_NOCMD
+                             | T5X_AF_INTERNAL
+                             | T5X_AF_ODARK))
+                        {
+                            fprintf(fp, "@@ attribute is ");
+                            if (T5X_AF_CONST & m_iFlags)
+                            {
+                                fprintf(fp, "const ");
+                            }
+                            if (T5X_AF_DARK & m_iFlags)
+                            {
+                                fprintf(fp, "dark ");
+                            }
+                            if (T5X_AF_GOD & m_iFlags)
+                            {
+                                fprintf(fp, "god ");
+                            }
+                            if (T5X_AF_NOCMD & m_iFlags)
+                            {
+                                fprintf(fp, "ignore ");
+                            }
+                            if (T5X_AF_INTERNAL & m_iFlags)
+                            {
+                                fprintf(fp, "internal ");
+                            }
+                            if (T5X_AF_ODARK & m_iFlags)
+                            {
+                                fprintf(fp, "private ");
+                            }
+                            fprintf(fp, "\n");
+                        }
+                        fprintf(fp, "@%s %s=%s\n", t5x_attr_names[i].pName, pObjName, EncodeSubstitutions(fUnicode, m_pValueUnencoded));
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (vector<T5X_ATTRNAMEINFO *>::iterator itName =  g_t5xgame.m_vAttrNames.begin(); itName != g_t5xgame.m_vAttrNames.end(); ++itName)
+            {
+                if (  (*itName)->m_fNumAndName
+                   && (*itName)->m_iNum == m_iNum)
+                {
+                    char *pAttrName = strchr((*itName)->m_pName, ':');
+                    if (NULL != pAttrName)
+                    {
+                        pAttrName++;
+                        fprintf(fp, "&%s %s=%s\n", pAttrName, pObjName, EncodeSubstitutions(fUnicode, m_pValueUnencoded));
+                        if ( m_iFlags
+                           & ( T5X_AF_CASE
+                             | T5X_AF_DARK
+                             | T5X_AF_MDARK
+                             | T5X_AF_HTML
+                             | T5X_AF_NOPROG
+                             | T5X_AF_PRIVATE
+                             | T5X_AF_NONAME
+                             | T5X_AF_NOPARSE
+                             | T5X_AF_REGEXP
+                             | T5X_AF_TRACE
+                             | T5X_AF_WIZARD
+                             | T5X_AF_VISUAL))
+                        {
+                            fprintf(fp, "@set %s/%s=", pObjName, pAttrName);
+                            if (T5X_AF_CASE & m_iFlags)
+                            {
+                                fprintf(fp, "case ");
+                            }
+                            if (T5X_AF_DARK & m_iFlags)
+                            {
+                                fprintf(fp, "dark ");
+                            }
+                            if (T5X_AF_MDARK & m_iFlags)
+                            {
+                                fprintf(fp, "hidden ");
+                            }
+                            if (T5X_AF_HTML & m_iFlags)
+                            {
+                                fprintf(fp, "html ");
+                            }
+                            if (T5X_AF_NOPROG & m_iFlags)
+                            {
+                                fprintf(fp, "no_command ");
+                            }
+                            if (T5X_AF_PRIVATE & m_iFlags)
+                            {
+                                fprintf(fp, "no_inherit ");
+                            }
+                            if (T5X_AF_NONAME & m_iFlags)
+                            {
+                                fprintf(fp, "no_name ");
+                            }
+                            if (T5X_AF_NOPARSE & m_iFlags)
+                            {
+                                fprintf(fp, "no_parse ");
+                            }
+                            if (T5X_AF_REGEXP & m_iFlags)
+                            {
+                                fprintf(fp, "regexp ");
+                            }
+                            if (T5X_AF_TRACE & m_iFlags)
+                            {
+                                fprintf(fp, "trace ");
+                            }
+                            if (T5X_AF_WIZARD & m_iFlags)
+                            {
+                                fprintf(fp, "wizard ");
+                            }
+                            if (T5X_AF_VISUAL & m_iFlags)
+                            {
+                                fprintf(fp, "visual ");
+                            }
+                            fprintf(fp, "\n");
+                        }
+                        if (T5X_AF_IS_LOCK & m_iFlags)
+                        {
+                            fprintf(fp, "@lock %s/%s", pObjName, pAttrName);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
 }
