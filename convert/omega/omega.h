@@ -19,6 +19,7 @@ using namespace std;
 
 char *StringClone(const char *str);
 char *StringCloneLen(const char *str, size_t nStr);
+bool ConvertTimeString(char *pTime, time_t *pt);
 
 typedef struct
 {
@@ -42,6 +43,6 @@ struct lti
     }
 };
 
-#define OMEGA_VERSION "1.0.8.9"
+#define OMEGA_VERSION "1.0.9.10"
 
 #endif
