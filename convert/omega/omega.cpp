@@ -30,6 +30,51 @@ char *StringClone(const char *str)
     return StringCloneLen(str, strlen(str));
 }
 
+bool ConvertTimeString(char *pTime, time_t *pt)
+{
+    char buffer[100];
+    char *p = buffer;
+
+    while (  '\0' != *pTime
+          && '.'  != *pTime
+          && p < buffer + sizeof(buffer) - 1)
+    {
+        *p++ = *pTime++;
+    }
+
+    while (  '\0' != *pTime
+          && !isspace(*pTime))
+    {
+        pTime++;
+    }
+
+    if (  isspace(*pTime)
+       && p < buffer + sizeof(buffer) - 1)
+    {
+       *p++ = *pTime++;
+    }
+
+    while (  '\0' != *pTime
+          && p < buffer + sizeof(buffer) - 1)
+    {
+        *p++ = *pTime++;
+    }
+    *pTime = '\0';
+
+    struct tm tm;
+    if (strptime(buffer, "%a %b %d %H:%M:%S %Y", &tm) != NULL)
+    {
+        tm.tm_isdst = -1;
+        time_t t = mktime(&tm);
+        if (-1 != t)
+        {
+            *pt = t;
+            return true;
+        }
+    }
+    return false;
+}
+
 void Usage()
 {
     fprintf(stderr, "Version: %s\n", OMEGA_VERSION);
@@ -461,6 +506,13 @@ int main(int argc, char *argv[])
             g_t5xgame.ConvertFromR7H();
             g_t5xgame.Pass2();
             g_t5xgame.Validate();
+        }
+        else if (  eTinyMUX  == eInputType
+                && eTinyMUSH == eOutputType)
+        {
+            g_t6hgame.ConvertFromT5X();
+            g_t6hgame.Pass2();
+            g_t6hgame.Validate();
         }
         else
         {

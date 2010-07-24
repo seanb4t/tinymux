@@ -2253,51 +2253,6 @@ static struct
     { "Open",       225 },
 };
 
-bool ConvertTimeString(char *pTime, time_t *pt)
-{
-    char buffer[100];
-    char *p = buffer;
-
-    while (  '\0' != *pTime
-          && '.'  != *pTime
-          && p < buffer + sizeof(buffer) - 1)
-    {
-        *p++ = *pTime++;
-    }
-
-    while (  '\0' != *pTime
-          && !isspace(*pTime))
-    {
-        pTime++;
-    }
-
-    if (  isspace(*pTime)
-       && p < buffer + sizeof(buffer) - 1)
-    {
-       *p++ = *pTime++;
-    }
-
-    while (  '\0' != *pTime
-          && p < buffer + sizeof(buffer) - 1)
-    {
-        *p++ = *pTime++;
-    }
-    *pTime = '\0';
-
-    struct tm tm;
-    if (strptime(buffer, "%a %b %d %H:%M:%S %Y", &tm) != NULL)
-    {
-        tm.tm_isdst = -1;
-        time_t t = mktime(&tm);
-        if (-1 != t)
-        {
-            *pt = t;
-            return true;
-        }
-    }
-    return false;
-}
-
 void P6H_GAME::ConvertFromT5X()
 {
     SetFlags( DBF_NO_CHAT_SYSTEM
@@ -2395,13 +2350,9 @@ void P6H_GAME::ConvertFromT5X()
     {
         AttrNames[t5x_known_attrs[i].iNum] = StringClone(t5x_known_attrs[i].pName);
     }
-    for (vector<T5X_ATTRNAMEINFO *>::iterator it = g_t5xgame.m_vAttrNames.begin(); it != g_t5xgame.m_vAttrNames.end(); ++it)
+    for (map<int, T5X_ATTRNAMEINFO *, lti>::iterator it = g_t5xgame.m_mAttrNames.begin(); it != g_t5xgame.m_mAttrNames.end(); ++it)
     {
-        char *p = strchr((*it)->m_pName, ':');
-        if (NULL != p)
-        {
-            AttrNames[(*it)->m_iNum] = StringClone(p+1);
-        }
+        AttrNames[it->second->m_iNum] = StringClone(it->second->m_pNameUnencoded);
     }
 
     // Upgrade objects.
