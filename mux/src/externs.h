@@ -192,6 +192,7 @@ void PopRegisters(reg_ref **p, int nNeeded);
 
 extern const signed char mux_RegisterSet[256];
 extern const unsigned int ColorTable[256];
+bool parse_rgb(size_t n, const UTF8 *p, RGB &rgb);
 
 #define CJC_CENTER 0
 #define CJC_LJUST  1
@@ -1236,6 +1237,5 @@ UTF8 *modSpeech(dbref player, UTF8 *message, bool bWhich, UTF8 *command);
 void stack_clr(dbref obj);
 #endif // DEPRECATED
 bool parse_and_get_attrib(dbref, UTF8 *[], UTF8 **, dbref *, dbref *, int *, UTF8 *, UTF8 **);
-void SimplifyColorLetters(UTF8 Out[8], UTF8 *pIn);
 
 #endif // EXTERNS_H
