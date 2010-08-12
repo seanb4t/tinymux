@@ -789,6 +789,14 @@ typedef UINT64 ColorState;
 #define COLOR_INDEX_ATTR        (NUM_OTHER)
 #define COLOR_INDEX_FG          (COLOR_INDEX_ATTR + NUM_ATTR)
 #define COLOR_INDEX_BG          (COLOR_INDEX_FG + NUM_FG)
+#define COLOR_INDEX_FG_24       (COLOR_INDEX_BG + NUM_BG)
+#define COLOR_INDEX_FG_24_RED   (COLOR_INDEX_FG_24)
+#define COLOR_INDEX_FG_24_GREEN (COLOR_INDEX_FG_24_RED   + 256)
+#define COLOR_INDEX_FG_24_BLUE  (COLOR_INDEX_FG_24_GREEN + 256)
+#define COLOR_INDEX_BG_24       (COLOR_INDEX_FG_24_BLUE  + 256)
+#define COLOR_INDEX_BG_24_RED   (COLOR_INDEX_BG_24)
+#define COLOR_INDEX_BG_24_GREEN (COLOR_INDEX_BG_24_RED   + 256)
+#define COLOR_INDEX_BG_24_BLUE  (COLOR_INDEX_BG_24_GREEN + 256)
 
 #define COLOR_INDEX_RESET       1
 #define COLOR_INDEX_INTENSE     (COLOR_INDEX_ATTR + 0)
@@ -828,7 +836,7 @@ typedef UINT64 ColorState;
 #define COLOR_FG_5555FF  "\xEF\x98\x8C"    // 18
 #define COLOR_FG_FF55FF  "\xEF\x98\x8D"    // 19
 #define COLOR_FG_55FFFF  "\xEF\x98\x8E"    // 20
-#define COLOR_FG_FFFFFF  "\xEF\x98\x8F"    // 21
+#define COLOR_FG_FFFFFF_1 "\xEF\x98\x8F"    // 21
 #define COLOR_FG_000000  "\xEF\x98\x90"    // 22
 #define COLOR_FG_00005F  "\xEF\x98\x91"    // 23
 #define COLOR_FG_000087  "\xEF\x98\x92"    // 24
@@ -1044,6 +1052,7 @@ typedef UINT64 ColorState;
 #define COLOR_FG_FFFF87  "\xEF\x9B\xA4"    // 234
 #define COLOR_FG_FFFFAF  "\xEF\x9B\xA5"    // 235
 #define COLOR_FG_FFFFD7  "\xEF\x9B\xA6"    // 236
+#define COLOR_FG_FFFFFF_2 "\xEF\x9B\xA7"   // 237
 #define COLOR_FG_080808  "\xEF\x9B\xA8"    // 238
 #define COLOR_FG_121212  "\xEF\x9B\xA9"    // 239
 #define COLOR_FG_1C1C1C  "\xEF\x9B\xAA"    // 240
@@ -1084,7 +1093,7 @@ typedef UINT64 ColorState;
 #define COLOR_BG_5555FF  "\xEF\x9C\x8C"    // 274
 #define COLOR_BG_FF55FF  "\xEF\x9C\x8D"    // 275
 #define COLOR_BG_55FFFF  "\xEF\x9C\x8E"    // 276
-#define COLOR_BG_FFFFFF  "\xEF\x9C\x8F"    // 277
+#define COLOR_BG_FFFFFF_1 "\xEF\x9C\x8F"   // 277
 #define COLOR_BG_000000  "\xEF\x9C\x90"    // 278
 #define COLOR_BG_00005F  "\xEF\x9C\x91"    // 279
 #define COLOR_BG_000087  "\xEF\x9C\x92"    // 280
@@ -1300,6 +1309,7 @@ typedef UINT64 ColorState;
 #define COLOR_BG_FFFF87  "\xEF\x9F\xA4"    // 490
 #define COLOR_BG_FFFFAF  "\xEF\x9F\xA5"    // 491
 #define COLOR_BG_FFFFD7  "\xEF\x9F\xA6"    // 492
+#define COLOR_BG_FFFFFF_2 "\xEF\x9F\xA7"   // 493
 #define COLOR_BG_080808  "\xEF\x9F\xA8"    // 494
 #define COLOR_BG_121212  "\xEF\x9F\xA9"    // 495
 #define COLOR_BG_1C1C1C  "\xEF\x9F\xAA"    // 496
@@ -1325,15 +1335,13 @@ typedef UINT64 ColorState;
 #define COLOR_BG_E4E4E4  "\xEF\x9F\xBE"    // 516
 #define COLOR_BG_EEEEEE  "\xEF\x9F\xBF"    // 517
 
-#define COLOR_LAST_CODE  (NUM_OTHER + NUM_ATTR + NUM_FG + NUM_BG)
-
 #define COLOR_INDEX_FG_WHITE    (COLOR_INDEX_FG + COLOR_INDEX_WHITE)
 
 typedef struct
 {
     ColorState  cs;
     ColorState  csMask;
-    const char *pAnsi;
+    const char  pAnsi[12];
     size_t      nAnsi;
     const UTF8 *pUTF;
     size_t      nUTF;
@@ -1357,6 +1365,17 @@ typedef struct
     int v;
     int y2;
 } YUV;
+
+typedef struct
+{
+    RGB  rgb;
+    YUV  yuv;
+    int  child[2];
+    int  color8;
+    int  color16;
+} PALETTE_ENTRY;
+extern PALETTE_ENTRY palette[];
+
 int FindNearestPaletteEntry(RGB &rgb, bool fColor256);
 UTF8 *LettersToBinary(UTF8 *pLetters);
 
