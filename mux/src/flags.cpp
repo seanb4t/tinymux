@@ -354,6 +354,7 @@ static FLAGBITENT fbeAudible        = { HEARTHRU,     'a',    FLAG_WORD1, 0,    
 static FLAGBITENT fbeAuditorium     = { AUDITORIUM,   'b',    FLAG_WORD2, 0,                    fh_any};
 static FLAGBITENT fbeBlind          = { BLIND,        'B',    FLAG_WORD2, 0,                    fh_wiz};
 static FLAGBITENT fbeChownOk        = { CHOWN_OK,     'C',    FLAG_WORD1, 0,                    fh_any};
+static FLAGBITENT fbeColor256       = { COLOR256,     ' ',    FLAG_WORD2, 0,                    fh_any};
 static FLAGBITENT fbeConnected      = { CONNECTED,    'c',    FLAG_WORD2, CA_NO_DECOMP,         fh_god};
 static FLAGBITENT fbeDark           = { DARK,         'D',    FLAG_WORD1, 0,                    fh_dark_bit};
 static FLAGBITENT fbeDestroyOk      = { DESTROY_OK,   'd',    FLAG_WORD1, 0,                    fh_any};
@@ -460,6 +461,7 @@ FLAGNAMEENT gen_flag_names[] =
     {(UTF8 *)"BLIND",           true, &fbeBlind          },
     {(UTF8 *)"COMMANDS",       false, &fbeNoCommand      },
     {(UTF8 *)"CHOWN_OK",        true, &fbeChownOk        },
+    {(UTF8 *)"COLOR256",        true, &fbeColor256       },
     {(UTF8 *)"CONNECTED",       true, &fbeConnected      },
     {(UTF8 *)"DARK",            true, &fbeDark           },
     {(UTF8 *)"DESTROY_OK",      true, &fbeDestroyOk      },
@@ -967,7 +969,7 @@ UTF8 *unparse_object_numonly(dbref target)
 }
 
 #if defined(FIRANMUX)
-static bool AcquireColor(dbref player, dbref target, UTF8 SimplifiedCodes[8])
+static UTF8 *AcquireColorLetters(dbref player, dbref target)
 {
     int   aflags;
     dbref aowner;
@@ -980,7 +982,7 @@ static bool AcquireColor(dbref player, dbref target, UTF8 SimplifiedCodes[8])
     if ('\0' == color_attr[0])
     {
         free_lbuf(color_attr);
-        return false;
+        return NULL;
     }
     else
     {
@@ -990,10 +992,7 @@ static bool AcquireColor(dbref player, dbref target, UTF8 SimplifiedCodes[8])
                 AttrTrace(aflags, EV_EVAL|EV_TOP|EV_FCHECK), NULL, 0);
         *ac = '\0';
         free_lbuf(color_attr);
-
-        SimplifyColorLetters(SimplifiedCodes, AnsiCodes);
-        free_lbuf(AnsiCodes);
-        return true;
+        return AnsiCodes;
     }
 }
 #endif // FIRANMUX
@@ -1041,17 +1040,12 @@ UTF8 *unparse_object(dbref player, dbref target, bool obey_myopic, bool bAddColo
             UTF8 *buf2 = alloc_lbuf("unparse_object.color");
             UTF8 *bp2  = buf2;
 
-            UTF8 SimplifiedCodes[8];
-            if (AcquireColor(player, target, SimplifiedCodes))
+            UTF8 *pLetters = AcquireColorLetters(player, target);
+            if (NULL != pLetters)
             {
-                for (int i = 0; SimplifiedCodes[i]; i++)
-                {
-                    const UTF8 *pColor = aColors[ColorTable[SimplifiedCodes[i]]].pUTF;
-                    if (pColor)
-                    {
-                        safe_str(pColor, buf2, &bp2);
-                    }
-                }
+                safe_str(LettersToBinary(pLetters), buf2, &bp2);
+                free_lbuf(pLetters);
+                pLetters = NULL;
             }
             else
             {
