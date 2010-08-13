@@ -1001,7 +1001,7 @@ inline int abs(int x)
     else return -x;
 }
 
-inline int min(int x, int y)
+inline int mux_min(int x, int y)
 {
     if (x < y) return x;
     else return y;
@@ -1009,27 +1009,27 @@ inline int min(int x, int y)
 
 inline void rgb2yuv16(RGB *rgb, YUV *yuv)
 {
-    yuv->y = min(abs( 2104*rgb->r + 4310*rgb->g +  802*rgb->b + 4096 +  131072) >> 13, 235);
-    yuv->u = min(abs(-1214*rgb->r - 2384*rgb->g + 3598*rgb->b + 4096 + 1048576) >> 13, 240);
-    yuv->v = min(abs( 3598*rgb->r - 3013*rgb->g -  585*rgb->b + 4096 + 1048576) >> 13, 240);
+    yuv->y = mux_min(abs( 2104*rgb->r + 4310*rgb->g +  802*rgb->b + 4096 +  131072) >> 13, 235);
+    yuv->u = mux_min(abs(-1214*rgb->r - 2384*rgb->g + 3598*rgb->b + 4096 + 1048576) >> 13, 240);
+    yuv->v = mux_min(abs( 3598*rgb->r - 3013*rgb->g -  585*rgb->b + 4096 + 1048576) >> 13, 240);
     yuv->y2 = yuv->y + (yuv->y/2);
 }
 
-inline void cs2rgb(unsigned int cs, RGB *rgb)
+inline void cs2rgb(ColorState cs, RGB *rgb)
 {
-    rgb->r = (cs & 0xFF0000) >> 16;
-    rgb->g = (cs & 0x00FF00) >> 8;
-    rgb->b = (cs & 0x0000FF);
+    rgb->r = static_cast<int>((cs & 0xFF0000) >> 16);
+    rgb->g = static_cast<int>((cs & 0x00FF00) >> 8);
+    rgb->b = static_cast<int>((cs & 0x0000FF));
 }
 
-typedef struct
+inline ColorState rgb2cs(RGB *rgb)
 {
-    RGB  rgb;
-    YUV  yuv;
-    int  child[2];
-    int  color8;
-    int  color16;
-} PALETTE_ENTRY;
+    ColorState cs;
+    cs = (static_cast<ColorState>(rgb->r) << 16)
+       | (static_cast<ColorState>(rgb->g) << 8)
+       | (static_cast<ColorState>(rgb->b));
+    return cs;
+}
 
 // All 256 entries of the palette are included in this table, but the palette
 // is divided into two non-overlapping trees -- one for when xterm is support,
@@ -1444,6 +1444,9 @@ int FindNearestPalette8Entry(RGB &rgb)
 }
 
 #define CS_FOREGROUND UINT64_C(0x0000000001FFFFFF)
+#define CS_FOREGROUND_RED     UINT64_C(0x0000000000FF0000)
+#define CS_FOREGROUND_GREEN   UINT64_C(0x000000000000FF00)
+#define CS_FOREGROUND_BLUE    UINT64_C(0x00000000000000FF)
 #define CS_FG_BLACK   UINT64_C(0x0000000001000000)    // FOREGROUND BLACK (0,0,0)
 #define CS_FG_RED     UINT64_C(0x0000000001000001)    // FOREGROUND RED (187,0,0)
 #define CS_FG_GREEN   UINT64_C(0x0000000001000002)    // FOREGROUND GREEN (0,187,0)
@@ -1457,6 +1460,9 @@ int FindNearestPalette8Entry(RGB &rgb)
 #define CS_FG_FIELD(x) ((x) & UINT64_C(0x0000000000FFFFFF))
 #define CS_FG_DEFAULT CS_FG(NUM_FG)
 #define CS_BACKGROUND UINT64_C(0x01FFFFFF00000000)
+#define CS_BACKGROUND_RED     UINT64_C(0x00FF000000000000)
+#define CS_BACKGROUND_GREEN   UINT64_C(0x0000FF0000000000)
+#define CS_BACKGROUND_BLUE    UINT64_C(0x000000FF00000000)
 #define CS_BG_BLACK   UINT64_C(0x0100000000000000)    // BACKGROUND BLACK (0,0,0)
 #define CS_BG_RED     UINT64_C(0x0100000100000000)    // BACKGROUND RED (187,0,0)
 #define CS_BG_GREEN   UINT64_C(0x0100000200000000)    // BACKGROUND GREEN (0,187,0)
@@ -1483,7 +1489,7 @@ int FindNearestPalette8Entry(RGB &rgb)
 // Even for 256-color-capable clients, the latter are used instead of the former.
 // Similiarly for XTERM_BG(0) through XTERM_BG(0).
 //
-const MUX_COLOR_SET aColors[COLOR_LAST_CODE+1] =
+const MUX_COLOR_SET aColors[] =
 {
     { 0,             0,             "",            0,                       T(""),               0, T(""),    0}, // COLOR_NOTCOLOR
     { CS_NORMAL,     CS_ALLBITS,    ANSI_NORMAL,   sizeof(ANSI_NORMAL)-1,   T(COLOR_RESET),      3, T("%xn"), 3}, // COLOR_INDEX_RESET
@@ -1499,14 +1505,14 @@ const MUX_COLOR_SET aColors[COLOR_LAST_CODE+1] =
     { CS_FG_MAGENTA, CS_FOREGROUND, ANSI_MAGENTA,  sizeof(ANSI_MAGENTA)-1,  T(COLOR_FG_MAGENTA), 3, T("%xm"), 3},
     { CS_FG_CYAN,    CS_FOREGROUND, ANSI_CYAN,     sizeof(ANSI_CYAN)-1,     T(COLOR_FG_CYAN),    3, T("%xc"), 3},
     { CS_FG_WHITE,   CS_FOREGROUND, ANSI_WHITE,    sizeof(ANSI_WHITE)-1,    T(COLOR_FG_WHITE),   3, T("%xw"), 3}, // COLOR_INDEX_FG_WHITE
-    { CS_FG(  8),    CS_FOREGROUND, ANSI_BLACK   ANSI_HILITE, sizeof(ANSI_BLACK   ANSI_HILITE)-1, T(COLOR_FG_555555),  3, T("%xx%xh"), 6},
-    { CS_FG(  9),    CS_FOREGROUND, ANSI_RED     ANSI_HILITE, sizeof(ANSI_RED     ANSI_HILITE)-1, T(COLOR_FG_FF5555),  3, T("%xr%xh"), 6},
-    { CS_FG( 10),    CS_FOREGROUND, ANSI_GREEN   ANSI_HILITE, sizeof(ANSI_GREEN   ANSI_HILITE)-1, T(COLOR_FG_55FF55),  3, T("%xg%xh"), 6},
-    { CS_FG( 11),    CS_FOREGROUND, ANSI_YELLOW  ANSI_HILITE, sizeof(ANSI_YELLOW  ANSI_HILITE)-1, T(COLOR_FG_FFFF55),  3, T("%xy%xh"), 6},
-    { CS_FG( 12),    CS_FOREGROUND, ANSI_BLUE    ANSI_HILITE, sizeof(ANSI_BLUE    ANSI_HILITE)-1, T(COLOR_FG_5555FF),  3, T("%xb%xh"), 6},
-    { CS_FG( 13),    CS_FOREGROUND, ANSI_MAGENTA ANSI_HILITE, sizeof(ANSI_MAGENTA ANSI_HILITE)-1, T(COLOR_FG_FF55FF),  3, T("%xm%xh"), 6},
-    { CS_FG( 14),    CS_FOREGROUND, ANSI_CYAN    ANSI_HILITE, sizeof(ANSI_CYAN    ANSI_HILITE)-1, T(COLOR_FG_55FFFF),  3, T("%xc%xh"), 6},
-    { CS_FG( 15),    CS_FOREGROUND, ANSI_WHITE   ANSI_HILITE, sizeof(ANSI_WHITE   ANSI_HILITE)-1, T(COLOR_FG_FFFFFF),  3, T("%xw%xh"), 6},
+    { CS_FG(  8),    CS_FOREGROUND, XTERM_FG(  8), sizeof(XTERM_FG(  8))-1, T(COLOR_FG_555555),  3, T("NU8"), 6},  // These eight are converted into something else.
+    { CS_FG(  9),    CS_FOREGROUND, XTERM_FG(  9), sizeof(XTERM_FG(  9))-1, T(COLOR_FG_FF5555),  3, T("NU9"), 6},  // .
+    { CS_FG( 10),    CS_FOREGROUND, XTERM_FG( 10), sizeof(XTERM_FG( 10))-1, T(COLOR_FG_55FF55),  3, T("NU10"), 6},  // .
+    { CS_FG( 11),    CS_FOREGROUND, XTERM_FG( 11), sizeof(XTERM_FG( 11))-1, T(COLOR_FG_FFFF55),  3, T("NU11"), 6},  // .
+    { CS_FG( 12),    CS_FOREGROUND, XTERM_FG( 12), sizeof(XTERM_FG( 12))-1, T(COLOR_FG_5555FF),  3, T("NU12"), 6},  // .
+    { CS_FG( 13),    CS_FOREGROUND, XTERM_FG( 13), sizeof(XTERM_FG( 13))-1, T(COLOR_FG_FF55FF),  3, T("NU13"), 6},  // .
+    { CS_FG( 14),    CS_FOREGROUND, XTERM_FG( 14), sizeof(XTERM_FG( 14))-1, T(COLOR_FG_55FFFF),  3, T("NU14"), 6},  // .
+    { CS_FG( 15),    CS_FOREGROUND, XTERM_FG( 15), sizeof(XTERM_FG( 15))-1, T(COLOR_FG_FFFFFF_1),3, T("NU15"), 6},  // -
     { CS_FG( 16),    CS_FOREGROUND, XTERM_FG( 16), sizeof(XTERM_FG( 16))-1, T(COLOR_FG_000000),  3, T("%x<#000000>"), 11},
     { CS_FG( 17),    CS_FOREGROUND, XTERM_FG( 17), sizeof(XTERM_FG( 17))-1, T(COLOR_FG_00005F),  3, T("%x<#00005F>"), 11},
     { CS_FG( 18),    CS_FOREGROUND, XTERM_FG( 18), sizeof(XTERM_FG( 18))-1, T(COLOR_FG_000087),  3, T("%x<#000087>"), 11},
@@ -1722,7 +1728,7 @@ const MUX_COLOR_SET aColors[COLOR_LAST_CODE+1] =
     { CS_FG(228),    CS_FOREGROUND, XTERM_FG(228), sizeof(XTERM_FG(228))-1, T(COLOR_FG_FFFF87),  3, T("%x<#FFFF87>"), 11},
     { CS_FG(229),    CS_FOREGROUND, XTERM_FG(229), sizeof(XTERM_FG(229))-1, T(COLOR_FG_FFFFAF),  3, T("%x<#FFFFAF>"), 11},
     { CS_FG(230),    CS_FOREGROUND, XTERM_FG(230), sizeof(XTERM_FG(230))-1, T(COLOR_FG_FFFFD7),  3, T("%x<#FFFFD7>"), 11},
-    { CS_FG(231),    CS_FOREGROUND, XTERM_FG(231), sizeof(XTERM_FG(231))-1, T(COLOR_FG_FFFFFF),  3, T("%x<#FFFFFF>"), 11},
+    { CS_FG(231),    CS_FOREGROUND, XTERM_FG(231), sizeof(XTERM_FG(231))-1, T(COLOR_FG_FFFFFF_2),3, T("%x<#FFFFFF>"), 11},
     { CS_FG(232),    CS_FOREGROUND, XTERM_FG(232), sizeof(XTERM_FG(232))-1, T(COLOR_FG_080808),  3, T("%x<#080808>"), 11},
     { CS_FG(233),    CS_FOREGROUND, XTERM_FG(233), sizeof(XTERM_FG(233))-1, T(COLOR_FG_121212),  3, T("%x<#121212>"), 11},
     { CS_FG(234),    CS_FOREGROUND, XTERM_FG(234), sizeof(XTERM_FG(234))-1, T(COLOR_FG_1C1C1C),  3, T("%x<#1C1C1C>"), 11},
@@ -1754,15 +1760,15 @@ const MUX_COLOR_SET aColors[COLOR_LAST_CODE+1] =
     { CS_BG_BLUE,    CS_BACKGROUND, ANSI_BBLUE,    sizeof(ANSI_BBLUE)-1,    T(COLOR_BG_BLUE),    3, T("%xB"), 3},
     { CS_BG_MAGENTA, CS_BACKGROUND, ANSI_BMAGENTA, sizeof(ANSI_BMAGENTA)-1, T(COLOR_BG_MAGENTA), 3, T("%xM"), 3},
     { CS_BG_CYAN,    CS_BACKGROUND, ANSI_BCYAN,    sizeof(ANSI_BCYAN)-1,    T(COLOR_BG_CYAN),    3, T("%xC"), 3},
-    { CS_BG_WHITE,   CS_BACKGROUND, ANSI_BWHITE,   sizeof(ANSI_BWHITE)-1,   T(COLOR_BG_WHITE),   3, T("%xW"), 3}, // COLOR_LAST_CODE
-    { CS_BG(  8),    CS_BACKGROUND, ANSI_BBLACK,   sizeof(ANSI_BBLACK)-1,   T(COLOR_BG_555555),  3, T("%xx"), 3},
-    { CS_BG(  9),    CS_BACKGROUND, ANSI_BRED,     sizeof(ANSI_BRED)-1,     T(COLOR_BG_FF5555),  3, T("%xr"), 3},
-    { CS_BG( 10),    CS_BACKGROUND, ANSI_BGREEN,   sizeof(ANSI_BGREEN)-1,   T(COLOR_BG_55FF55),  3, T("%xg"), 3},
-    { CS_BG( 11),    CS_BACKGROUND, ANSI_BYELLOW,  sizeof(ANSI_BYELLOW)-1,  T(COLOR_BG_FFFF55),  3, T("%xy"), 3},
-    { CS_BG( 12),    CS_BACKGROUND, ANSI_BBLUE,    sizeof(ANSI_BBLUE)-1,    T(COLOR_BG_5555FF),  3, T("%xb"), 3},
-    { CS_BG( 13),    CS_BACKGROUND, ANSI_BMAGENTA, sizeof(ANSI_BMAGENTA)-1, T(COLOR_BG_FF55FF),  3, T("%xm"), 3},
-    { CS_BG( 14),    CS_BACKGROUND, ANSI_BCYAN,    sizeof(ANSI_BCYAN)-1,    T(COLOR_BG_55FFFF),  3, T("%xc"), 3},
-    { CS_BG( 15),    CS_BACKGROUND, ANSI_BWHITE,   sizeof(ANSI_BWHITE)-1,   T(COLOR_BG_FFFFFF),  3, T("%xw"), 3},
+    { CS_BG_WHITE,   CS_BACKGROUND, ANSI_BWHITE,   sizeof(ANSI_BWHITE)-1,   T(COLOR_BG_WHITE),   3, T("%xW"), 3},
+    { CS_BG(  8),    CS_BACKGROUND, ANSI_BBLACK,   sizeof(ANSI_BBLACK)-1,   T(COLOR_BG_555555),  3, T("%xX"), 3}, // These eight are never used.
+    { CS_BG(  9),    CS_BACKGROUND, ANSI_BRED,     sizeof(ANSI_BRED)-1,     T(COLOR_BG_FF5555),  3, T("%xR"), 3}, // .
+    { CS_BG( 10),    CS_BACKGROUND, ANSI_BGREEN,   sizeof(ANSI_BGREEN)-1,   T(COLOR_BG_55FF55),  3, T("%xG"), 3}, // .
+    { CS_BG( 11),    CS_BACKGROUND, ANSI_BYELLOW,  sizeof(ANSI_BYELLOW)-1,  T(COLOR_BG_FFFF55),  3, T("%xY"), 3}, // .
+    { CS_BG( 12),    CS_BACKGROUND, ANSI_BBLUE,    sizeof(ANSI_BBLUE)-1,    T(COLOR_BG_5555FF),  3, T("%xB"), 3}, // .
+    { CS_BG( 13),    CS_BACKGROUND, ANSI_BMAGENTA, sizeof(ANSI_BMAGENTA)-1, T(COLOR_BG_FF55FF),  3, T("%xM"), 3}, // .
+    { CS_BG( 14),    CS_BACKGROUND, ANSI_BCYAN,    sizeof(ANSI_BCYAN)-1,    T(COLOR_BG_55FFFF),  3, T("%xC"), 3}, // .
+    { CS_BG( 15),    CS_BACKGROUND, ANSI_BWHITE,   sizeof(ANSI_BWHITE)-1,   T(COLOR_BG_FFFFFF_1),3, T("%xW"), 3}, // -
     { CS_BG( 16),    CS_BACKGROUND, XTERM_BG( 16), sizeof(XTERM_BG( 16))-1, T(COLOR_BG_000000),  3, T("%X<#000000>"), 11},
     { CS_BG( 17),    CS_BACKGROUND, XTERM_BG( 17), sizeof(XTERM_BG( 17))-1, T(COLOR_BG_00005F),  3, T("%X<#00005F>"), 11},
     { CS_BG( 18),    CS_BACKGROUND, XTERM_BG( 18), sizeof(XTERM_BG( 18))-1, T(COLOR_BG_000087),  3, T("%X<#000087>"), 11},
@@ -1978,7 +1984,7 @@ const MUX_COLOR_SET aColors[COLOR_LAST_CODE+1] =
     { CS_BG(228),    CS_BACKGROUND, XTERM_BG(228), sizeof(XTERM_BG(228))-1, T(COLOR_BG_FFFF87),  3, T("%X<#FFFF87>"), 11},
     { CS_BG(229),    CS_BACKGROUND, XTERM_BG(229), sizeof(XTERM_BG(229))-1, T(COLOR_BG_FFFFAF),  3, T("%X<#FFFFAF>"), 11},
     { CS_BG(230),    CS_BACKGROUND, XTERM_BG(230), sizeof(XTERM_BG(230))-1, T(COLOR_BG_FFFFD7),  3, T("%X<#FFFFD7>"), 11},
-    { CS_BG(231),    CS_BACKGROUND, XTERM_BG(231), sizeof(XTERM_BG(231))-1, T(COLOR_BG_FFFFFF),  3, T("%X<#FFFFFF>"), 11},
+    { CS_BG(231),    CS_BACKGROUND, XTERM_BG(231), sizeof(XTERM_BG(231))-1, T(COLOR_BG_FFFFFF_2),3, T("%X<#FFFFFF>"), 11},
     { CS_BG(232),    CS_BACKGROUND, XTERM_BG(232), sizeof(XTERM_BG(232))-1, T(COLOR_BG_080808),  3, T("%X<#080808>"), 11},
     { CS_BG(233),    CS_BACKGROUND, XTERM_BG(233), sizeof(XTERM_BG(233))-1, T(COLOR_BG_121212),  3, T("%X<#121212>"), 11},
     { CS_BG(234),    CS_BACKGROUND, XTERM_BG(234), sizeof(XTERM_BG(234))-1, T(COLOR_BG_1C1C1C),  3, T("%X<#1C1C1C>"), 11},
@@ -2025,6 +2031,53 @@ inline void ValidateColorState(ColorState cs)
 
 inline ColorState UpdateColorState(ColorState cs, int iColorCode)
 {
+    if (COLOR_INDEX_FG_24 <= iColorCode)
+    {
+        // In order to apply an RGB 24-bit modification, we need to translate
+        // any indexed color to a value color.
+        //
+        if (iColorCode < COLOR_INDEX_BG_24)
+        {
+            if (CS_FG_INDEXED & cs)
+            {
+                cs = (cs & ~CS_FOREGROUND) | rgb2cs(&palette[CS_FG_FIELD(cs)].rgb);
+            }
+
+            if (iColorCode < COLOR_INDEX_FG_24_GREEN)
+            {
+                cs = (cs & ~CS_FOREGROUND_RED) | (static_cast<ColorState>(iColorCode - COLOR_INDEX_FG_24_RED) << 16);
+            }
+            else if (iColorCode < COLOR_INDEX_FG_24_BLUE)
+            {
+                cs = (cs & ~CS_FOREGROUND_GREEN) | (static_cast<ColorState>(iColorCode - COLOR_INDEX_FG_24_GREEN) << 8);
+            }
+            else
+            {
+                cs = (cs & ~CS_FOREGROUND_BLUE) | static_cast<ColorState>(iColorCode - COLOR_INDEX_FG_24_BLUE);
+            }
+        }
+        else
+        {
+            if (CS_BG_INDEXED & cs)
+            {
+                cs = (cs & ~CS_BACKGROUND) | (rgb2cs(&palette[CS_BG_FIELD(cs)].rgb) << 32);
+            }
+
+            if (iColorCode < COLOR_INDEX_BG_24_GREEN)
+            {
+                cs = (cs & ~CS_BACKGROUND_RED) | (static_cast<ColorState>(iColorCode - COLOR_INDEX_BG_24_RED) << 48);
+            }
+            else if (iColorCode < COLOR_INDEX_BG_24_BLUE)
+            {
+                cs = (cs & ~CS_BACKGROUND_GREEN) | (static_cast<ColorState>(iColorCode - COLOR_INDEX_BG_24_GREEN) << 40);
+            }
+            else
+            {
+                cs = (cs & ~CS_BACKGROUND_BLUE) | (static_cast<ColorState>(iColorCode - COLOR_INDEX_BG_24_BLUE) << 32);
+            }
+        }
+        return cs;
+    }
     return (cs & ~aColors[iColorCode].csMask) | aColors[iColorCode].cs;
 }
 
@@ -2038,9 +2091,9 @@ inline ColorState UpdateColorState(ColorState cs, int iColorCode)
 // + COLOR_FG_RED     "\xEF\x98\x81"
 // + COLOR_BG_WHITE   "\xEF\x9C\x87"
 //
-// Each of the seven codes is 3 bytes or 21 bytes total.
+// Each of the seven codes is 3 bytes or 21 bytes total. Plus six 24-bit modifiers (each 4 bytes).
 //
-#define COLOR_MAXIMUM_BINARY_TRANSITION_LENGTH 21
+#define COLOR_MAXIMUM_BINARY_TRANSITION_LENGTH (21+4*6)
 
 // Generate the minimal color sequence that will transition from one color state
 // to another.
@@ -2095,37 +2148,83 @@ static UTF8 *ColorTransitionBinary
     unsigned int iColor;
     if (CS_FOREGROUND & tmp)
     {
+        bool fExact;
         if (CS_FG_INDEXED & csNext)
         {
-            iColor = COLOR_INDEX_FG + CS_FG_FIELD(csNext);
+            iColor = static_cast<unsigned int>(CS_FG_FIELD(csNext));
+            fExact = true;
         }
         else
         {
             cs2rgb(CS_FG_FIELD(csNext), &rgb);
-            iColor = COLOR_INDEX_FG + FindNearestPaletteEntry(rgb, true);
+            iColor = FindNearestPaletteEntry(rgb, true);
+            fExact = (  palette[iColor].rgb.r == rgb.r
+                     && palette[iColor].rgb.g == rgb.g
+                     && palette[iColor].rgb.b == rgb.b);
         }
-        if (iColor < COLOR_INDEX_FG + COLOR_INDEX_DEFAULT)
+        if (iColor < COLOR_INDEX_DEFAULT)
         {
-            memcpy(Buffer + i, aColors[iColor].pUTF, aColors[iColor].nUTF);
-            i += aColors[iColor].nUTF;
+            memcpy(Buffer + i, aColors[COLOR_INDEX_FG + iColor].pUTF, aColors[COLOR_INDEX_FG + iColor].nUTF);
+            i += aColors[COLOR_INDEX_FG + iColor].nUTF;
+            if (!fExact)
+            {
+                if (palette[iColor].rgb.r != rgb.r)
+                {
+                    memcpy(Buffer + i, ConvertToUTF8(rgb.r + 0xF0000), 4);
+                    i += 4;
+                }
+                if (palette[iColor].rgb.g != rgb.g)
+                {
+                    memcpy(Buffer + i, ConvertToUTF8(rgb.g + 0xF0100), 4);
+                    i += 4;
+                }
+                if (palette[iColor].rgb.b != rgb.b)
+                {
+                    memcpy(Buffer + i, ConvertToUTF8(rgb.b + 0xF0200), 4);
+                    i += 4;
+                }
+            }
         }
     }
 
     if (CS_BACKGROUND & tmp)
     {
+        bool fExact;
         if (CS_BG_INDEXED & csNext)
         {
-            iColor = COLOR_INDEX_BG + CS_BG_FIELD(csNext);
+            iColor = static_cast<unsigned int>(CS_BG_FIELD(csNext));
+            fExact = true;
         }
         else
         {
             cs2rgb(CS_BG_FIELD(csNext), &rgb);
-            iColor = COLOR_INDEX_BG + FindNearestPaletteEntry(rgb, true);
+            iColor = FindNearestPaletteEntry(rgb, true);
+            fExact = (  palette[iColor].rgb.r == rgb.r
+                     && palette[iColor].rgb.g == rgb.g
+                     && palette[iColor].rgb.b == rgb.b);
         }
-        if (iColor < COLOR_INDEX_BG + COLOR_INDEX_DEFAULT)
+        if (iColor < COLOR_INDEX_DEFAULT)
         {
-            memcpy(Buffer + i, aColors[iColor].pUTF, aColors[iColor].nUTF);
-            i += aColors[iColor].nUTF;
+            memcpy(Buffer + i, aColors[COLOR_INDEX_BG + iColor].pUTF, aColors[COLOR_INDEX_BG + iColor].nUTF);
+            i += aColors[COLOR_INDEX_BG + iColor].nUTF;
+            if (!fExact)
+            {
+                if (palette[iColor].rgb.r != rgb.r)
+                {
+                    memcpy(Buffer + i, ConvertToUTF8(rgb.r + 0xF0300), 4);
+                    i += 4;
+                }
+                if (palette[iColor].rgb.g != rgb.g)
+                {
+                    memcpy(Buffer + i, ConvertToUTF8(rgb.g + 0xF0400), 4);
+                    i += 4;
+                }
+                if (palette[iColor].rgb.b != rgb.b)
+                {
+                    memcpy(Buffer + i, ConvertToUTF8(rgb.b + 0xF0500), 4);
+                    i += 4;
+                }
+            }
         }
     }
     Buffer[i] = '\0';
@@ -2233,17 +2332,18 @@ static UTF8 *ColorTransitionEscape
     {
         if (CS_FG_INDEXED & csNext)
         {
-            iColor = COLOR_INDEX_FG + CS_FG_FIELD(csNext);
+            iColor = COLOR_INDEX_FG + static_cast<unsigned int>(CS_FG_FIELD(csNext));
+            if (iColor < COLOR_INDEX_FG + COLOR_INDEX_DEFAULT)
+            {
+                memcpy(Buffer + i, aColors[iColor].pEscape, aColors[iColor].nEscape);
+                i += aColors[iColor].nEscape;
+            }
         }
         else
         {
             cs2rgb(CS_FG_FIELD(csNext), &rgb);
-            iColor = COLOR_INDEX_FG + FindNearestPaletteEntry(rgb, true);
-        }
-        if (iColor < COLOR_INDEX_FG + COLOR_INDEX_DEFAULT)
-        {
-            memcpy(Buffer + i, aColors[iColor].pEscape, aColors[iColor].nEscape);
-            i += aColors[iColor].nEscape;
+            mux_sprintf(Buffer + i, 12, T("%%x<#%02X%02X%02X>"), rgb.r, rgb.g, rgb.b);
+            i += 11;
         }
     }
 
@@ -2251,17 +2351,18 @@ static UTF8 *ColorTransitionEscape
     {
         if (CS_BG_INDEXED & csNext)
         {
-            iColor = COLOR_INDEX_BG + CS_BG_FIELD(csNext);
+            iColor = COLOR_INDEX_BG + static_cast<unsigned int>(CS_BG_FIELD(csNext));
+            if (iColor < COLOR_INDEX_BG + COLOR_INDEX_DEFAULT)
+            {
+                memcpy(Buffer + i, aColors[iColor].pEscape, aColors[iColor].nEscape);
+                i += aColors[iColor].nEscape;
+            }
         }
         else
         {
             cs2rgb(CS_BG_FIELD(csNext), &rgb);
-            iColor = COLOR_INDEX_BG + FindNearestPaletteEntry(rgb, true);
-        }
-        if (iColor < COLOR_INDEX_BG + COLOR_INDEX_DEFAULT)
-        {
-            memcpy(Buffer + i, aColors[iColor].pEscape, aColors[iColor].nEscape);
-            i += aColors[iColor].nEscape;
+            mux_sprintf(Buffer + i, 12, T("%%X<#%02X%02X%02X>"), rgb.r, rgb.g, rgb.b);
+            i += 11;
         }
     }
     Buffer[i] = '\0';
@@ -2288,32 +2389,103 @@ static UTF8 *ColorTransitionEscape
 //
 static UTF8 *ColorTransitionANSI
 (
-    ColorState csCurrent,
+    ColorState &csClient,
     ColorState csNext,
     size_t *nTransition,
     bool fNoBleed,
     bool fColor256
 )
 {
-    ValidateColorState(csCurrent);
+    ValidateColorState(csClient);
     ValidateColorState(csNext);
 
     static UTF8 Buffer[COLOR_MAXIMUM_ANSI_TRANSITION_LENGTH+1];
 
-    if (fNoBleed)
+    // First, modify our sense of what 'normal' is.
+    //
+    if (  fNoBleed
+       && (csNext & CS_FOREGROUND) == CS_FG_DEFAULT)
     {
-        if ((csCurrent & CS_FOREGROUND) == CS_FG_DEFAULT)
-        {
-            csCurrent = (csCurrent & ~CS_FOREGROUND) | CS_FG_WHITE;
-        }
-
-        if ((csNext & CS_FOREGROUND) == CS_FG_DEFAULT)
-        {
-            csNext = (csNext & ~CS_FOREGROUND) | CS_FG_WHITE;
-        }
+        csNext = (csNext & ~CS_FOREGROUND) | CS_FG_WHITE;
     }
 
-    if (csCurrent == csNext)
+    // Approximate Foreground Color
+    //
+    RGB rgb;
+    unsigned int iColor;
+    if (fColor256)
+    {
+        if (CS_FG_INDEXED & csNext)
+        {
+            iColor = COLOR_INDEX_FG + static_cast<unsigned int>(CS_FG_FIELD(csNext));
+        }
+        else
+        {
+            cs2rgb(CS_FG_FIELD(csNext), &rgb);
+            iColor = COLOR_INDEX_FG + FindNearestPaletteEntry(rgb, true);
+        }
+    }
+    else
+    {
+        if (CS_FG_INDEXED & csNext)
+        {
+            iColor = COLOR_INDEX_FG + palette[CS_FG_FIELD(csNext)].color16;
+        }
+        else
+        {
+            cs2rgb(CS_FG_FIELD(csNext), &rgb);
+            iColor = COLOR_INDEX_FG + FindNearestPaletteEntry(rgb, false);
+        }
+
+        // For foreground 256-to-16-color down-conversion, we 'borrow' the
+        // highlite capability.  We don't need or want it if the client supports
+        // 256-color, and there is no highlite capability we can borrow for
+        // background color.  This decision is a prerequisite to the 'return
+        // to normal' decision below.
+        //
+        if (COLOR_INDEX_FG + 8 <= iColor && iColor <= COLOR_INDEX_FG + 15)
+        {
+            csNext |= CS_INTENSE;
+            iColor -= 8;
+        }
+    }
+    if (iColor < COLOR_INDEX_FG + COLOR_INDEX_DEFAULT)
+    {
+        csNext = UpdateColorState(csNext, iColor);
+    }
+
+    // Aproximate Background Color
+    //
+    if (fColor256)
+    {
+        if (CS_BG_INDEXED & csNext)
+        {
+            iColor = COLOR_INDEX_BG + static_cast<unsigned int>(CS_BG_FIELD(csNext));
+        }
+        else
+        {
+            cs2rgb(CS_BG_FIELD(csNext), &rgb);
+            iColor = COLOR_INDEX_BG + FindNearestPaletteEntry(rgb, true);
+        }
+    }
+    else
+    {
+        if (CS_BG_INDEXED & csNext)
+        {
+            iColor = COLOR_INDEX_BG + palette[CS_BG_FIELD(csNext)].color8;
+        }
+        else
+        {
+            cs2rgb(CS_BG_FIELD(csNext), &rgb);
+            iColor = COLOR_INDEX_BG + FindNearestPalette8Entry(rgb);
+        }
+    }
+    if (iColor < COLOR_INDEX_BG + COLOR_INDEX_DEFAULT)
+    {
+        csNext = UpdateColorState(csNext, iColor);
+    }
+
+    if (csClient == csNext)
     {
         *nTransition = 0;
         Buffer[0] = '\0';
@@ -2323,18 +2495,18 @@ static UTF8 *ColorTransitionANSI
 
     // Do we need to go through the normal state?
     //
-    if (  ((csCurrent & ~csNext) & CS_ATTRS)
+    if (  ((csClient & ~csNext) & CS_ATTRS)
        || (  (csNext & CS_BACKGROUND) == CS_BG_DEFAULT
-          && (csCurrent & CS_BACKGROUND) != CS_BG_DEFAULT)
+          && (csClient & CS_BACKGROUND) != CS_BG_DEFAULT)
        || (  (csNext & CS_FOREGROUND) == CS_FG_DEFAULT
-          && (csCurrent & CS_FOREGROUND) != CS_FG_DEFAULT))
+          && (csClient & CS_FOREGROUND) != CS_FG_DEFAULT))
     {
         memcpy(Buffer + i, ANSI_NORMAL, sizeof(ANSI_NORMAL)-1);
         i += sizeof(ANSI_NORMAL)-1;
-        csCurrent = CS_NORMAL;
+        csClient = CS_NORMAL;
     }
 
-    ColorState tmp = csCurrent ^ csNext;
+    ColorState tmp = csClient ^ csNext;
     if (CS_ATTRS & tmp)
     {
         for (unsigned int iAttr = COLOR_INDEX_ATTR; iAttr < COLOR_INDEX_FG; iAttr++)
@@ -2347,26 +2519,11 @@ static UTF8 *ColorTransitionANSI
         }
     }
 
-    RGB rgb;
-    unsigned int iColor;
+    // At this point, all colors are indexed.
+    //
     if (CS_FOREGROUND & tmp)
     {
-        if (CS_FG_INDEXED & csNext)
-        {
-            if (fColor256)
-            {
-                iColor = COLOR_INDEX_FG + CS_FG_FIELD(csNext);
-            }
-            else
-            {
-                iColor = COLOR_INDEX_FG + palette[CS_FG_FIELD(csNext)].color16;
-            }
-        }
-        else
-        {
-            cs2rgb(CS_FG_FIELD(csNext), &rgb);
-            iColor = COLOR_INDEX_FG + FindNearestPaletteEntry(rgb, fColor256);
-        }
+        iColor = COLOR_INDEX_FG + static_cast<unsigned int>(CS_FG_FIELD(csNext));
         if (iColor < COLOR_INDEX_FG + COLOR_INDEX_DEFAULT)
         {
             memcpy(Buffer + i, aColors[iColor].pAnsi, aColors[iColor].nAnsi);
@@ -2376,29 +2533,7 @@ static UTF8 *ColorTransitionANSI
 
     if (CS_BACKGROUND & tmp)
     {
-        if (CS_BG_INDEXED & csNext)
-        {
-            if (fColor256)
-            {
-                iColor = COLOR_INDEX_BG + CS_BG_FIELD(csNext);
-            }
-            else
-            {
-                iColor = COLOR_INDEX_BG + palette[CS_BG_FIELD(csNext)].color8;
-            }
-        }
-        else
-        {
-            cs2rgb(CS_BG_FIELD(csNext), &rgb);
-            if (fColor256)
-            {
-                iColor = COLOR_INDEX_BG + FindNearestPaletteEntry(rgb, fColor256);
-            }
-            else
-            {
-                iColor = COLOR_INDEX_BG + FindNearestPalette8Entry(rgb);
-            }
-        }
+        iColor = COLOR_INDEX_BG + static_cast<unsigned int>(CS_BG_FIELD(csNext));
         if (iColor < COLOR_INDEX_BG + COLOR_INDEX_DEFAULT)
         {
             memcpy(Buffer + i, aColors[iColor].pAnsi, aColors[iColor].nAnsi);
@@ -2407,6 +2542,7 @@ static UTF8 *ColorTransitionANSI
     }
     Buffer[i] = '\0';
     *nTransition = i;
+    csClient = csNext;
     return Buffer;
 }
 
@@ -2414,7 +2550,8 @@ void LettersToColorState(ColorState &cs, UTF8 *pIn)
 {
     cs = CS_NORMAL;
     bool fBackground = false;
-    for (size_t i = 0; '\0' != pIn[i]; i++)
+    size_t i = 0;
+    while ('\0' != pIn[i])
     {
         unsigned int iColor;
         unsigned ch = pIn[i];
@@ -2428,17 +2565,31 @@ void LettersToColorState(ColorState &cs, UTF8 *pIn)
                 i++;
             }
             RGB rgb;
-            if (  '>' == ch
-               && parse_rgb(i - j, pIn + j, rgb))
+            if ('>' == ch)
             {
-                iColor = FindNearestPaletteEntry(rgb, true) + (fBackground ? COLOR_INDEX_BG : COLOR_INDEX_FG);
-                cs = UpdateColorState(cs, iColor);
+                if (parse_rgb(i - j, pIn + j, rgb))
+                {
+                    iColor = FindNearestPaletteEntry(rgb, true);
+                    bool fExact = (  palette[iColor].rgb.r == rgb.r
+                                  && palette[iColor].rgb.g == rgb.g
+                                  && palette[iColor].rgb.b == rgb.b);
+                    if (fBackground)
+                    {
+                        cs = (cs & ~CS_BACKGROUND) | (fExact ? CS_BG(iColor) : (rgb2cs(&rgb) << 32));
+                    }
+                    else
+                    {
+                        cs = (cs & ~CS_FOREGROUND) | (fExact ? CS_FG(iColor) : rgb2cs(&rgb));
+                    }
+                }
+                i++;
             }
             fBackground = false;
         }
         else if ('/' == ch)
         {
             fBackground = true;
+            i++;
         }
         else
         {
@@ -2448,6 +2599,7 @@ void LettersToColorState(ColorState &cs, UTF8 *pIn)
                 cs = UpdateColorState(cs, iColor);
             }
             fBackground = false;
+            i++;
         }
     }
 }
@@ -2489,6 +2641,7 @@ UTF8 *convert_color(const UTF8 *pString, bool fNoBleed, bool fColor256)
         nNormal += sizeof(ANSI_WHITE)-1;
     }
 
+    ColorState csClient = (fNoBleed)?CS_FG_WHITE:CS_NORMAL;
     ColorState csPrev = CS_NORMAL;
     ColorState csNext = CS_NORMAL;
     UTF8 *pBuffer = aBuffer;
@@ -2514,7 +2667,7 @@ UTF8 *convert_color(const UTF8 *pString, bool fNoBleed, bool fColor256)
             {
                 UTF8 *pTransition = NULL;
                 size_t nTransition;
-                pTransition = ColorTransitionANSI( csPrev, csNext,
+                pTransition = ColorTransitionANSI( csClient, csNext,
                                                    &nTransition, fNoBleed, fColor256);
                 if (nTransition)
                 {
@@ -2533,6 +2686,7 @@ UTF8 *convert_color(const UTF8 *pString, bool fNoBleed, bool fColor256)
                 break;
             }
             memcpy(pBuffer, pString + iCopy, i - iCopy);
+            pBuffer += i - iCopy;
             iCopy = i;
         }
 
@@ -3515,7 +3669,7 @@ UTF8 *ConvertToUTF8(const char *p, size_t *pn)
                             {
                                 unsigned int iCode = COLOR_INDEX_FG + (p[1] - '0');
                                 if (  COLOR_INDEX_FG <= iCode
-                                   && iCode < COLOR_INDEX_BG)
+                                   && iCode < COLOR_INDEX_FG + 7)
                                 {
                                     s = aColors[iCode].pUTF;
                                 }
@@ -3524,7 +3678,7 @@ UTF8 *ConvertToUTF8(const char *p, size_t *pn)
                             {
                                 unsigned int iCode = COLOR_INDEX_BG + (p[1] - '0');
                                 if (  COLOR_INDEX_BG <= iCode
-                                   && iCode <= COLOR_LAST_CODE)
+                                   && iCode <= COLOR_INDEX_BG + 7)
                                 {
                                     s = aColors[iCode].pUTF;
                                 }
@@ -3913,7 +4067,8 @@ size_t TruncateToBuffer
         // Parse a run of color code points.
         //
         int iCode;
-        while (  UTF8_SIZE3 == utf8_FirstByte[p[0]]
+        while (  (  UTF8_SIZE3 == utf8_FirstByte[p[0]]
+                 || UTF8_SIZE4 == utf8_FirstByte[p[0]])
               && COLOR_NOTCOLOR != (iCode = mux_color(p)))
         {
             csCurrent = UpdateColorState(csCurrent, iCode);
@@ -3928,15 +4083,8 @@ size_t TruncateToBuffer
         const UTF8 *pTextRun = p;
         for (;;)
         {
-            const UTF8 *pEF = (UTF8 *)strchr((char *)p, '\xEF');
-            if (NULL == pEF)
-            {
-                size_t n = strlen((char *)pTextRun);
-                nTextRun += n;
-                p += n;
-                break;
-            }
-            else
+            const UTF8 *pEF, *pF3;
+            if (NULL != (pEF = (UTF8 *)strchr((char *)p, '\xEF')))
             {
                 nTextRun += pEF - p;
                 p = pEF;
@@ -3946,6 +4094,24 @@ size_t TruncateToBuffer
                 }
                 nTextRun += UTF8_SIZE3;
                 p += UTF8_SIZE3;
+            }
+            else if (NULL != (pF3 = (UTF8 *)strchr((char *)p, '\xF3')))
+            {
+                nTextRun += pF3 - p;
+                p = pF3;
+                if (COLOR_NOTCOLOR != mux_color(p))
+                {
+                    break;
+                }
+                nTextRun += UTF8_SIZE4;
+                p += UTF8_SIZE4;
+            }
+            else
+            {
+                size_t n = strlen((char *)pTextRun);
+                nTextRun += n;
+                p += n;
+                break;
             }
         }
 
@@ -5905,7 +6071,9 @@ UTF8 *mux_string::export_TextConverted
 
     mux_cursor curIn, iCopy;
     size_t iOut = 0, nCopy = 0, nTransition = 0;
-    ColorState csPrev = CS_NORMAL, csCurrent = CS_NORMAL;
+    ColorState csClient = (fNoBleed)?CS_FG_WHITE:CS_NORMAL;
+    ColorState csPrev = CS_NORMAL;
+    ColorState csCurrent = CS_NORMAL;
     UTF8 *pTransition = NULL;
 
     bool bPlentyOfRoom = (m_iLast.m_byte + (COLOR_MAXIMUM_ANSI_TRANSITION_LENGTH * m_ncs) + nNormal + 1) < sizeof(Buffer);
@@ -5925,7 +6093,7 @@ UTF8 *mux_string::export_TextConverted
                     iOut += nCopy;
                     iCopy = curIn;
                 }
-                pTransition = ColorTransitionANSI( csPrev, csCurrent,
+                pTransition = ColorTransitionANSI( csClient, csCurrent,
                                                    &nTransition, fNoBleed, fColor256);
                 if (nTransition)
                 {
@@ -5962,7 +6130,7 @@ UTF8 *mux_string::export_TextConverted
         ValidateColorState(csCurrent);
         if (csPrev != csCurrent)
         {
-            pTransition = ColorTransitionANSI( csPrev, csCurrent,
+            pTransition = ColorTransitionANSI( csClient, csCurrent,
                                                &nTransition, fNoBleed, fColor256);
         }
         else
