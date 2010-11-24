@@ -742,7 +742,7 @@ const int g_trimoffset[4][4] =
 
 const char *ConvertToAscii(const UTF8 *pString)
 {
-    static char buffer[LBUF_SIZE];
+    static char buffer[2*LBUF_SIZE];
     char *q = buffer;
 
     while ('\0' != *pString)
@@ -995,7 +995,7 @@ const char *ConvertToLatin2(const UTF8 *pString)
 // U  = min(abs(-1214R - 2384G + 3598B + 4096 + 1048576) >> 13, 240)
 // V  = min(abs( 3598R - 3013G -  585B + 4096 + 1048576) >> 13, 240)
 
-inline int abs(int x)
+inline int mux_abs(int x)
 {
     if (0 < x) return x;
     else return -x;
@@ -1009,9 +1009,9 @@ inline int mux_min(int x, int y)
 
 inline void rgb2yuv16(RGB *rgb, YUV *yuv)
 {
-    yuv->y = mux_min(abs( 2104*rgb->r + 4310*rgb->g +  802*rgb->b + 4096 +  131072) >> 13, 235);
-    yuv->u = mux_min(abs(-1214*rgb->r - 2384*rgb->g + 3598*rgb->b + 4096 + 1048576) >> 13, 240);
-    yuv->v = mux_min(abs( 3598*rgb->r - 3013*rgb->g -  585*rgb->b + 4096 + 1048576) >> 13, 240);
+    yuv->y = mux_min(mux_abs( 2104*rgb->r + 4310*rgb->g +  802*rgb->b + 4096 +  131072) >> 13, 235);
+    yuv->u = mux_min(mux_abs(-1214*rgb->r - 2384*rgb->g + 3598*rgb->b + 4096 + 1048576) >> 13, 240);
+    yuv->v = mux_min(mux_abs( 3598*rgb->r - 3013*rgb->g -  585*rgb->b + 4096 + 1048576) >> 13, 240);
     yuv->y2 = yuv->y + (yuv->y/2);
 }
 
@@ -2417,7 +2417,14 @@ static UTF8 *ColorTransitionANSI
     {
         if (CS_FG_INDEXED & csNext)
         {
-            iColor = COLOR_INDEX_FG + static_cast<unsigned int>(CS_FG_FIELD(csNext));
+            if (CS_FG_FIELD(csNext) < COLOR_INDEX_DEFAULT)
+            {
+                iColor = COLOR_INDEX_FG + static_cast<unsigned int>(CS_FG_FIELD(csNext));
+            }
+            else
+            {
+                iColor = COLOR_INDEX_FG + COLOR_INDEX_DEFAULT;
+            }
         }
         else
         {
@@ -2429,7 +2436,14 @@ static UTF8 *ColorTransitionANSI
     {
         if (CS_FG_INDEXED & csNext)
         {
-            iColor = COLOR_INDEX_FG + palette[CS_FG_FIELD(csNext)].color16;
+            if (CS_FG_FIELD(csNext) < COLOR_INDEX_DEFAULT)
+            {
+                iColor = COLOR_INDEX_FG + palette[CS_FG_FIELD(csNext)].color16;
+            }
+            else
+            {
+                iColor = COLOR_INDEX_FG + COLOR_INDEX_DEFAULT;
+            }
         }
         else
         {
@@ -2460,7 +2474,14 @@ static UTF8 *ColorTransitionANSI
     {
         if (CS_BG_INDEXED & csNext)
         {
-            iColor = COLOR_INDEX_BG + static_cast<unsigned int>(CS_BG_FIELD(csNext));
+            if (CS_BG_FIELD(csNext) < COLOR_INDEX_DEFAULT)
+            {
+                iColor = COLOR_INDEX_BG + static_cast<unsigned int>(CS_BG_FIELD(csNext));
+            }
+            else
+            {
+                iColor = COLOR_INDEX_BG + COLOR_INDEX_DEFAULT;
+            }
         }
         else
         {
@@ -2472,7 +2493,14 @@ static UTF8 *ColorTransitionANSI
     {
         if (CS_BG_INDEXED & csNext)
         {
-            iColor = COLOR_INDEX_BG + palette[CS_BG_FIELD(csNext)].color8;
+            if (CS_BG_FIELD(csNext) < COLOR_INDEX_DEFAULT)
+            {
+                iColor = COLOR_INDEX_BG + palette[CS_BG_FIELD(csNext)].color8;
+            }
+            else
+            {
+                iColor = COLOR_INDEX_BG + COLOR_INDEX_DEFAULT;
+            }
         }
         else
         {
