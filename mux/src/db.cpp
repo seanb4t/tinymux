@@ -2469,7 +2469,6 @@ bool atr_get_info(dbref thing, int atr, dbref *owner, int *flags)
         return false;
     }
     atr_decode_LEN(buff, nLen, NULL, thing, owner, flags, &nLen);
-    
     return true;
 }
 

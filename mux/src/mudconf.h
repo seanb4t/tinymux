@@ -344,9 +344,9 @@ struct forward_list
 typedef struct attr_permission_list ATTRPERM;
 struct attr_permission_list
 {
-	UTF8	*wildcard;
-	int		 flags;
-	struct attr_permission_list *next;
+    UTF8    *wildcard;
+    int      flags;
+    struct attr_permission_list *next;
 };
 
 #define MAX_ITEXT 100
@@ -433,7 +433,7 @@ struct statedata
     SITE    *suspect_list;      /* Sites that are suspect */
     SITE    *access_list;       /* Access states for sites */
     
-    ATTRPERM *attrperm_list;	/* Wildcarded attribute permissions list */
+    ATTRPERM *attrperm_list;    /* Wildcarded attribute permissions list */
 
 #if defined(STUB_SLAVE)
     mux_ISlaveControl *pISlaveControl;  // Management interface for StubSlave process.
