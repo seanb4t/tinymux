@@ -1210,7 +1210,7 @@ void SetupPorts(int *pnPorts, PortInfo aPorts[], IntArray *pia, IntArray *piaSSL
         }
 
     } while (NULL != sp);
-    
+
     if (NULL != sAddress)
     {
         MEMFREE(sAddress);
@@ -5715,6 +5715,13 @@ void mux_in6_addr::makeMask(int nLeadingBits)
 }
 #endif
 
+mux_subnet::~mux_subnet()
+{
+    delete m_iaBase;
+    delete m_iaMask;
+    delete m_iaEnd;
+}
+
 bool mux_subnet::listinfo(UTF8 *sAddress, int *pnLeadingBits) const
 {
     // Base Address
@@ -5793,25 +5800,28 @@ mux_subnet::Comparison mux_subnet::CompareTo(MUX_SOCKADDR *msa) const
     default:
         return mux_subnet::kGreaterThan;
     }
-        
+
+    mux_subnet::Comparison fComp;
     if (*ma < *m_iaBase)
     {
         // this > t
         //
-        return mux_subnet::kGreaterThan;
+        fComp = mux_subnet::kGreaterThan;
     }
     else if (*m_iaEnd < *ma)
     {
         // this < t
         //
-        return mux_subnet::kLessThan;
+        fComp = mux_subnet::kLessThan;
     }
     else
     {
         // this contains t
         //
-        return mux_subnet::kContains;
+        fComp = mux_subnet::kContains;
     }
+    delete ma;
+    return fComp;
 }
 
 mux_subnet *ParseSubnet(UTF8 *str, dbref player, UTF8 *cmd)
@@ -6322,7 +6332,7 @@ int mux_getaddrinfo(const UTF8 *node, const UTF8 *service, const MUX_ADDRINFO *h
 
 void mux_freeaddrinfo(MUX_ADDRINFO *res)
 {
-#if defined(UNIX_NETWORKING) && defined(HAVE_FREEADDRINFO)
+#if defined(UNIX_NETWORKING) && defined(HAVE_GETADDRINFO)
     freeaddrinfo(res);
 #elif defined(WINDOWS_NETWORKING)
     if (NULL != fpFreeAddrInfo)
@@ -6331,7 +6341,7 @@ void mux_freeaddrinfo(MUX_ADDRINFO *res)
         return;
     }
 #endif
-#if defined(WINDOWS_NETWORKING) || (defined(UNIX_NETWORK) && !defined(HAVE_FREEADDRINFO))
+#if defined(WINDOWS_NETWORKING) || (defined(UNIX_NETWORK) && !defined(HAVE_GETADDRINFO))
     MUX_ADDRINFO *next;
     while (NULL != res)
     {
@@ -6572,7 +6582,7 @@ size_t mux_sockaddr::salen() const
     case AF_INET6:
         return sizeof(u.sai6);
 #endif
-        
+
     default:
         return 0;
     }
