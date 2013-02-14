@@ -92,6 +92,17 @@ extern const unsigned char cl_8859_2_itt[256];
 extern const unsigned char cl_8859_2_sot[6];
 extern const unsigned char cl_8859_2_sbt[73];
 
+// utf/cl_hangul.txt
+//
+// 11172 included, 1102940 excluded, 0 errors.
+// 6 states, 9 columns, 298 bytes
+//
+#define CL_HANGUL_START_STATE (0)
+#define CL_HANGUL_ACCEPTING_STATES_START (6)
+extern const unsigned char cl_hangul_itt[256];
+extern const unsigned char cl_hangul_sot[6];
+extern const unsigned char cl_hangul_sbt[36];
+
 // utf/tr_utf8_ascii.txt
 //
 // 2367 code points.
